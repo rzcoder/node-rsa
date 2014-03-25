@@ -1,4 +1,4 @@
-/*
+/*!
  * RSA library for Node.js
  *
  * Copyright (c) 2014 rzcoder
@@ -177,28 +177,29 @@ module.exports = (function() {
 
     /**
      * Check if keypair contains public key
+     * @param strict {boolean} - public key only, return false if have private exponent
      */
-    NodeRSA.prototype.isPublic = function() {
-        return this.keyPair.n && this.keyPair.e;
+    NodeRSA.prototype.isPublic = function(strict) {
+        return this.keyPair.n && this.keyPair.e && !(strict && this.keyPair.d);
     };
 
     /**
      * Encrypting data method
      *
-     * @param buf {string|number|object|array|Buffer} - data for encoding. Object and array will convert to JSON string.
+     * @param buffer {string|number|object|array|Buffer} - data for encrypting. Object and array will convert to JSON string.
      * @param source_encoding {string} - optional. Encoding for given string. Default utf8.
      * @param output_encoding {string} - optional. Encoding for output result, can also take 'buffer' to return Buffer object. Default base64.
      * @returns {string|Buffer}
      */
-    NodeRSA.prototype.encrypt = function(buf, source_encoding, output_encoding) {
+    NodeRSA.prototype.encrypt = function(buffer, source_encoding, output_encoding) {
         var res = null;
 
-        if (_.isString(buf) || _.isNumber(buf)) {
-            res = this.keyPair.encrypt(new Buffer('' + buf, source_encoding || 'utf8'));
-        } else if (Buffer.isBuffer(buf)) {
-            res = this.keyPair.encrypt(buf);
-        } else if (_.isObject(buf)) {
-            res = this.keyPair.encrypt(new Buffer(JSON.stringify(buf)));
+        if (_.isString(buffer) || _.isNumber(buffer)) {
+            res = this.keyPair.encrypt(new Buffer('' + buffer, source_encoding || 'utf8'));
+        } else if (Buffer.isBuffer(buffer)) {
+            res = this.keyPair.encrypt(buffer);
+        } else if (_.isObject(buffer)) {
+            res = this.keyPair.encrypt(new Buffer(JSON.stringify(buffer)));
         }
 
         if (output_encoding == 'buffer') {
@@ -211,13 +212,13 @@ module.exports = (function() {
     /**
      * Decrypting data method
      *
-     * @param buf {Buffer} - buffer to decrypt
+     * @param buffer {Buffer} - buffer for decrypting
      * @param encoding - encoding for result string, can also take 'json' or 'buffer' for the automatic conversion of this type
-     * @returns {Buffer|string}
+     * @returns {Buffer|object|string}
      */
-    NodeRSA.prototype.decrypt = function(buf, encoding) {
+    NodeRSA.prototype.decrypt = function(buffer, encoding) {
         encoding = encoding || 'utf8';
-        var res = this.keyPair.decrypt(buf);
+        var res = this.keyPair.decrypt(buffer);
 
         if (encoding == 'buffer') {
             return res;

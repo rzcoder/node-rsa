@@ -30,88 +30,15 @@
  * All redistributions must retain an intact copy of this copyright notice
  * and disclaimer.
  */
+
+/*
+ * Node.js adaptation, long message implementation
+ * 2014 rzcoder
+ *
+ */
 var crypt = require('crypto');
 var BigInteger = require("./jsbn.js");
-
-/**
- * PKCS#1 (type 2, random) pad input buffer buf to n bytes, and return a bigint
- * @param buf
- * @param n
- * @returns {*}
- */
-function pkcs1pad2(buf, n) {
-    if (n < buf.length + 11) {
-        throw new Error("Message too long for RSA (n=" + n + ", l=" + s.length + ")");
-    }
-
-    // TO-DO: make buffer n-length
-    var ba = Array.prototype.slice.call(buf, 0);
-
-    // random padding
-    ba.unshift(0);
-    var rand = crypt.randomBytes(n - ba.length - 2);
-    for(var i = 0; i < rand.length; i++) {
-        var r = rand[i];
-        while (r === 0) // non-zero only
-            r = crypt.randomBytes(1)[0];
-        ba.unshift(r);
-    }
-    ba.unshift(2);
-    ba.unshift(0);
-
-    return new BigInteger(ba);
-}
-
-/**
- * Undo PKCS#1 (type 2, random) padding and, if valid, return the plaintext
- * @param d
- * @param n
- * @returns {Buffer}
- */
-function pkcs1unpad2(d, n) {
-    var b = d.toByteArray();
-    var i = 0;
-    while (i < b.length && b[i] === 0)
-        ++i;
-
-    if (b.length - i != n - 1 || b[i] != 2)
-        return null;
-    ++i;
-    while (b[i] !== 0)
-        if (++i >= b.length)
-            return null;
-
-    var ret = [];
-    while (++i < b.length) {
-        var c = b[i] & 255;
-        ret.push(c);
-    }
-    return new Buffer(ret);
-}
-
-/**
- * Trying get a 32-bit unsigned integer from the partial buffer
- * @param buffer
- * @param offset
- * @returns {Number}
- */
-function get32Int(buffer, offset) {
-    offset = offset || 0;
-    var size = 0;
-    if ((size = buffer.length - offset) > 0) {
-        if (size >= 4) {
-            return buffer.readUInt32BE(offset);
-        } else {
-            var res = 0;
-            for (var i = offset + size, d = 0; i > offset; i--, d+=2) {
-                res += buffer[i-1] * Math.pow(16, d);
-            }
-            return res;
-        }
-    } else {
-        return NaN;
-    }
-}
+var utils = require('../utils.js')
 
 exports.BigInteger = BigInteger;
 module.exports.Key = (function() {
@@ -175,6 +102,7 @@ module.exports.Key = (function() {
                 break;
             }
         }
+        this.$$recalculateCache();
     };
 
     /**
@@ -192,7 +120,7 @@ module.exports.Key = (function() {
     RSAKey.prototype.setPrivate = function (N, E, D, P, Q, DP, DQ, C) {
         if (N && E && D && N.length > 0 && E.length > 0 && D.length > 0) {
             this.n = new BigInteger(N);
-            this.e = get32Int(E, 0);
+            this.e = utils.get32IntFromBuffer(E, 0);
             this.d = new BigInteger(D);
 
             if (P && Q && DP && DQ && C) {
@@ -202,6 +130,7 @@ module.exports.Key = (function() {
                 this.dmq1 = new BigInteger(DQ);
                 this.coeff = new BigInteger(C);
             }
+            this.$$recalculateCache();
         } else
             throw Error("Invalid RSA private key");
     };
@@ -214,7 +143,8 @@ module.exports.Key = (function() {
     RSAKey.prototype.setPublic = function (N, E) {
         if (N && E && N.length > 0 && E.length > 0) {
             this.n = new BigInteger(N);
-            this.e = get32Int(E, 0);
+            this.e = utils.get32IntFromBuffer(E, 0);
+            this.$$recalculateCache();
         } else
             throw Error("Invalid RSA public key");
     };
@@ -252,34 +182,126 @@ module.exports.Key = (function() {
 
     /**
      * Return the PKCS#1 RSA encryption of buffer
-     * @param buf {Buffer}
+     * @param buffer {Buffer}
      * @returns {Buffer}
      */
-    RSAKey.prototype.encrypt = function (buf) {
-        var m = pkcs1pad2(buf, (this.n.bitLength() + 7) >> 3);
+    RSAKey.prototype.encrypt = function (buffer) {
+        var buffers = [];
+        var results = [];
 
-        if (m === null)
-            return null;
+        if (buffer.length <= this.maxMessageLength) {
+            buffers.push(buffer);
+        }
 
-        var c = this.$doPublic(m);
-        if (c === null)
-            return null;
+        for(var i in buffers) {
+            var buf = buffers[i];
 
-        return new Buffer(c.toByteArray());
+            var m = this.$$pkcs1pad2(buf, this.maxEncryptDataLength);
+
+            if (m === null) {
+                return null;
+            }
+
+            var c = this.$doPublic(m);
+            if (c === null) {
+                return null;
+            }
+
+            results.push(new Buffer(c.toByteArray()));
+        }
+
+        return Buffer.concat(results);
     };
 
     /**
      * Return the PKCS#1 RSA decryption of buffer
-     * @param buf {Buffer}
+     * @param buffer {Buffer}
      * @returns {Buffer}
      */
-    RSAKey.prototype.decrypt = function (buf) {
-        var c = new BigInteger(buf);
+    RSAKey.prototype.decrypt = function (buffer) {
+        var c = new BigInteger(buffer);
         var m = this.$doPrivate(c);
-        if (m === null)
+
+        if (m === null) {
             return null;
-        return pkcs1unpad2(m, (this.n.bitLength() + 7) >> 3);
+        }
+
+        return this.$$pkcs1unpad2(m, (this.n.bitLength() + 7) >> 3);
     };
+
+    Object.defineProperty(RSAKey.prototype, 'maxEncryptDataLength', {
+        get: function() { return this.cache.keyByteLength; }
+    });
+
+    Object.defineProperty(RSAKey.prototype, 'maxMessageLength', {
+        get: function() { return this.maxEncryptDataLength - 11; }
+    });
+
+    /**
+     * Caching key data
+     */
+    RSAKey.prototype.$$recalculateCache = function () {
+        this.cache = this.cache || {};
+        // Bit & byte length
+        this.cache.keyBitLength = this.n.bitLength();
+        this.cache.keyByteLength = (this.cache.keyBitLength + 6) >> 3;
+    }
+
+    /**
+     * PKCS#1 (type 2, random) pad input buffer to n bytes, and return a bigint
+     * @param buffer
+     * @param n
+     * @returns {*}
+     */
+    RSAKey.prototype.$$pkcs1pad2 = function (buffer, n) {
+        if (n < buffer.length + 11) {
+            throw new Error("Message too long for RSA (n=" + n + ", l=" + buffer.length + ")");
+        }
+
+        // TO-DO: make n-length buffer
+        var ba = Array.prototype.slice.call(buffer, 0);
+
+        // random padding
+        ba.unshift(0);
+        var rand = crypt.randomBytes(n - ba.length - 2);
+        for(var i = 0; i < rand.length; i++) {
+            var r = rand[i];
+            while (r === 0) // non-zero only
+                r = crypt.randomBytes(1)[0];
+            ba.unshift(r);
+        }
+        ba.unshift(2);
+        ba.unshift(0);
+
+        return new BigInteger(ba);
+    }
+
+    /**
+     * Undo PKCS#1 (type 2, random) padding and, if valid, return the plaintext
+     * @param d
+     * @param n
+     * @returns {Buffer}
+     */
+    RSAKey.prototype.$$pkcs1unpad2 = function (d, n) {
+        var b = d.toByteArray();
+        var i = 0;
+        while (i < b.length && b[i] === 0)
+            ++i;
+
+        if (b.length - i != n - 1 || b[i] != 2)
+            return null;
+        ++i;
+        while (b[i] !== 0)
+            if (++i >= b.length)
+                return null;
+
+        var res = [];
+        while (++i < b.length) {
+            var c = b[i] & 255;
+            res.push(c);
+        }
+        return new Buffer(res);
+    }
 
     return RSAKey;
 })();

@@ -18,3 +18,27 @@ module.exports.linebrk = function (str, maxLen) {
     }
     return res + str.substring(i, str.length);
 };
+
+/**
+ * Trying get a 32-bit unsigned integer from the partial buffer
+ * @param buffer
+ * @param offset
+ * @returns {Number}
+ */
+module.exports.get32IntFromBuffer = function (buffer, offset) {
+    offset = offset || 0;
+    var size = 0;
+    if ((size = buffer.length - offset) > 0) {
+        if (size >= 4) {
+            return buffer.readUInt32BE(offset);
+        } else {
+            var res = 0;
+            for (var i = offset + size, d = 0; i > offset; i--, d+=2) {
+                res += buffer[i-1] * Math.pow(16, d);
+            }
+            return res;
+        }
+    } else {
+        return NaN;
+    }
+};

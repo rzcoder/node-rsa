@@ -3,8 +3,15 @@ var NodeRSA = (require('../src/NodeRSA'))
 
 describe('NodeRSA', function(){
     var nodeRSA = null;
+    var privateNodeRSA = null;
+    var publicNodeRSA = null;
 
     describe('Work with keys', function(){
+        it('.generateKeyPair() should make key pair', function(){
+            nodeRSA = new NodeRSA({b: 512});
+            assert.instanceOf(nodeRSA.keyPair, Object);
+        });
+
         describe('PEM', function(){
             var privateKeyPEM = '-----BEGIN RSA PRIVATE KEY-----\n'+
                 'MIIFwgIBAAKCAUEAsE1edyfToZRv6cFOkB0tAJ5qJor4YF5CccJAL0fS/o1Yk10V\n'+
@@ -51,72 +58,104 @@ describe('NodeRSA', function(){
                 'KY4kQIIx8JEBsAYzgyP2iy0CAwEAAQ==\n'+
                 '-----END PUBLIC KEY-----';
 
-            var privateNodeRSA = null;
-            var publicNodeRSA = null;
-
             it('.loadFromPrivatePEM() should load private key from PEM string', function(){
-                privateNodeRSA = new NodeRSA(privateKeyPEM)
-                assert.instanceOf(privateNodeRSA.keyPair, Object)
-                assert(privateNodeRSA.isPrivate())
+                privateNodeRSA = new NodeRSA(privateKeyPEM);
+                assert.instanceOf(privateNodeRSA.keyPair, Object);
+                assert(privateNodeRSA.isPrivate());
+                assert(privateNodeRSA.isPublic());
+                assert(!privateNodeRSA.isPublic(true));
             });
 
             it('.loadFromPublicPEM() should load public key from PEM string', function(){
-                publicNodeRSA = new NodeRSA(publicKeyPEM)
-                assert.instanceOf(privateNodeRSA.keyPair, Object)
-                assert(publicNodeRSA.isPublic())
+                publicNodeRSA = new NodeRSA(publicKeyPEM);
+                assert.instanceOf(privateNodeRSA.keyPair, Object);
+                assert(publicNodeRSA.isPublic());
+                assert(publicNodeRSA.isPublic(true));
+                assert(!publicNodeRSA.isPrivate());
             });
 
             it('.toPrivatePEM() should return private PEM string', function(){
-                assert.equal(privateNodeRSA.toPrivatePEM(), privateKeyPEM)
+                assert.equal(privateNodeRSA.toPrivatePEM(), privateKeyPEM);
             });
 
             it('.toPublicPEM() from public key should return public PEM string', function(){
-                assert.equal(publicNodeRSA.toPublicPEM(), publicKeyPEM)
+                assert.equal(publicNodeRSA.toPublicPEM(), publicKeyPEM);
             });
 
             it('.toPublicPEM() from private key should return public PEM string', function(){
-                assert.equal(privateNodeRSA.toPublicPEM(), publicKeyPEM)
+                assert.equal(privateNodeRSA.toPublicPEM(), publicKeyPEM);
             });
-        });
-
-        it('.generateKeyPair() should make key pair', function(){
-            nodeRSA = new NodeRSA({b: 512})
-            assert.instanceOf(nodeRSA.keyPair, Object)
         });
     });
 
 
-    var dataForEncrypt = 'node-rsa + юникодовые символы スラ';
+    var dataForEncrypt = "ascii + юникод スラ ⑨";
+    var longDataForEncrypt = "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+    var JSONForEncrypt = {str: "string", arr: ["a","r","r", "a", "y", true, '⑨'], int: 42, nested: {key: {key: 1}}}
+
     var encrypted = null;
+    var encryptedLong = null;
     var encryptedBuffer = null;
+    var encryptedJSON = null;
+
     var decrypted = null;
+    var decryptedLong = null;
+    var decryptedJSON = null;
 
     describe('Encrypting', function(){
         it('.encrypt() should return Buffer object', function(){
-            encryptedBuffer = nodeRSA.encrypt(dataForEncrypt, null, 'buffer')
-            assert(Buffer.isBuffer(encryptedBuffer))
+            encryptedBuffer = nodeRSA.encrypt(dataForEncrypt, null, 'buffer');
+            assert(Buffer.isBuffer(encryptedBuffer));
         });
 
         it('.encrypt() should return base64 encrypted string', function(){
-            encrypted = nodeRSA.encrypt(dataForEncrypt)
-            assert.isString(encrypted)
-            assert.match(encrypted, /^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)$/)
+            encrypted = nodeRSA.encrypt(dataForEncrypt);
+            assert.isString(encrypted);
+            assert.match(encrypted, /^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)$/);
+        });
+
+        it('.encrypt() should return encrypted string for long message', function(){
+            encryptedLong = nodeRSA.encrypt(longDataForEncrypt, null, Buffer);
+            assert(Buffer.isBuffer(encryptedLong));
+        });
+
+        it('.encrypt() for js object). Should return Buffer object', function(){
+            encryptedJSON = nodeRSA.encrypt(JSONForEncrypt, null, 'buffer');
+            assert(Buffer.isBuffer(encryptedJSON));
         });
     });
 
     describe('Decrypting', function(){
         it('.decrypt() should return decrypted Buffer', function(){
-            decrypted = nodeRSA.decrypt(encryptedBuffer, 'buffer')
-            assert(Buffer.isBuffer(decrypted))
+            decrypted = nodeRSA.decrypt(encryptedBuffer, 'buffer');
+            assert(Buffer.isBuffer(decrypted));
         });
 
         it('.decrypt() should return decrypted string', function(){
-            decrypted = nodeRSA.decrypt(new Buffer(encrypted, 'base64'), 'utf8')
-            assert.isString(decrypted)
+            decrypted = nodeRSA.decrypt(new Buffer(encrypted, 'base64'), 'utf8');
+            assert.isString(decrypted);
+        });
+
+        it('.decrypt() should return decrypted string for long message', function(){
+            decryptedLong = nodeRSA.decrypt(encryptedLong);
+            assert.isString(decryptedLong);
+        });
+
+        it('.decrypt() for js object. Should return decrypted js object', function(){
+            decryptedJSON = nodeRSA.decrypt(new Buffer(encrypted, 'base64'), 'utf8');
+            assert.isObject(decryptedJSON);
         });
 
         it('source and decrypted should be the same', function(){
-            assert.equal(dataForEncrypt, decrypted)
+            assert.equal(decrypted, dataForEncrypt);
+        });
+
+        it('long source and decrypted should be the same', function(){
+            assert.equal(decryptedLong, longDataForEncrypt);
+        });
+
+        it('source JSON and decrypted JSON should be the same', function(){
+            assert(_.isEqual(decryptedJSON, JSONForEncrypt));
         });
     });
 });

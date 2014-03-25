@@ -1,9 +1,12 @@
 # Node-RSA
 
-Pure JavaScript Node.js RSA library
-No needed OpenSSL
+Node.js RSA library
+Based on jsbn library from Tom Wu http://www-cs-students.stanford.edu/~tjw/jsbn/
 
-Based on jsbn library from Tom Wu http://www-cs-students.stanford.edu/~tjw/jsbn/ and node.js adaptation https://github.com/eschnou/node-bignumber
+* Pure JavaScript
+* No needed OpenSSL
+* Supports long messages for encrypt/decrypt
+
 
 ## Building and Installing
 
@@ -47,15 +50,16 @@ var key = new NodeRSA('-----BEGIN RSA PRIVATE KEY-----\n'+
 Also you can use next methods:
 
 ```js
-key.generateKeyPair(bits, exp); // exp = 65537 by default
-key.loadFromPEM();
+key.generateKeyPair([bits], [exp]); // exp = 65537 by default
+key.loadFromPEM(pem_string);
 ```
 
 ### Export keys
 ```js
 key.toPrivatePEM();
-key.toPublicPEM();
+key.toPublicPEM([strict]);
 ```
+* **strict** - if true method will return false if key pair have private exponent. Default *false*.
 
 ### Test key
 ```js
@@ -63,16 +67,34 @@ key.isPrivate();
 key.isPublic();
 ```
 
+### Encrypting/decrypting
+```js
+key.encrypt(buffer, [source_encoding], [output_encoding]);
+```
+* **buffer** - data for encrypting, may be string, Buffer, or any object/array. Arrays and objects will encoded to JSON string first.
+* **source_encoding** - source encoding, works only with string buffer. Can take standard Node.js Buffer encodings (hex, utf8, base64, etc). *Utf8* by default.
+* **output_encoding** - encoding for output result, can also take 'buffer' to return Buffer object. Default *base64*.
+
+```js
+key.decrypt(buffer, [encoding]);
+```
+
+* **buffer** - data for decrypting. Takes Buffer object.
+* **encoding** - encoding for result string. Can also take 'buffer' for raw Buffer object, or 'json' for automatic JSON.parse result.
+
 
 ## Contributing
 
 Questions, comments, bug reports, and pull requests are all welcome.
 
-## License For NodeRSA.js
+## License for NodeRSA.js
+
+Copyright (c) 2014  rzcoder
+All Rights Reserved.
 
 BSD
 
-## Licensing For Code used in rsa.js and jsbn.js
+## Licensing for code used in rsa.js and jsbn.js
 
 Copyright (c) 2003-2005  Tom Wu
 All Rights Reserved.
