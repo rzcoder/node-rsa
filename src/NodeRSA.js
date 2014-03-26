@@ -218,6 +218,8 @@ module.exports = (function() {
      */
     NodeRSA.prototype.decrypt = function(buffer, encoding) {
         encoding = encoding || 'utf8';
+
+        buffer = _.isString(buffer) ? new Buffer(buffer, 'base64') : buffer;
         var res = this.keyPair.decrypt(buffer);
 
         if (encoding == 'buffer') {

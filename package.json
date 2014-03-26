@@ -1,11 +1,10 @@
 {
   "name": "node-rsa",
-  "version": "0.0.1",
+  "version": "0.1.3",
   "description": "Node.js RSA library",
-  "main": "dist/nodersa.js",
+  "main": "src/NodeRSA.js",
   "scripts": {
-    "test": "grunt test",
-    "install": "grunt"
+    "test": "grunt test"
   },
   "repository": {
     "type": "git",
