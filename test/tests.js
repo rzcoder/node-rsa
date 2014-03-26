@@ -1,13 +1,11 @@
 /**
- * TODO: test for compatibility with other rsa libraries
+ * TODO: tests for compatibility with other rsa libraries
  */
 
 var assert = require('chai').assert;
 var _ = require('lodash');
 var NodeRSA = (require('../src/NodeRSA'));
 
-
-for(var i=0;i<100;i++)
 describe('NodeRSA', function(){
     var nodeRSA = null;
     var privateNodeRSA = null;
@@ -15,7 +13,7 @@ describe('NodeRSA', function(){
 
     describe('Work with keys', function(){
         it('.generateKeyPair() should make key pair', function(){
-            nodeRSA = new NodeRSA({b: 512});
+            nodeRSA = new NodeRSA({b: 1024});
             assert.instanceOf(nodeRSA.keyPair, Object);
         });
 

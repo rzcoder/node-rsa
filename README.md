@@ -81,7 +81,7 @@ key.encrypt(buffer, [source_encoding], [output_encoding]);
 key.decrypt(buffer, [encoding]);
 ```
 
-**buffer** - data for decrypting. Takes Buffer object.  
+**buffer** - data for decrypting. Takes Buffer object or base64 encoded string.
 **encoding** - encoding for result string. Can also take 'buffer' for raw Buffer object, or 'json' for automatic JSON.parse result.
 
 
