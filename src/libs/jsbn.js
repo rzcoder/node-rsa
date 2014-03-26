@@ -45,6 +45,8 @@ function BigInteger(a, b) {
     if (a != null) {
         if ("number" == typeof a) {
             this.fromNumber(a, b);
+        } else if (Buffer.isBuffer(a)) {
+            this.fromBuffer(a);
         } else if (b == null && "string" != typeof a) {
             this.fromByteArray(a);
         } else {
@@ -172,7 +174,7 @@ function nbv(i) {
 }
 
 // (protected) set from string and radix
-function bnpFromString(data, radix) {
+function bnpFromString(data, radix, unsigned) {
     var k;
     if (radix == 16) k = 4;
     else if (radix == 8) k = 3;
@@ -215,6 +217,10 @@ function bnpFromString(data, radix) {
 
 function bnpFromByteArray(a) {
     this.fromString(a, 256)
+}
+
+function bnpFromBuffer(a) {
+    this.fromString(a, 256, true)
 }
 
 // (protected) clamp off excess high words
@@ -793,8 +799,14 @@ function bnToByteArray() {
     return r;
 }
 
-function bnToBuffer() {
-    return new Buffer(this.toByteArray());
+/**
+ * return Buffer object
+ * @param trim {boolean} slice buffer if first element == 0
+ * @returns {Buffer}
+ */
+function bnToBuffer(trim) {
+    var res = new Buffer(this.toByteArray());
+    return trim && res[0] === 0 ? res.slice(1) : res;
 }
 
 function bnEquals(a) {
@@ -1394,6 +1406,7 @@ BigInteger.prototype.copyTo = bnpCopyTo;
 BigInteger.prototype.fromInt = bnpFromInt;
 BigInteger.prototype.fromString = bnpFromString;
 BigInteger.prototype.fromByteArray = bnpFromByteArray;
+BigInteger.prototype.fromBuffer = bnpFromBuffer;
 BigInteger.prototype.clamp = bnpClamp;
 BigInteger.prototype.dlShiftTo = bnpDLShiftTo;
 BigInteger.prototype.drShiftTo = bnpDRShiftTo;

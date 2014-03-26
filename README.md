@@ -90,6 +90,7 @@ Questions, comments, bug reports, and pull requests are all welcome.
 ## License for NodeRSA.js
 
 Copyright (c) 2014  rzcoder
+
 All Rights Reserved.
 
 BSD

@@ -32,10 +32,10 @@
  */
 
 /*
- * Node.js adaptation, long message implementation
+ * Node.js adaptation, long message support implementation
  * 2014 rzcoder
- *
  */
+
 var crypt = require('crypto');
 var BigInteger = require("./jsbn.js");
 var utils = require('../utils.js')
@@ -189,25 +189,46 @@ module.exports.Key = (function() {
         var buffers = [];
         var results = [];
 
-        if (buffer.length <= this.maxMessageLength) {
+        var bufferSize = buffer.length;
+        var buffersCount = Math.ceil(bufferSize / this.maxMessageLength); // total buffers count for encrypt
+        var dividedSize = Math.ceil(bufferSize / buffersCount); // each buffer size
+
+        if ( buffersCount == 1) {
             buffers.push(buffer);
+        } else {
+            for (var bufNum = 0; bufNum < buffersCount; bufNum++) {
+                buffers.push(buffer.slice(bufNum * dividedSize, (bufNum+1) * dividedSize));
+            }
         }
 
+        this.debug = {}
+        this.debug.s = {}
+        this.debug.s.b = [];
+        this.debug.s.m = [];
+        this.debug.s.c = [];
+        this.debug.s.resbuf = [];
         for(var i in buffers) {
             var buf = buffers[i];
+            this.debug.s.b[i] = buf;
 
-            var m = this.$$pkcs1pad2(buf, this.maxEncryptDataLength);
+            var m = this.$$pkcs1pad2(buf, this.encryptedDataLength);
+            this.debug.s.m[i] = m;
 
             if (m === null) {
                 return null;
             }
 
             var c = this.$doPublic(m);
+            this.debug.s.c[i] = c;
             if (c === null) {
                 return null;
             }
 
-            results.push(new Buffer(c.toByteArray()));
+            this.debug.s.resbuf[i] = c.toBuffer(true)
+            while (this.debug.s.resbuf[i].length < this.encryptedDataLength)
+                this.debug.s.resbuf[i] = Buffer.concat(new Buffer([0]), this.debug.s.resbuf[i]);
+
+            results.push( this.debug.s.resbuf[i]);
         }
 
         return Buffer.concat(results);
@@ -219,22 +240,55 @@ module.exports.Key = (function() {
      * @returns {Buffer}
      */
     RSAKey.prototype.decrypt = function (buffer) {
-        var c = new BigInteger(buffer);
-        var m = this.$doPrivate(c);
+       // if (buffer.length % this.encryptedDataLength > 0)
+       //     throw Error('Incorrect data or key');
 
-        if (m === null) {
-            return null;
+        var result = [];
+
+        var s = '';
+        var offset = 0;
+        var length = 0;
+
+        this.debug.o = {}
+        this.debug.o.b = [];
+        this.debug.o.m = [];
+        this.debug.o.c = [];
+        this.debug.o.resbuf = [];
+        for (var i = 0; ; i++) {
+            offset = length;
+            length = offset + this.encryptedDataLength// + (buffer[offset] === 0 ? 1 : 0);
+
+            this.debug.o.resbuf[i] = buffer.slice(offset, Math.min(length, buffer.length))
+            var c = new BigInteger(this.debug.o.resbuf[i]);
+            this.debug.o.c[i] = c;
+            var m = this.$doPrivate(c);
+            this.debug.o.m[i] = m;
+            if (m === null) {
+                return null;
+            }
+
+            this.debug.o.b[i] = this.$$pkcs1unpad2(m, this.encryptedDataLength)
+            result.push(this.debug.o.b[i]);
+
+            if (length >= buffer.length)
+                break;
         }
 
-        return this.$$pkcs1unpad2(m, (this.n.bitLength() + 7) >> 3);
+       try{
+            a = Buffer.concat(result);
+       } catch (e) {
+            console.log(e)
+            throw e;
+        }
+        return a;
     };
 
-    Object.defineProperty(RSAKey.prototype, 'maxEncryptDataLength', {
+    Object.defineProperty(RSAKey.prototype, 'encryptedDataLength', {
         get: function() { return this.cache.keyByteLength; }
     });
 
     Object.defineProperty(RSAKey.prototype, 'maxMessageLength', {
-        get: function() { return this.maxEncryptDataLength - 11; }
+        get: function() { return this.encryptedDataLength - 11; }
     });
 
     /**
@@ -285,22 +339,27 @@ module.exports.Key = (function() {
     RSAKey.prototype.$$pkcs1unpad2 = function (d, n) {
         var b = d.toByteArray();
         var i = 0;
-        while (i < b.length && b[i] === 0)
+        while (i < b.length && b[i] === 0) {
             ++i;
-
-        if (b.length - i != n - 1 || b[i] != 2)
-            return null;
-        ++i;
-        while (b[i] !== 0)
-            if (++i >= b.length)
-                return null;
-
-        var res = [];
-        while (++i < b.length) {
-            var c = b[i] & 255;
-            res.push(c);
         }
-        return new Buffer(res);
+
+        if (b.length - i != n - 1 || b[i] != 2) {
+            return null;
+        }
+
+        ++i;
+        while (b[i] !== 0) {
+            if (++i >= b.length) {
+                return null;
+            }
+        }
+
+        var c = 0;
+        var res = new Buffer(b.length - i - 1);
+        while (++i < b.length) {
+            res[c++] = b[i] & 255;
+        }
+        return res;
     }
 
     return RSAKey;
