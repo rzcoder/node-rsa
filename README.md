@@ -50,9 +50,11 @@ var key = new NodeRSA('-----BEGIN RSA PRIVATE KEY-----\n'+
 Also you can use next methods:
 
 ```js
-key.generateKeyPair([bits], [exp]); // exp = 65537 by default
+key.generateKeyPair([bits], [exp]);
 key.loadFromPEM(pem_string);
 ```
+**bits** - key size in bits. 2048 by default.  
+**exp** - public exponent. 65537 by default.
 
 ### Export keys
 ```js
@@ -79,8 +81,8 @@ key.encrypt(buffer, [source_encoding], [output_encoding]);
 key.decrypt(buffer, [encoding]);
 ```
 
-* **buffer** - data for decrypting. Takes Buffer object.
-* **encoding** - encoding for result string. Can also take 'buffer' for raw Buffer object, or 'json' for automatic JSON.parse result.
+**buffer** - data for decrypting. Takes Buffer object.  
+**encoding** - encoding for result string. Can also take 'buffer' for raw Buffer object, or 'json' for automatic JSON.parse result.
 
 
 ## Contributing
