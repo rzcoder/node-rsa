@@ -1,6 +1,6 @@
 # Node-RSA
 
-Node.js RSA library  
+Node.js RSA library<br/>
 Based on jsbn library from Tom Wu http://www-cs-students.stanford.edu/~tjw/jsbn/
 
 * Pure JavaScript
@@ -73,15 +73,15 @@ key.isPublic();
 ```js
 key.encrypt(buffer, [source_encoding], [output_encoding]);
 ```
-**buffer** - data for encrypting, may be string, Buffer, or any object/array. Arrays and objects will encoded to JSON string first.  
-**source_encoding** - source encoding, works only with string buffer. Can take standard Node.js Buffer encodings (hex, utf8, base64, etc). *Utf8* by default.  
+**buffer** - data for encrypting, may be string, Buffer, or any object/array. Arrays and objects will encoded to JSON string first.<br/>  
+**source_encoding** - source encoding, works only with string buffer. Can take standard Node.js Buffer encodings (hex, utf8, base64, etc). *Utf8* by default.<br/>  
 **output_encoding** - encoding for output result, can also take 'buffer' to return Buffer object. Default *base64*.
 
 ```js
 key.decrypt(buffer, [encoding]);
 ```
 
-**buffer** - data for decrypting. Takes Buffer object or base64 encoded string.
+**buffer** - data for decrypting. Takes Buffer object or base64 encoded string.<br/>
 **encoding** - encoding for result string. Can also take 'buffer' for raw Buffer object, or 'json' for automatic JSON.parse result.
 
 
@@ -91,14 +91,14 @@ Questions, comments, bug reports, and pull requests are all welcome.
 
 ## License for NodeRSA.js
 
-Copyright (c) 2014  rzcoder  
+Copyright (c) 2014  rzcoder<br/>  
 All Rights Reserved.
 
 BSD
 
 ## Licensing for code used in rsa.js and jsbn.js
 
-Copyright (c) 2003-2005  Tom Wu  
+Copyright (c) 2003-2005  Tom Wu<br/>  
 All Rights Reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining
