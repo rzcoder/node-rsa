@@ -31,6 +31,11 @@
  * and disclaimer.
  */
 
+/*
+ * Added Node.js Buffers support
+ * 2014 rzcoder
+ */
+
 var crypt = require('crypto');
 
 // Bits per digit
@@ -176,19 +181,25 @@ function nbv(i) {
 // (protected) set from string and radix
 function bnpFromString(data, radix, unsigned) {
     var k;
-    if (radix == 16) k = 4;
-    else if (radix == 8) k = 3;
-    else if (radix == 256) k = 8; // byte array
-    else if (radix == 2) k = 1;
-    else if (radix == 32) k = 5;
-    else if (radix == 4) k = 2;
-    else {
-        this.fromRadix(data, radix);
-        return;
+    switch(radix) {
+        case 2: k=1; break;
+        case 4: k=2; break;
+        case 8: k=3; break;
+        case 16: k=4; break;
+        case 32: k=5; break;
+        case 256: k=8; break;
+        default:
+            this.fromRadix(data, radix);
+            return;
     }
+
     this.t = 0;
     this.s = 0;
-    var i = data.length, mi = false, sh = 0;
+
+    var i = data.length;
+    var mi = false;
+    var sh = 0;
+
     while (--i >= 0) {
         var x = (k == 8) ? data[i] & 0xff : intAt(data, i);
         if (x < 0) {
@@ -207,7 +218,7 @@ function bnpFromString(data, radix, unsigned) {
         sh += k;
         if (sh >= this.DB) sh -= this.DB;
     }
-    if (k == 8 && (data[0] & 0x80) != 0) {
+    if ((!unsigned) && k == 8 && (data[0] & 0x80) != 0) {
         this.s = -1;
         if (sh > 0) this[this.t - 1] |= ((1 << (this.DB - sh)) - 1) << sh;
     }
@@ -215,8 +226,8 @@ function bnpFromString(data, radix, unsigned) {
     if (mi) BigInteger.ZERO.subTo(this, this);
 }
 
-function bnpFromByteArray(a) {
-    this.fromString(a, 256)
+function bnpFromByteArray(a, unsigned) {
+    this.fromString(a, 256, unsigned)
 }
 
 function bnpFromBuffer(a) {

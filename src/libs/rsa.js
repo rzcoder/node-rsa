@@ -38,7 +38,7 @@
 
 var crypt = require('crypto');
 var BigInteger = require("./jsbn.js");
-var utils = require('../utils.js')
+var utils = require('../utils.js');
 
 exports.BigInteger = BigInteger;
 module.exports.Key = (function() {
@@ -129,6 +129,8 @@ module.exports.Key = (function() {
                 this.dmp1 = new BigInteger(DP);
                 this.dmq1 = new BigInteger(DQ);
                 this.coeff = new BigInteger(C);
+            } else {
+                // TODO: re-calculate any missing CRT params
             }
             this.$$recalculateCache();
         } else
@@ -201,34 +203,28 @@ module.exports.Key = (function() {
             }
         }
 
-        this.debug = {}
-        this.debug.s = {}
-        this.debug.s.b = [];
-        this.debug.s.m = [];
-        this.debug.s.c = [];
-        this.debug.s.resbuf = [];
         for(var i in buffers) {
             var buf = buffers[i];
-            this.debug.s.b[i] = buf;
 
             var m = this.$$pkcs1pad2(buf, this.encryptedDataLength);
-            this.debug.s.m[i] = m;
 
             if (m === null) {
                 return null;
             }
 
             var c = this.$doPublic(m);
-            this.debug.s.c[i] = c;
+
             if (c === null) {
                 return null;
             }
 
-            this.debug.s.resbuf[i] = c.toBuffer(true)
-            while (this.debug.s.resbuf[i].length < this.encryptedDataLength)
-                this.debug.s.resbuf[i] = Buffer.concat(new Buffer([0]), this.debug.s.resbuf[i]);
+            var encryptedBuffer = c.toBuffer(true);
 
-            results.push( this.debug.s.resbuf[i]);
+            while (encryptedBuffer.length < this.encryptedDataLength) {
+                encryptedBuffer = Buffer.concat([new Buffer([0]), encryptedBuffer]);
+            }
+
+            results.push(encryptedBuffer);
         }
 
         return Buffer.concat(results);
@@ -240,47 +236,31 @@ module.exports.Key = (function() {
      * @returns {Buffer}
      */
     RSAKey.prototype.decrypt = function (buffer) {
-       // if (buffer.length % this.encryptedDataLength > 0)
-       //     throw Error('Incorrect data or key');
+        if (buffer.length % this.encryptedDataLength > 0)
+            throw Error('Incorrect data or key');
 
         var result = [];
 
-        var s = '';
         var offset = 0;
         var length = 0;
 
-        this.debug.o = {}
-        this.debug.o.b = [];
-        this.debug.o.m = [];
-        this.debug.o.c = [];
-        this.debug.o.resbuf = [];
-        for (var i = 0; ; i++) {
-            offset = length;
-            length = offset + this.encryptedDataLength// + (buffer[offset] === 0 ? 1 : 0);
+        var buffersCount = buffer.length / this.encryptedDataLength;
 
-            this.debug.o.resbuf[i] = buffer.slice(offset, Math.min(length, buffer.length))
-            var c = new BigInteger(this.debug.o.resbuf[i]);
-            this.debug.o.c[i] = c;
+
+        for (var i = 0; i < buffersCount; i++) {
+            offset = i * this.encryptedDataLength;
+            length = offset + this.encryptedDataLength;
+
+            var c = new BigInteger(buffer.slice(offset, Math.min(length, buffer.length)));
             var m = this.$doPrivate(c);
-            this.debug.o.m[i] = m;
             if (m === null) {
                 return null;
             }
 
-            this.debug.o.b[i] = this.$$pkcs1unpad2(m, this.encryptedDataLength)
-            result.push(this.debug.o.b[i]);
-
-            if (length >= buffer.length)
-                break;
+            result.push(this.$$pkcs1unpad2(m, this.encryptedDataLength));
         }
 
-       try{
-            a = Buffer.concat(result);
-       } catch (e) {
-            console.log(e)
-            throw e;
-        }
-        return a;
+        return Buffer.concat(result);
     };
 
     Object.defineProperty(RSAKey.prototype, 'encryptedDataLength', {
@@ -299,7 +279,7 @@ module.exports.Key = (function() {
         // Bit & byte length
         this.cache.keyBitLength = this.n.bitLength();
         this.cache.keyByteLength = (this.cache.keyBitLength + 6) >> 3;
-    }
+    };
 
     /**
      * PKCS#1 (type 2, random) pad input buffer to n bytes, and return a bigint
@@ -328,7 +308,7 @@ module.exports.Key = (function() {
         ba.unshift(0);
 
         return new BigInteger(ba);
-    }
+    };
 
     /**
      * Undo PKCS#1 (type 2, random) padding and, if valid, return the plaintext
@@ -360,7 +340,7 @@ module.exports.Key = (function() {
             res[c++] = b[i] & 255;
         }
         return res;
-    }
+    };
 
     return RSAKey;
 })();
