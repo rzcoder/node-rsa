@@ -59,15 +59,15 @@ key.loadFromPEM(pem_string);
 ### Export keys
 ```js
 key.toPrivatePEM();
-key.toPublicPEM([strict]);
+key.toPublicPEM();
 ```
-**strict** - if true method will return false if key pair have private exponent. Default *false*.
 
 ### Test key
 ```js
 key.isPrivate();
-key.isPublic();
+key.isPublic([strict]);
 ```
+**strict** - if true method will return false if key pair have private exponent. Default *false*.
 
 ### Encrypting/decrypting
 ```js
