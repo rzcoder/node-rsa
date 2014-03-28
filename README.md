@@ -8,13 +8,13 @@ Based on jsbn library from Tom Wu http://www-cs-students.stanford.edu/~tjw/jsbn/
 * Supports long messages for encrypt/decrypt
 
 
-## Building and Installing
+## Installing
 
 ```shell
 npm install node-rsa
 ```
 
-#### Testing
+### Testing
 
 ```shell
 npm test
@@ -30,7 +30,7 @@ var key = new NodeRSA();
 
 ### Generate new key 512bit-length and with public exponent 65537
 ```js
-var key =  NodeRSA({b: 512});
+var key = new NodeRSA({b: 512});
 ```
 
 ### Load key from PEM string
