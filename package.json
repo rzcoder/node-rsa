@@ -1,6 +1,6 @@
 {
   "name": "node-rsa",
-  "version": "0.1.31",
+  "version": "0.1.32",
   "description": "Node.js RSA library",
   "main": "src/NodeRSA.js",
   "scripts": {
@@ -11,8 +11,12 @@
     "url": "https://github.com/rzcoder/node-rsa.git"
   },
   "keywords": [
-    "node.js",
-    "rsa"
+    "node",
+    "rsa",
+    "crypto",
+    "assymetric",
+    "encryption",
+    "decryption"
   ],
   "author": "rzcoder",
   "license": "BSD",
