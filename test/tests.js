@@ -182,7 +182,7 @@ describe('NodeRSA', function(){
             var sign = dataBundle[i];
             var signature = null;
 
-            it('should signed '+i, function(){
+            it('should sign '+i, function(){
                 signature = nodeRSA.sign(sign, 'hex');
                 console.log(signature)
             });
