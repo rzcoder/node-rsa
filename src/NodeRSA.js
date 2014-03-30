@@ -8,6 +8,7 @@
  */
 
 var rsa = require('./libs/rsa.js');
+var crypt = require('crypto');
 var ber = require('asn1').Ber;
 var _ = require('lodash');
 var utils = require('./utils');
@@ -21,6 +22,7 @@ module.exports = (function() {
      */
     function NodeRSA(arg) {
         this.keyPair = new rsa.Key();
+        this.$cache = {}
 
         if (_.isObject(arg)) {
             this.generateKeyPair(arg.b, arg.e);
@@ -41,6 +43,7 @@ module.exports = (function() {
         exp = 65537;
 
         this.keyPair.generate(bits, exp.toString(16));
+        this.$recalculateCache();
         return this;
     };
 
@@ -55,6 +58,8 @@ module.exports = (function() {
             this.loadFromPublicPEM(pem, 'base64');
         } else
             throw Error('Invalid PEM format');
+
+        this.$recalculateCache();
     };
 
     /**
@@ -103,69 +108,6 @@ module.exports = (function() {
             body.readString(0x02, true), // modulus
             body.readString(0x02, true)  // publicExponent
         );
-    };
-
-    /**
-     * @returns {string} private PEM string
-     */
-    NodeRSA.prototype.toPrivatePEM = function() {
-        var n = this.keyPair.n.toBuffer();
-        var d = this.keyPair.d.toBuffer();
-        var p = this.keyPair.p.toBuffer();
-        var q = this.keyPair.q.toBuffer();
-        var dmp1 = this.keyPair.dmp1.toBuffer();
-        var dmq1 = this.keyPair.dmq1.toBuffer();
-        var coeff = this.keyPair.coeff.toBuffer();
-
-        var length = n.length + d.length + p.length + q.length + dmp1.length + dmq1.length + coeff.length + 512; // magic
-        var writer = new ber.Writer({size: length});
-
-        writer.startSequence();
-        writer.writeInt(0);
-        writer.writeBuffer(n, 2);
-        writer.writeInt(this.keyPair.e);
-        writer.writeBuffer(d, 2);
-        writer.writeBuffer(p, 2);
-        writer.writeBuffer(q, 2);
-        writer.writeBuffer(dmp1, 2);
-        writer.writeBuffer(dmq1, 2);
-        writer.writeBuffer(coeff, 2);
-        writer.endSequence();
-
-        return '-----BEGIN RSA PRIVATE KEY-----\n' +
-            utils.linebrk(writer.buffer.toString('base64'), 64) +
-            '\n-----END RSA PRIVATE KEY-----';
-    };
-
-    /**
-     * @returns {string} public PEM string
-     */
-    NodeRSA.prototype.toPublicPEM = function() {
-        var n = this.keyPair.n.toBuffer();
-        var length = n.length + 512; // magic
-
-        var bodyWriter = new ber.Writer({size: length});
-        bodyWriter.writeByte(0);
-        bodyWriter.startSequence();
-        bodyWriter.writeBuffer(n, 2);
-        bodyWriter.writeInt(this.keyPair.e);
-        bodyWriter.endSequence();
-        var body = bodyWriter.buffer;
-
-        var writer = new ber.Writer({size: length});
-        writer.startSequence();
-        writer.startSequence();
-        writer.writeOID(PUBLIC_RSA_OID);
-        writer.writeNull();
-        writer.endSequence();
-        writer.writeBuffer(body, 3);
-        writer.endSequence();
-
-        n = writer.buffer.toString('hex');
-
-        return '-----BEGIN PUBLIC KEY-----\n' +
-            utils.linebrk(writer.buffer.toString('base64'), 64) +
-            '\n-----END PUBLIC KEY-----';
     };
 
     /**
@@ -231,5 +173,114 @@ module.exports = (function() {
         }
     };
 
-     return NodeRSA;
+    /**
+     *  Signing data
+     *
+     * @param buffer - data for signing
+     * @param encoding - output encoding. May be 'buffer', 'binary', 'hex' or 'base64'. Default 'buffer'.
+     * @returns {*}
+     */
+    NodeRSA.prototype.sign = function(buffer, encoding) {
+        encoding = (!encoding || encoding == 'buffer' ? null : encoding)
+        var signer = crypt.createSign('RSA-SHA256');
+        signer.update(buffer);
+        return signer.sign(this.getPrivatePEM(), encoding);
+    }
+
+    /**
+     *  Verifying signed data
+     *
+     * @param buffer - signed data
+     * @param signature
+     * @param signature_encoding - encoding of given signature. May be 'buffer', 'binary', 'hex' or 'base64'. Default 'buffer'.
+     * @returns {*}
+     */
+    NodeRSA.prototype.verify = function(buffer, signature, signature_encoding) {
+        signature_encoding = (!signature_encoding || signature_encoding == 'buffer' ? null : signature_encoding)
+        var verifier = crypt.createVerify('RSA-SHA256');
+        verifier.update(buffer);
+        return verifier.verify(this.getPublicPEM(), signature, signature_encoding);
+    }
+
+    NodeRSA.prototype.getPrivatePEM = function () {
+        return this.$cache.privatePEM
+    }
+
+    NodeRSA.prototype.getPublicPEM = function () {
+        return this.$cache.publicPEM
+    }
+
+    /**
+     * private
+     * Recalculating properties
+     */
+    NodeRSA.prototype.$recalculateCache = function() {
+        this.$cache.privatePEM = this.$makePrivatePEM()
+        this.$cache.publicPEM = this.$makePublicPEM()
+    }
+
+    /**
+     * private
+     * @returns {string} private PEM string
+     */
+    NodeRSA.prototype.$makePrivatePEM = function() {
+        var n = this.keyPair.n.toBuffer();
+        var d = this.keyPair.d.toBuffer();
+        var p = this.keyPair.p.toBuffer();
+        var q = this.keyPair.q.toBuffer();
+        var dmp1 = this.keyPair.dmp1.toBuffer();
+        var dmq1 = this.keyPair.dmq1.toBuffer();
+        var coeff = this.keyPair.coeff.toBuffer();
+
+        var length = n.length + d.length + p.length + q.length + dmp1.length + dmq1.length + coeff.length + 512; // magic
+        var writer = new ber.Writer({size: length});
+
+        writer.startSequence();
+        writer.writeInt(0);
+        writer.writeBuffer(n, 2);
+        writer.writeInt(this.keyPair.e);
+        writer.writeBuffer(d, 2);
+        writer.writeBuffer(p, 2);
+        writer.writeBuffer(q, 2);
+        writer.writeBuffer(dmp1, 2);
+        writer.writeBuffer(dmq1, 2);
+        writer.writeBuffer(coeff, 2);
+        writer.endSequence();
+
+        return '-----BEGIN RSA PRIVATE KEY-----\n' +
+            utils.linebrk(writer.buffer.toString('base64'), 64) +
+            '\n-----END RSA PRIVATE KEY-----';
+    };
+
+    /**
+     * private
+     * @returns {string} public PEM string
+     */
+    NodeRSA.prototype.$makePublicPEM = function() {
+        var n = this.keyPair.n.toBuffer();
+        var length = n.length + 512; // magic
+
+        var bodyWriter = new ber.Writer({size: length});
+        bodyWriter.writeByte(0);
+        bodyWriter.startSequence();
+        bodyWriter.writeBuffer(n, 2);
+        bodyWriter.writeInt(this.keyPair.e);
+        bodyWriter.endSequence();
+        var body = bodyWriter.buffer;
+
+        var writer = new ber.Writer({size: length});
+        writer.startSequence();
+        writer.startSequence();
+        writer.writeOID(PUBLIC_RSA_OID);
+        writer.writeNull();
+        writer.endSequence();
+        writer.writeBuffer(body, 3);
+        writer.endSequence();
+
+        return '-----BEGIN PUBLIC KEY-----\n' +
+            utils.linebrk(writer.buffer.toString('base64'), 64) +
+            '\n-----END PUBLIC KEY-----';
+    };
+
+    return NodeRSA;
 })();

@@ -4,16 +4,25 @@
 
 var assert = require('chai').assert;
 var _ = require('lodash');
-var NodeRSA = (require('../src/NodeRSA'));
+var NodeRSA = require('../src/NodeRSA');
 
 describe('NodeRSA', function(){
     var nodeRSA = null;
     var privateNodeRSA = null;
     var publicNodeRSA = null;
 
+    var dataBundle = {
+        "string": "ascii + юникод スラ ⑨",
+        "empty string": "",
+        "long string": "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+        "buffer": new Buffer("ascii + юникод スラ ⑨"),
+        "json object": {str: "string", arr: ["a","r","r", "a", "y", true, '⑨'], int: 42, nested: {key: {key: 1}}},
+        "json array": [1,2,3,4,5,6,7,8,9,[10,11,12,[13],14,15,[16,17,[18]]]]
+    };
+
     describe('Work with keys', function(){
         it('.generateKeyPair() should make key pair', function(){
-            nodeRSA = new NodeRSA({b: 1024});
+            nodeRSA = new NodeRSA({b: 512});
             assert.instanceOf(nodeRSA.keyPair, Object);
         });
 
@@ -80,15 +89,15 @@ describe('NodeRSA', function(){
             });
 
             it('.toPrivatePEM() should return private PEM string', function(){
-                assert.equal(privateNodeRSA.toPrivatePEM(), privateKeyPEM);
+                assert.equal(privateNodeRSA.getPrivatePEM(), privateKeyPEM);
             });
 
             it('.toPublicPEM() from public key should return public PEM string', function(){
-                assert.equal(publicNodeRSA.toPublicPEM(), publicKeyPEM);
+                assert.equal(publicNodeRSA.getPublicPEM(), publicKeyPEM);
             });
 
             it('.toPublicPEM() from private key should return public PEM string', function(){
-                assert.equal(privateNodeRSA.toPublicPEM(), publicKeyPEM);
+                assert.equal(privateNodeRSA.getPublicPEM(), publicKeyPEM);
             });
         });
     });
@@ -162,5 +171,22 @@ describe('NodeRSA', function(){
         it('source JSON and decrypted JSON should be the same', function(){
             assert(_.isEqual(decryptedJSON, JSONForEncrypt));
         });
+    });
+
+    describe('Signing & verifying', function () {
+
+
+        var signed = {};
+
+        for(var i in dataForSign) {
+            var sign = dataForSign[i];
+            var signature = null;
+
+            it('should signed '+i, function(){
+                signature = nodeRSA.sign(sign, 'hex');
+                console.log(signature)
+            });
+
+        }
     });
 });

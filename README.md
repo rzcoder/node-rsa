@@ -58,8 +58,8 @@ key.loadFromPEM(pem_string);
 
 ### Export keys
 ```js
-key.toPrivatePEM();
-key.toPublicPEM();
+key.getPrivatePEM();
+key.getPublicPEM();
 ```
 
 ### Test key
