@@ -71,18 +71,19 @@ key.isPublic([strict]);
 
 ### Encrypting/decrypting
 ```js
-key.encrypt(buffer, [source_encoding], [output_encoding]);
+key.encrypt(buffer, [encoding], [source_encoding]);
 ```
 **buffer** - data for encrypting, may be string, Buffer, or any object/array. Arrays and objects will encoded to JSON string first.<br/>
+**encoding** - encoding for output result, may be 'buffer', 'binary', 'hex' or 'base64'. Default *buffer*.
 **source_encoding** - source encoding, works only with string buffer. Can take standard Node.js Buffer encodings (hex, utf8, base64, etc). *Utf8* by default.<br/>
-**output_encoding** - encoding for output result, can also take 'buffer' to return Buffer object. Default *base64*.
 
 ```js
 key.decrypt(buffer, [encoding]);
 ```
-
 **buffer** - data for decrypting. Takes Buffer object or base64 encoded string.<br/>
-**encoding** - encoding for result string. Can also take 'buffer' for raw Buffer object, or 'json' for automatic JSON.parse result.
+**encoding** - encoding for result string. Can also take 'buffer' for raw Buffer object, or 'json' for automatic JSON.parse result. Default 'buffer'.
+
+### Signing/Verifying
 
 ## Contributing
 

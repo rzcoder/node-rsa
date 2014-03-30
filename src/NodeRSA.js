@@ -129,25 +129,17 @@ module.exports = (function() {
      * Encrypting data method
      *
      * @param buffer {string|number|object|array|Buffer} - data for encrypting. Object and array will convert to JSON string.
+     * @param encoding {string} - optional. Encoding for output result, may be 'buffer', 'binary', 'hex' or 'base64'. Default 'buffer'.
      * @param source_encoding {string} - optional. Encoding for given string. Default utf8.
-     * @param output_encoding {string} - optional. Encoding for output result, can also take 'buffer' to return Buffer object. Default base64.
      * @returns {string|Buffer}
      */
-    NodeRSA.prototype.encrypt = function(buffer, source_encoding, output_encoding) {
-        var res = null;
+    NodeRSA.prototype.encrypt = function(buffer, encoding, source_encoding) {
+        var res = this.keyPair.encrypt(this.$getDataForEcrypt(buffer, source_encoding));
 
-        if (_.isString(buffer) || _.isNumber(buffer)) {
-            res = this.keyPair.encrypt(new Buffer('' + buffer, source_encoding || 'utf8'));
-        } else if (Buffer.isBuffer(buffer)) {
-            res = this.keyPair.encrypt(buffer);
-        } else if (_.isObject(buffer)) {
-            res = this.keyPair.encrypt(new Buffer(JSON.stringify(buffer)));
-        }
-
-        if (output_encoding == 'buffer') {
+        if (encoding == 'buffer' || !encoding) {
             return res;
         } else {
-            return res.toString(output_encoding || 'base64');
+            return res.toString(encoding);
         }
     };
 
@@ -159,31 +151,22 @@ module.exports = (function() {
      * @returns {Buffer|object|string}
      */
     NodeRSA.prototype.decrypt = function(buffer, encoding) {
-        encoding = encoding || 'utf8';
-
         buffer = _.isString(buffer) ? new Buffer(buffer, 'base64') : buffer;
-        var res = this.keyPair.decrypt(buffer);
-
-        if (encoding == 'buffer') {
-            return res;
-        } else if (encoding == 'json') {
-            return JSON.parse(res.toString());
-        } else {
-            return res.toString(encoding);
-        }
+        return this.$getDecryptedData(this.keyPair.decrypt(buffer), encoding);
     };
 
     /**
      *  Signing data
      *
-     * @param buffer - data for signing
-     * @param encoding - output encoding. May be 'buffer', 'binary', 'hex' or 'base64'. Default 'buffer'.
-     * @returns {*}
+     * @param buffer {string|number|object|array|Buffer} - data for signing. Object and array will convert to JSON string.
+     * @param encoding {string} - optional. Encoding for output result, may be 'buffer', 'binary', 'hex' or 'base64'. Default 'buffer'.
+     * @param source_encoding {string} - optional. Encoding for given string. Default utf8.
+     * @returns {string|Buffer}
      */
-    NodeRSA.prototype.sign = function(buffer, encoding) {
+    NodeRSA.prototype.sign = function(buffer, encoding, source_encoding) {
         encoding = (!encoding || encoding == 'buffer' ? null : encoding)
         var signer = crypt.createSign('RSA-SHA256');
-        signer.update(buffer);
+        signer.update(this.$getDataForEcrypt(buffer, source_encoding));
         return signer.sign(this.getPrivatePEM(), encoding);
     }
 
@@ -192,7 +175,7 @@ module.exports = (function() {
      *
      * @param buffer - signed data
      * @param signature
-     * @param signature_encoding - encoding of given signature. May be 'buffer', 'binary', 'hex' or 'base64'. Default 'buffer'.
+     * @param signature_encoding - optional. Encoding of given signature. May be 'buffer', 'binary', 'hex' or 'base64'. Default 'buffer'.
      * @returns {*}
      */
     NodeRSA.prototype.verify = function(buffer, signature, signature_encoding) {
@@ -211,6 +194,44 @@ module.exports = (function() {
     }
 
     /**
+     * Preparing given data for encrypting/signing. Just make new/return Buffer object.
+     *
+     * @param buffer {string|number|object|array|Buffer} - data for encrypting. Object and array will convert to JSON string.
+     * @param source_encoding {string} - optional. Encoding for given string. Default utf8.
+     * @returns {Buffer}
+     */
+    NodeRSA.prototype.$getDataForEcrypt = function(buffer, encoding) {
+        if (_.isString(buffer) || _.isNumber(buffer)) {
+            return new Buffer('' + buffer, encoding || 'utf8');
+        } else if (Buffer.isBuffer(buffer)) {
+            return buffer;
+        } else if (_.isObject(buffer)) {
+            return new Buffer(JSON.stringify(buffer));
+        } else {
+            throw Error("Unexpected data type")
+        }
+    }
+
+    /**
+     *
+     * @param buffer {Buffer} - decrypted data.
+     * @param encoding - optional. Encoding for result output. May be 'buffer', 'json' or any of Node.js Buffer supported encoding.
+     * @returns {*}
+     */
+    NodeRSA.prototype.$getDecryptedData = function(buffer, encoding) {
+        encoding = encoding || 'buffer';
+
+        if (encoding == 'buffer') {
+            return buffer;
+        } else if (encoding == 'json') {
+            return JSON.parse(buffer.toString());
+        } else {
+            return buffer.toString(encoding);
+        }
+    };
+
+
+    /**
      * private
      * Recalculating properties
      */
@@ -224,6 +245,10 @@ module.exports = (function() {
      * @returns {string} private PEM string
      */
     NodeRSA.prototype.$makePrivatePEM = function() {
+        if (!this.isPrivate()) {
+            return null;
+        }
+
         var n = this.keyPair.n.toBuffer();
         var d = this.keyPair.d.toBuffer();
         var p = this.keyPair.p.toBuffer();
@@ -257,6 +282,10 @@ module.exports = (function() {
      * @returns {string} public PEM string
      */
     NodeRSA.prototype.$makePublicPEM = function() {
+        if (!this.isPublic()) {
+            return null;
+        }
+
         var n = this.keyPair.n.toBuffer();
         var length = n.length + 512; // magic
 

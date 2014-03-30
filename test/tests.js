@@ -118,40 +118,40 @@ describe('NodeRSA', function(){
 
     describe('Encrypting', function(){
         it('.encrypt() should return Buffer object', function(){
-            encryptedBuffer = nodeRSA.encrypt(dataForEncrypt, null, 'buffer');
+            encryptedBuffer = nodeRSA.encrypt(dataForEncrypt, 'buffer');
             assert(Buffer.isBuffer(encryptedBuffer));
         });
 
         it('.encrypt() should return base64 encrypted string', function(){
-            encrypted = nodeRSA.encrypt(dataForEncrypt);
+            encrypted = nodeRSA.encrypt(dataForEncrypt, 'base64');
             assert.isString(encrypted);
             assert.match(encrypted, /^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)$/);
         });
 
         it('.encrypt() should return encrypted Buffer for long message', function(){
-            encryptedLong = nodeRSA.encrypt(longDataForEncrypt, null, 'buffer');
+            encryptedLong = nodeRSA.encrypt(longDataForEncrypt, 'buffer');
             assert(Buffer.isBuffer(encryptedLong));
         });
 
         it('.encrypt() for js object. Should return Buffer object', function(){
-            encryptedJSON = nodeRSA.encrypt(JSONForEncrypt, null, 'buffer');
+            encryptedJSON = nodeRSA.encrypt(JSONForEncrypt, 'buffer');
             assert(Buffer.isBuffer(encryptedJSON));
         });
     });
 
     describe('Decrypting', function(){
         it('.decrypt() should return decrypted Buffer', function(){
-            decrypted = nodeRSA.decrypt(encryptedBuffer, 'buffer');
+            decrypted = nodeRSA.decrypt(encryptedBuffer);
             assert(Buffer.isBuffer(decrypted));
         });
 
         it('.decrypt() should return decrypted string', function(){
-            decrypted = nodeRSA.decrypt(new Buffer(encrypted, 'base64'));
+            decrypted = nodeRSA.decrypt(new Buffer(encrypted, 'base64'), 'utf8');
             assert.isString(decrypted);
         });
 
         it('.decrypt() should return decrypted string for long message', function(){
-            decryptedLong = nodeRSA.decrypt(encryptedLong);
+            decryptedLong = nodeRSA.decrypt(encryptedLong, 'utf8');
             assert.isString(decryptedLong);
         });
 
@@ -178,8 +178,8 @@ describe('NodeRSA', function(){
 
         var signed = {};
 
-        for(var i in dataForSign) {
-            var sign = dataForSign[i];
+        for(var i in dataBundle) {
+            var sign = dataBundle[i];
             var signature = null;
 
             it('should signed '+i, function(){
