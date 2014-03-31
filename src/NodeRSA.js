@@ -175,13 +175,14 @@ module.exports = (function() {
      *
      * @param buffer - signed data
      * @param signature
+     * @param source_encoding {string} - optional. Encoding for given string. Default utf8.
      * @param signature_encoding - optional. Encoding of given signature. May be 'buffer', 'binary', 'hex' or 'base64'. Default 'buffer'.
      * @returns {*}
      */
-    NodeRSA.prototype.verify = function(buffer, signature, signature_encoding) {
+    NodeRSA.prototype.verify = function(buffer, signature, source_encoding, signature_encoding) {
         signature_encoding = (!signature_encoding || signature_encoding == 'buffer' ? null : signature_encoding)
         var verifier = crypt.createVerify('RSA-SHA256');
-        verifier.update(buffer);
+        verifier.update(this.$getDataForEcrypt(buffer, source_encoding));
         return verifier.verify(this.getPublicPEM(), signature, signature_encoding);
     }
 
