@@ -30,7 +30,7 @@ var key = new NodeRSA([key], [options]);
 ```
 **key** - parameters of a generated key or the key in PEM format.<br/>
 **options** - additional settings
- * **signingAlgorithm** - algorithm used for signing and verifying. Default _'RSA-SHA256'_
+ * **signingAlgorithm** - algorithm used for signing and verifying. Default *'RSA-SHA256'*
 
 #### "Empty" key
 ```js
@@ -82,17 +82,32 @@ key.isPublic([strict]);
 ```js
 key.encrypt(buffer, [encoding], [source_encoding]);
 ```
+Return encrypted data.<br/>
 **buffer** - data for encrypting, may be string, Buffer, or any object/array. Arrays and objects will encoded to JSON string first.<br/>
 **encoding** - encoding for output result, may be 'buffer', 'binary', 'hex' or 'base64'. Default *buffer*.
-**source_encoding** - source encoding, works only with string buffer. Can take standard Node.js Buffer encodings (hex, utf8, base64, etc). *Utf8* by default.<br/>
+**source_encoding** - source encoding, works only with string buffer. Can take standard Node.js Buffer encodings (hex, utf8, base64, etc). *'utf8'* by default.<br/>
 
 ```js
 key.decrypt(buffer, [encoding]);
 ```
+Return decrypted data.<br/>
 **buffer** - data for decrypting. Takes Buffer object or base64 encoded string.<br/>
-**encoding** - encoding for result string. Can also take 'buffer' for raw Buffer object, or 'json' for automatic JSON.parse result. Default 'buffer'.
+**encoding** - encoding for result string. Can also take 'buffer' for raw Buffer object, or 'json' for automatic JSON.parse result. Default *'buffer*.
 
 ### Signing/Verifying
+```js
+key.sign(buffer, [encoding], [source_encoding]);
+```
+Return signature for data. All the arguments are the same as for `encrypt` method.
+
+```js
+key.verify(buffer, signature, [source_encoding], [signature_encoding])
+```
+Return result of check, _true_ or _false_.<br/>
+**buffer** - data for check, same as `encrypt` method.<br/>
+**signature** - signature for check, result of `sign` method.<br/>
+**source_encoding** - same as for`encrypt` method.<br/>
+**signature_encoding** - encoding of given signature. May be 'buffer', 'binary', 'hex' or 'base64'. Default *'buffer'*.
 
 ## Contributing
 
