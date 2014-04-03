@@ -5,9 +5,9 @@ Based on jsbn library from Tom Wu http://www-cs-students.stanford.edu/~tjw/jsbn/
 
 * Pure JavaScript
 * No needed OpenSSL
-* Generate keys
+* Generating keys
 * Supports long messages for encrypt/decrypt
-* Signing/verifying
+* Signing and verifying
 
 
 ## Installing
