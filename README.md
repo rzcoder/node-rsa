@@ -92,13 +92,13 @@ key.decrypt(buffer, [encoding]);
 ```
 Return decrypted data.<br/>
 **buffer** - data for decrypting. Takes Buffer object or base64 encoded string.<br/>
-**encoding** - encoding for result string. Can also take 'buffer' for raw Buffer object, or 'json' for automatic JSON.parse result. Default *'buffer*.
+**encoding** - encoding for result string. Can also take 'buffer' for raw Buffer object, or 'json' for automatic JSON.parse result. Default *'buffer'*.
 
 ### Signing/Verifying
 ```js
 key.sign(buffer, [encoding], [source_encoding]);
 ```
-Return signature for data. All the arguments are the same as for `encrypt` method.
+Return signature for buffer. All the arguments are the same as for `encrypt` method.
 
 ```js
 key.verify(buffer, signature, [source_encoding], [signature_encoding])
