@@ -22,7 +22,7 @@ module.exports = (function() {
      */
     function NodeRSA(arg) {
         this.keyPair = new rsa.Key();
-        this.$cache = {}
+        this.$cache = {};
 
         if (_.isObject(arg)) {
             this.generateKeyPair(arg.b, arg.e);
@@ -165,14 +165,14 @@ module.exports = (function() {
      */
     NodeRSA.prototype.sign = function(buffer, encoding, source_encoding) {
         if (!this.isPrivate()) {
-            throw Error("isn't private key")
+            throw Error("It is not private key");
         }
 
-        encoding = (!encoding || encoding == 'buffer' ? null : encoding)
+        encoding = (!encoding || encoding == 'buffer' ? null : encoding);
         var signer = crypt.createSign('RSA-SHA256');
         signer.update(this.$getDataForEcrypt(buffer, source_encoding));
         return signer.sign(this.getPrivatePEM(), encoding);
-    }
+    };
 
     /**
      *  Verifying signed data
@@ -184,25 +184,33 @@ module.exports = (function() {
      * @returns {*}
      */
     NodeRSA.prototype.verify = function(buffer, signature, source_encoding, signature_encoding) {
-        signature_encoding = (!signature_encoding || signature_encoding == 'buffer' ? null : signature_encoding)
+        signature_encoding = (!signature_encoding || signature_encoding == 'buffer' ? null : signature_encoding);
         var verifier = crypt.createVerify('RSA-SHA256');
         verifier.update(this.$getDataForEcrypt(buffer, source_encoding));
         return verifier.verify(this.getPublicPEM(), signature, signature_encoding);
-    }
+    };
 
     NodeRSA.prototype.getPrivatePEM = function () {
-        return this.$cache.privatePEM
-    }
+        if (!this.isPrivate()) {
+            throw Error("It is not private key");
+        }
+
+        return this.$cache.privatePEM;
+    };
 
     NodeRSA.prototype.getPublicPEM = function () {
-        return this.$cache.publicPEM
-    }
+        if (!this.isPublic()) {
+            throw Error("It is not public key");
+        }
+
+        return this.$cache.publicPEM;
+    };
 
     /**
      * Preparing given data for encrypting/signing. Just make new/return Buffer object.
      *
      * @param buffer {string|number|object|array|Buffer} - data for encrypting. Object and array will convert to JSON string.
-     * @param source_encoding {string} - optional. Encoding for given string. Default utf8.
+     * @param encoding {string} - optional. Encoding for given string. Default utf8.
      * @returns {Buffer}
      */
     NodeRSA.prototype.$getDataForEcrypt = function(buffer, encoding) {
@@ -213,9 +221,9 @@ module.exports = (function() {
         } else if (_.isObject(buffer)) {
             return new Buffer(JSON.stringify(buffer));
         } else {
-            throw Error("Unexpected data type")
+            throw Error("Unexpected data type");
         }
-    }
+    };
 
     /**
      *
@@ -241,9 +249,9 @@ module.exports = (function() {
      * Recalculating properties
      */
     NodeRSA.prototype.$recalculateCache = function() {
-        this.$cache.privatePEM = this.$makePrivatePEM()
-        this.$cache.publicPEM = this.$makePublicPEM()
-    }
+        this.$cache.privatePEM = this.$makePrivatePEM();
+        this.$cache.publicPEM = this.$makePublicPEM();
+    };
 
     /**
      * private

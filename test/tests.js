@@ -11,9 +11,9 @@ describe("NodeRSA", function(){
         {b: 512, e: 3},
         {b: 512, e: 5},
         {b: 512, e: 257},
-        //{b: 512, e: 65537},
-        //{b: 768}, // 'e' should be 65537
-        //{b: 1024} // 'e' should be 65537
+        {b: 512, e: 65537},
+        {b: 768}, // 'e' should be 65537
+        {b: 1024} // 'e' should be 65537
     ];
 
     var dataBundle = {
@@ -104,32 +104,48 @@ describe("NodeRSA", function(){
                 "KY4kQIIx8JEBsAYzgyP2iy0CAwEAAQ==\n"+
                 "-----END PUBLIC KEY-----";
 
-            it(".loadFromPrivatePEM() should load private key from PEM string", function(){
-                privateNodeRSA = new NodeRSA(privateKeyPEM);
-                assert.instanceOf(privateNodeRSA.keyPair, Object);
-                assert(privateNodeRSA.isPrivate());
-                assert(privateNodeRSA.isPublic());
-                assert(!privateNodeRSA.isPublic(true));
+            describe("Good cases", function () {
+                it(".loadFromPrivatePEM() should load private key from PEM string", function(){
+                    privateNodeRSA = new NodeRSA(privateKeyPEM);
+                    assert.instanceOf(privateNodeRSA.keyPair, Object);
+                    assert(privateNodeRSA.isPrivate());
+                    assert(privateNodeRSA.isPublic());
+                    assert(!privateNodeRSA.isPublic(true));
+                });
+
+                it(".loadFromPublicPEM() should load public key from PEM string", function(){
+                    publicNodeRSA = new NodeRSA(publicKeyPEM);
+                    assert.instanceOf(privateNodeRSA.keyPair, Object);
+                    assert(publicNodeRSA.isPublic());
+                    assert(publicNodeRSA.isPublic(true));
+                    assert(!publicNodeRSA.isPrivate());
+                });
+
+                it(".getPrivatePEM() should return private PEM string", function(){
+                    assert.equal(privateNodeRSA.getPrivatePEM(), privateKeyPEM);
+                });
+
+                it(".getPublicPEM() from public key should return public PEM string", function(){
+                    assert.equal(publicNodeRSA.getPublicPEM(), publicKeyPEM);
+                });
+
+                it(".getPublicPEM() from private key should return public PEM string", function(){
+                    assert.equal(privateNodeRSA.getPublicPEM(), publicKeyPEM);
+                });
             });
 
-            it(".loadFromPublicPEM() should load public key from PEM string", function(){
-                publicNodeRSA = new NodeRSA(publicKeyPEM);
-                assert.instanceOf(privateNodeRSA.keyPair, Object);
-                assert(publicNodeRSA.isPublic());
-                assert(publicNodeRSA.isPublic(true));
-                assert(!publicNodeRSA.isPrivate());
-            });
+            describe("Bad cases", function () {
+                it("not public key", function(){
+                    var key = new NodeRSA();
+                    assert.throw(function(){ key.getPrivatePEM(); }, Error, "It is not private key");
+                    assert.throw(function(){ key.getPublicPEM(); }, Error, "It is not public key");
+                });
 
-            it(".toPrivatePEM() should return private PEM string", function(){
-                assert.equal(privateNodeRSA.getPrivatePEM(), privateKeyPEM);
-            });
-
-            it(".toPublicPEM() from public key should return public PEM string", function(){
-                assert.equal(publicNodeRSA.getPublicPEM(), publicKeyPEM);
-            });
-
-            it(".toPublicPEM() from private key should return public PEM string", function(){
-                assert.equal(privateNodeRSA.getPublicPEM(), publicKeyPEM);
+                it("not private key", function(){
+                    var key = new NodeRSA(publicKeyPEM);
+                    assert.throw(function(){ key.getPrivatePEM(); }, Error, "It is not private key");
+                    assert.doesNotThrow(function(){ key.getPublicPEM(); }, Error, "It is not public key");
+                });
             });
         });
     });
@@ -156,6 +172,19 @@ describe("NodeRSA", function(){
                 });
             }
         });
+
+        describe("Bad cases", function () {
+            it("unsupported data types", function(){
+                assert.throw(function(){ generatedKeys[0].encrypt(null); }, Error, "Unexpected data type");
+                assert.throw(function(){ generatedKeys[0].encrypt(undefined); }, Error, "Unexpected data type");
+                assert.throw(function(){ generatedKeys[0].encrypt(true); }, Error, "Unexpected data type");
+            });
+
+            it("incorrect key for decrypting", function(){
+                var encrypted = generatedKeys[0].encrypt('data');
+                assert.notEqual('data', generatedKeys[1].decrypt(encrypted));
+            });
+        });
     });
 
     describe("Signing & verifying", function () {
@@ -179,14 +208,14 @@ describe("NodeRSA", function(){
         });
 
         describe("Bad cases", function () {
-            it("incorrect information", function(){
+            it("incorrect data for verifying", function(){
                 var signed = generatedKeys[0].sign('data1');
                 assert(! generatedKeys[0].verify('data2', signed));
             });
 
             it("incorrect key for signing", function(){
                 var key = new NodeRSA(generatedKeys[0].getPublicPEM());
-                key.sign('data');
+                assert.throw(function(){ key.sign('data'); }, Error, "It is not private key");
             });
 
             it("incorrect key for verifying", function(){
