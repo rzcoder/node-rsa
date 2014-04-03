@@ -1,6 +1,6 @@
 {
   "name": "node-rsa",
-  "version": "0.1.32",
+  "version": "0.1.40",
   "description": "Node.js RSA library",
   "main": "src/NodeRSA.js",
   "scripts": {
@@ -16,7 +16,9 @@
     "crypto",
     "assymetric",
     "encryption",
-    "decryption"
+    "decryption",
+    "sign",
+    "verify"
   ],
   "author": "rzcoder",
   "license": "BSD",
