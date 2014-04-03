@@ -17,17 +17,21 @@ var PUBLIC_RSA_OID = '1.2.840.113549.1.1.1';
 
 module.exports = (function() {
     /**
-     * @param arg {string|object} Key in PEM format, or data for generate key {b: bits, e: exponent}
+     * @param key {string|object} Key in PEM format, or data for generate key {b: bits, e: exponent}
      * @constructor
      */
-    function NodeRSA(arg) {
+    function NodeRSA(key, options) {
         this.keyPair = new rsa.Key();
         this.$cache = {};
 
-        if (_.isObject(arg)) {
-            this.generateKeyPair(arg.b, arg.e);
-        } else if (_.isString(arg)) {
-            this.loadFromPEM(arg);
+        this.options = _.merge({
+            signingAlgorithm: 'RSA-SHA256'
+        }, options  || {});
+
+        if (_.isObject(key)) {
+            this.generateKeyPair(key.b, key.e);
+        } else if (_.isString(key)) {
+            this.loadFromPEM(key);
         }
     }
 
@@ -169,7 +173,7 @@ module.exports = (function() {
         }
 
         encoding = (!encoding || encoding == 'buffer' ? null : encoding);
-        var signer = crypt.createSign('RSA-SHA256');
+        var signer = crypt.createSign(this.options.signingAlgorithm);
         signer.update(this.$getDataForEcrypt(buffer, source_encoding));
         return signer.sign(this.getPrivatePEM(), encoding);
     };
@@ -185,7 +189,7 @@ module.exports = (function() {
      */
     NodeRSA.prototype.verify = function(buffer, signature, source_encoding, signature_encoding) {
         signature_encoding = (!signature_encoding || signature_encoding == 'buffer' ? null : signature_encoding);
-        var verifier = crypt.createVerify('RSA-SHA256');
+        var verifier = crypt.createVerify(this.options.signingAlgorithm);
         verifier.update(this.$getDataForEcrypt(buffer, source_encoding));
         return verifier.verify(this.getPublicPEM(), signature, signature_encoding);
     };

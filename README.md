@@ -23,6 +23,13 @@ npm test
 ## Usage
 
 ### Create instance
+```js
+var key = new NodeRSA([key], [options]);
+```
+**key** - parameters of a generated key or the key in PEM format.
+**options** - additional settings<br/>
+ * **signingAlgorithm** - algorithm used for signing and verifying. Default _'RSA-SHA256'_
+
 #### "Empty" key
 ```js
 var key = new NodeRSA();

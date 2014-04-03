@@ -205,6 +205,12 @@ describe("NodeRSA", function(){
                     assert(key.verify(suit.data, signed[i]));
                 });
             }
+
+            it("signing with custom algorithm", function(){
+                var key = new NodeRSA(generatedKeys[0].getPrivatePEM(), {signingAlgorithm: 'RSA-MD5'});
+                var signed = key.sign('data');
+                assert(key.verify('data', signed));
+            });
         });
 
         describe("Bad cases", function () {
@@ -221,6 +227,13 @@ describe("NodeRSA", function(){
             it("incorrect key for verifying", function(){
                 var signed = generatedKeys[0].sign('data');
                 assert(! generatedKeys[1].verify('data', signed));
+            });
+
+            it("different algorithms", function(){
+                var singKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {signingAlgorithm: 'RSA-MD5'});
+                var verifyKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {signingAlgorithm: 'RSA-SHA1'});
+                var signed = singKey.sign('data');
+                assert(! verifyKey.verify('data', signed));
             });
         });
     });
