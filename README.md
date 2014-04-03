@@ -28,8 +28,8 @@ npm test
 ```js
 var key = new NodeRSA([key], [options]);
 ```
-**key** - parameters of a generated key or the key in PEM format.
-**options** - additional settings<br/>
+**key** - parameters of a generated key or the key in PEM format.<br/>
+**options** - additional settings
  * **signingAlgorithm** - algorithm used for signing and verifying. Default _'RSA-SHA256'_
 
 #### "Empty" key
