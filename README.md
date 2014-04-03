@@ -106,7 +106,7 @@ key.verify(buffer, signature, [source_encoding], [signature_encoding])
 Return result of check, _true_ or _false_.<br/>
 **buffer** - data for check, same as `encrypt` method.<br/>
 **signature** - signature for check, result of `sign` method.<br/>
-**source_encoding** - same as for`encrypt` method.<br/>
+**source_encoding** - same as for `encrypt` method.<br/>
 **signature_encoding** - encoding of given signature. May be 'buffer', 'binary', 'hex' or 'base64'. Default *'buffer'*.
 
 ## Contributing
