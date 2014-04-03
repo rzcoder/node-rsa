@@ -11,9 +11,9 @@ describe("NodeRSA", function(){
         {b: 512, e: 3},
         {b: 512, e: 5},
         {b: 512, e: 257},
-        {b: 512, e: 65537},
-        {b: 768}, // 'e' should be 65537
-        {b: 1024} // 'e' should be 65537
+        //{b: 512, e: 65537},
+        //{b: 768}, // 'e' should be 65537
+        //{b: 1024} // 'e' should be 65537
     ];
 
     var dataBundle = {
@@ -135,39 +135,64 @@ describe("NodeRSA", function(){
     });
 
     describe("Encrypting & decrypting", function(){
-        var encrypted = {};
-        var decrypted = {};
+        describe("Good cases", function () {
+            var encrypted = {};
+            var decrypted = {};
 
-        for(var i in dataBundle) {
-            var suit = dataBundle[i];
+            for(var i in dataBundle) {
+                var suit = dataBundle[i];
+                var key = null;
 
-            it("should encrypt "+i, function(){
-                encrypted[i] = generatedKeys[0].encrypt(suit.data);
-                assert(Buffer.isBuffer(encrypted[i]));
-                assert(encrypted[i].length > 0);
-            });
+                it("should encrypt "+i, function(){
+                    key = generatedKeys[Math.round(Math.random()*1000) % generatedKeys.length];
+                    encrypted[i] = key.encrypt(suit.data);
+                    assert(Buffer.isBuffer(encrypted[i]));
+                    assert(encrypted[i].length > 0);
+                });
 
-            it("should decrypt "+i, function(){
-                decrypted[i] = generatedKeys[0].decrypt(encrypted[i], _.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding);
-                assert(_.isEqual(suit.data, decrypted[i]));
-            });
-        }
+                it("should decrypt "+i, function(){
+                    decrypted[i] = key.decrypt(encrypted[i], _.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding);
+                    assert(_.isEqual(suit.data, decrypted[i]));
+                });
+            }
+        });
     });
 
     describe("Signing & verifying", function () {
-        var signed = {};
+        describe("Good cases", function () {
+            var signed = {};
+            var key = null;
 
-        for(var i in dataBundle) {
-            var suit = dataBundle[i];
-            it("should sign "+i, function(){
-                signed[i] = generatedKeys[0].sign(suit.data);
-                assert(Buffer.isBuffer(signed[i]));
-                assert(signed[i].length > 0);
+            for(var i in dataBundle) {
+                var suit = dataBundle[i];
+                it("should sign "+i, function(){
+                    key = generatedKeys[Math.round(Math.random()*1000) % generatedKeys.length];
+                    signed[i] = key.sign(suit.data);
+                    assert(Buffer.isBuffer(signed[i]));
+                    assert(signed[i].length > 0);
+                });
+
+                it("should verify "+i, function(){
+                    assert(key.verify(suit.data, signed[i]));
+                });
+            }
+        });
+
+        describe("Bad cases", function () {
+            it("incorrect information", function(){
+                var signed = generatedKeys[0].sign('data1');
+                assert(! generatedKeys[0].verify('data2', signed));
             });
 
-            it("should verify "+i, function(){
-                assert(generatedKeys[0].verify(suit.data, signed[i]));
+            it("incorrect key for signing", function(){
+                var key = new NodeRSA(generatedKeys[0].getPublicPEM());
+                key.sign('data');
             });
-        }
+
+            it("incorrect key for verifying", function(){
+                var signed = generatedKeys[0].sign('data');
+                assert(! generatedKeys[1].verify('data', signed));
+            });
+        });
     });
 });

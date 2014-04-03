@@ -114,7 +114,7 @@ module.exports = (function() {
      * Check if keypair contains private key
      */
     NodeRSA.prototype.isPrivate = function() {
-        return this.keyPair.n && this.keyPair.e && this.keyPair.d;
+        return this.keyPair.n && this.keyPair.e && this.keyPair.d || false;
     };
 
     /**
@@ -122,7 +122,7 @@ module.exports = (function() {
      * @param strict {boolean} - public key only, return false if have private exponent
      */
     NodeRSA.prototype.isPublic = function(strict) {
-        return this.keyPair.n && this.keyPair.e && !(strict && this.keyPair.d);
+        return this.keyPair.n && this.keyPair.e && !(strict && this.keyPair.d) || false;
     };
 
     /**
@@ -164,6 +164,10 @@ module.exports = (function() {
      * @returns {string|Buffer}
      */
     NodeRSA.prototype.sign = function(buffer, encoding, source_encoding) {
+        if (!this.isPrivate()) {
+            throw Error("isn't private key")
+        }
+
         encoding = (!encoding || encoding == 'buffer' ? null : encoding)
         var signer = crypt.createSign('RSA-SHA256');
         signer.update(this.$getDataForEcrypt(buffer, source_encoding));
