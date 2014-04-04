@@ -34,6 +34,8 @@ var key = new NodeRSA([key], [options]);
 
 #### "Empty" key
 ```js
+var NodeRSA = require('node-rsa');
+
 var key = new NodeRSA();
 ```
 
