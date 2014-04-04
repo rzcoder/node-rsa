@@ -26,6 +26,8 @@ npm test
 
 ### Create instance
 ```js
+var NodeRSA = require('node-rsa');
+
 var key = new NodeRSA([key], [options]);
 ```
 **key** - parameters of a generated key or the key in PEM format.<br/>
@@ -34,8 +36,6 @@ var key = new NodeRSA([key], [options]);
 
 #### "Empty" key
 ```js
-var NodeRSA = require('node-rsa');
-
 var key = new NodeRSA();
 ```
 
