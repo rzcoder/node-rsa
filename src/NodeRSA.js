@@ -72,7 +72,10 @@ module.exports = (function() {
      * @param publicPEM {string}
      */
     NodeRSA.prototype.loadFromPrivatePEM = function(privatePEM, encoding) {
-        var pem = privatePEM.replace('-----BEGIN RSA PRIVATE KEY-----','').replace('-----END RSA PRIVATE KEY-----','');
+        var pem = privatePEM
+            .replace('-----BEGIN RSA PRIVATE KEY-----','')
+            .replace('-----END RSA PRIVATE KEY-----','')
+            .replace(/\s+|\n|\r$/gm, '');
         var reader = new ber.Reader(new Buffer(pem, 'base64'));
 
         reader.readSequence();
@@ -96,7 +99,10 @@ module.exports = (function() {
      * @param privatePEM {string}
      */
     NodeRSA.prototype.loadFromPublicPEM = function(publicPEM, encoding) {
-        var pem = publicPEM.replace('-----BEGIN PUBLIC KEY-----','').replace('-----END PUBLIC KEY-----','');
+        var pem = publicPEM
+            .replace('-----BEGIN PUBLIC KEY-----','')
+            .replace('-----END PUBLIC KEY-----','')
+            .replace(/\s+|\n|\r$/gm, '');
         var reader = new ber.Reader(new Buffer(pem, 'base64'));
 
         reader.readSequence();
