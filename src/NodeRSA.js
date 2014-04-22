@@ -25,7 +25,8 @@ module.exports = (function() {
         this.$cache = {};
 
         this.options = _.merge({
-            signingAlgorithm: 'RSA-SHA256'
+            signingAlgorithm: 'sha256',
+            environment: utils.detectEnvironment()
         }, options  || {});
 
         if (_.isObject(key)) {
@@ -57,9 +58,9 @@ module.exports = (function() {
      */
     NodeRSA.prototype.loadFromPEM = function(pem) {
         if (/^-----BEGIN RSA PRIVATE KEY-----\s([A-Za-z0-9+/=]+\s)+-----END RSA PRIVATE KEY-----$/g.test(pem)) {
-            this.loadFromPrivatePEM(pem, 'base64');
+            this.$loadFromPrivatePEM(pem, 'base64');
         } else if (/^-----BEGIN PUBLIC KEY-----\s([A-Za-z0-9+/=]+\s)+-----END PUBLIC KEY-----$/g.test(pem)) {
-            this.loadFromPublicPEM(pem, 'base64');
+            this.$loadFromPublicPEM(pem, 'base64');
         } else
             throw Error('Invalid PEM format');
 
@@ -69,13 +70,13 @@ module.exports = (function() {
     /**
      * Make key form private PEM string
      *
-     * @param publicPEM {string}
+     * @param privatePEM {string}
      */
-    NodeRSA.prototype.loadFromPrivatePEM = function(privatePEM, encoding) {
+    NodeRSA.prototype.$loadFromPrivatePEM = function(privatePEM, encoding) {
         var pem = privatePEM
             .replace('-----BEGIN RSA PRIVATE KEY-----','')
             .replace('-----END RSA PRIVATE KEY-----','')
-            .replace(/\s+|\n|\r$/gm, '');
+            .replace(/\s+|\n\r|\n|\r$/gm, '');
         var reader = new ber.Reader(new Buffer(pem, 'base64'));
 
         reader.readSequence();
@@ -96,13 +97,13 @@ module.exports = (function() {
     /**
      * Make key form public PEM string
      *
-     * @param privatePEM {string}
+     * @param publicPEM {string}
      */
-    NodeRSA.prototype.loadFromPublicPEM = function(publicPEM, encoding) {
+    NodeRSA.prototype.$loadFromPublicPEM = function(publicPEM, encoding) {
         var pem = publicPEM
             .replace('-----BEGIN PUBLIC KEY-----','')
             .replace('-----END PUBLIC KEY-----','')
-            .replace(/\s+|\n|\r$/gm, '');
+            .replace(/\s+|\n\r|\n|\r$/gm, '');
         var reader = new ber.Reader(new Buffer(pem, 'base64'));
 
         reader.readSequence();
@@ -178,10 +179,19 @@ module.exports = (function() {
             throw Error("It is not private key");
         }
 
-        encoding = (!encoding || encoding == 'buffer' ? null : encoding);
-        var signer = crypt.createSign(this.options.signingAlgorithm);
-        signer.update(this.$getDataForEcrypt(buffer, source_encoding));
-        return signer.sign(this.getPrivatePEM(), encoding);
+        if (this.options.environment == 'browser') {
+            var res = this.keyPair.sign(this.$getDataForEcrypt(buffer, source_encoding), this.options.signingAlgorithm.toLowerCase());
+            if (encoding && encoding != 'buffer') {
+                return res.toString(encoding);
+            } else {
+                return res;
+            }
+        } else {
+            encoding = (!encoding || encoding == 'buffer' ? null : encoding);
+            var signer = crypt.createSign('RSA-' + this.options.signingAlgorithm.toUpperCase());
+            signer.update(this.$getDataForEcrypt(buffer, source_encoding));
+            return signer.sign(this.getPrivatePEM(), encoding);
+        }
     };
 
     /**
@@ -194,10 +204,19 @@ module.exports = (function() {
      * @returns {*}
      */
     NodeRSA.prototype.verify = function(buffer, signature, source_encoding, signature_encoding) {
+        if (!this.isPublic()) {
+            throw Error("It is not public key");
+        }
+
         signature_encoding = (!signature_encoding || signature_encoding == 'buffer' ? null : signature_encoding);
-        var verifier = crypt.createVerify(this.options.signingAlgorithm);
-        verifier.update(this.$getDataForEcrypt(buffer, source_encoding));
-        return verifier.verify(this.getPublicPEM(), signature, signature_encoding);
+
+        if (this.options.environment == 'browser') {
+            return this.keyPair.verify(this.$getDataForEcrypt(buffer, source_encoding), signature, signature_encoding, this.options.signingAlgorithm.toLowerCase());
+        } else {
+            var verifier = crypt.createVerify('RSA-' + this.options.signingAlgorithm.toUpperCase());
+            verifier.update(this.$getDataForEcrypt(buffer, source_encoding));
+            return verifier.verify(this.getPublicPEM(), signature, signature_encoding);
+        }
     };
 
     NodeRSA.prototype.getPrivatePEM = function () {
@@ -252,7 +271,6 @@ module.exports = (function() {
             return buffer.toString(encoding);
         }
     };
-
 
     /**
      * private

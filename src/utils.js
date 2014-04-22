@@ -19,6 +19,16 @@ module.exports.linebrk = function (str, maxLen) {
     return res + str.substring(i, str.length);
 };
 
+module.exports.detectEnvironment = function() {
+    if (process && process.title != 'browser') {
+        return 'node';
+    } else if (window) {
+        return 'browser';
+    }
+
+    return 'node';
+};
+
 /**
  * Trying get a 32-bit unsigned integer from the partial buffer
  * @param buffer

@@ -22,6 +22,10 @@ npm install node-rsa
 npm test
 ```
 
+## Work environment
+
+This library developed and tested primary for Node.js, but it still can work in browsers with [browserify](http://browserify.org/).
+
 ## Usage
 
 ### Create instance
@@ -32,7 +36,8 @@ var key = new NodeRSA([key], [options]);
 ```
 **key** - parameters of a generated key or the key in PEM format.<br/>
 **options** - additional settings
- * **signingAlgorithm** - algorithm used for signing and verifying. Default *'RSA-SHA256'*
+ * **environment** - working environment, `'browser'` or `'node'`. Default autodetect.
+ * **signingAlgorithm** - hash algorithm used for signing and verifying. Can by `'sha1'`, `'sha256'`, `'md5'`. Default `'sha256'`.
 
 #### "Empty" key
 ```js
@@ -78,7 +83,7 @@ key.getPublicPEM();
 key.isPrivate();
 key.isPublic([strict]);
 ```
-**strict** - if true method will return false if key pair have private exponent. Default *false*.
+**strict** - if true method will return false if key pair have private exponent. Default `false`.
 
 ### Encrypting/decrypting
 ```js
@@ -86,15 +91,15 @@ key.encrypt(buffer, [encoding], [source_encoding]);
 ```
 Return encrypted data.<br/>
 **buffer** - data for encrypting, may be string, Buffer, or any object/array. Arrays and objects will encoded to JSON string first.<br/>
-**encoding** - encoding for output result, may be 'buffer', 'binary', 'hex' or 'base64'. Default *buffer*.
-**source_encoding** - source encoding, works only with string buffer. Can take standard Node.js Buffer encodings (hex, utf8, base64, etc). *'utf8'* by default.<br/>
+**encoding** - encoding for output result, may be `'buffer'`, `'binary'`, `'hex'` or 'base64'. Default `'buffer'`.
+**source_encoding** - source encoding, works only with string buffer. Can take standard Node.js Buffer encodings (hex, utf8, base64, etc). `'utf8'` by default.<br/>
 
 ```js
 key.decrypt(buffer, [encoding]);
 ```
 Return decrypted data.<br/>
 **buffer** - data for decrypting. Takes Buffer object or base64 encoded string.<br/>
-**encoding** - encoding for result string. Can also take 'buffer' for raw Buffer object, or 'json' for automatic JSON.parse result. Default *'buffer'*.
+**encoding** - encoding for result string. Can also take `'buffer'` for raw Buffer object, or `'json'` for automatic JSON.parse result. Default `'buffer'`.
 
 ### Signing/Verifying
 ```js
@@ -105,15 +110,28 @@ Return signature for buffer. All the arguments are the same as for `encrypt` met
 ```js
 key.verify(buffer, signature, [source_encoding], [signature_encoding])
 ```
-Return result of check, _true_ or _false_.<br/>
+Return result of check, `true` or `false`.<br/>
 **buffer** - data for check, same as `encrypt` method.<br/>
 **signature** - signature for check, result of `sign` method.<br/>
 **source_encoding** - same as for `encrypt` method.<br/>
-**signature_encoding** - encoding of given signature. May be 'buffer', 'binary', 'hex' or 'base64'. Default *'buffer'*.
+**signature_encoding** - encoding of given signature. May be `'buffer'`, `'binary'`, `'hex'` or `'base64'`. Default `'buffer'`.
 
 ## Contributing
 
 Questions, comments, bug reports, and pull requests are all welcome.
+
+## Changelog
+
+### 0.1.50
+ * Implemented native js signing and verifying for browsers
+ * `.loadFromPublicPEM` and `.loadFromPrivatePEM` methods marked as private
+
+### 0.1.40
+ * Added signing/verifying
+
+### 0.1.30
+ * Added long message support
+
 
 ## License for NodeRSA.js
 
