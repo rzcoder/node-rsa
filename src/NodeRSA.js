@@ -47,6 +47,10 @@ module.exports = (function() {
         bits = bits || 2048;
         exp = 65537;
 
+        if (bits % 2 == 1) {
+            throw Error('Key size must be even.')
+        }
+
         this.keyPair.generate(bits, exp.toString(16));
         this.$recalculateCache();
         return this;
@@ -233,6 +237,14 @@ module.exports = (function() {
         }
 
         return this.$cache.publicPEM;
+    };
+
+    NodeRSA.prototype.getKeySize = function () {
+        return this.keyPair.keySize;
+    };
+
+    NodeRSA.prototype.getMaxMessageSize = function () {
+        return this.keyPair.maxMessageLength;
     };
 
     /**

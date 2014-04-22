@@ -303,6 +303,10 @@ module.exports.Key = (function() {
         return m.toBuffer().toString('hex') == hash.toString('hex');
     };
 
+    Object.defineProperty(RSAKey.prototype, 'keySize', {
+        get: function() { return this.cache.keyBitLength; }
+    });
+
     Object.defineProperty(RSAKey.prototype, 'encryptedDataLength', {
         get: function() { return this.cache.keyByteLength; }
     });
@@ -318,6 +322,10 @@ module.exports.Key = (function() {
         this.cache = this.cache || {};
         // Bit & byte length
         this.cache.keyBitLength = this.n.bitLength();
+        if (this.cache.keyBitLength % 2 == 1) {
+            this.cache.keyBitLength = this.cache.keyBitLength + 1;
+        }
+
         this.cache.keyByteLength = (this.cache.keyBitLength + 6) >> 3;
     };
 

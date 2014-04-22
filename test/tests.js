@@ -58,11 +58,15 @@ describe("NodeRSA", function(){
     describe("Work with keys", function(){
 
         describe("Generating keys", function() {
-            for (var i in keySizes) {
-                it("should make key pair " + keySizes[i].b + "-bit length and public exponent is " + (keySizes[i].e || 65537), function () {
-                    generatedKeys.push(new NodeRSA({b: keySizes[i].b, e: keySizes[i].e}));
-                    assert.instanceOf(generatedKeys[generatedKeys.length - 1].keyPair, Object);
-                });
+            for (var size in keySizes) {
+                (function(size){
+                    it("should make key pair " + size.b + "-bit length and public exponent is " + (size.e || 65537), function () {
+                        generatedKeys.push(new NodeRSA({b: size.b, e: size.e}));
+                        assert.instanceOf(generatedKeys[generatedKeys.length - 1].keyPair, Object);
+                        assert.equal(generatedKeys[generatedKeys.length - 1].getKeySize(), size.b);
+                        assert.equal(generatedKeys[generatedKeys.length - 1].getMaxMessageSize(), (size.b / 8 - 11));
+                    });
+                })(keySizes[size]);
             }
         });
 
