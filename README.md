@@ -37,7 +37,7 @@ var key = new NodeRSA([key], [options]);
 **key** - parameters of a generated key or the key in PEM format.<br/>
 **options** - additional settings
  * **environment** - working environment, `'browser'` or `'node'`. Default autodetect.
- * **signingAlgorithm** - hash algorithm used for signing and verifying. Can by `'sha1'`, `'sha256'`, `'md5'`. Default `'sha256'`.
+ * **signingAlgorithm** - hash algorithm used for signing and verifying. Can be `'sha1'`, `'sha256'`, `'md5'`. Default `'sha256'`.
 
 #### "Empty" key
 ```js
@@ -78,12 +78,25 @@ key.getPrivatePEM();
 key.getPublicPEM();
 ```
 
-### Test key
+### Properties
+
+#### Key testing
 ```js
 key.isPrivate();
 key.isPublic([strict]);
 ```
 **strict** - if true method will return false if key pair have private exponent. Default `false`.
+
+#### Key info
+```js
+key.getKeySize();
+```
+Return key size in bits.
+
+```js
+key.getMaxMessageSize();
+```
+Return max data size for encrypt in bytes.
 
 ### Encrypting/decrypting
 ```js
@@ -91,7 +104,7 @@ key.encrypt(buffer, [encoding], [source_encoding]);
 ```
 Return encrypted data.<br/>
 **buffer** - data for encrypting, may be string, Buffer, or any object/array. Arrays and objects will encoded to JSON string first.<br/>
-**encoding** - encoding for output result, may be `'buffer'`, `'binary'`, `'hex'` or 'base64'. Default `'buffer'`.
+**encoding** - encoding for output result, may be `'buffer'`, `'binary'`, `'hex'` or 'base64'. Default `'buffer'`.<br/>
 **source_encoding** - source encoding, works only with string buffer. Can take standard Node.js Buffer encodings (hex, utf8, base64, etc). `'utf8'` by default.<br/>
 
 ```js
@@ -124,6 +137,8 @@ Questions, comments, bug reports, and pull requests are all welcome.
 
 ### 0.1.50
  * Implemented native js signing and verifying for browsers
+ * `options.signingAlgorithm` now takes only hash-algorithm name
+ * Added `.getKeySize()` and `.getMaxMessageSize()` methods
  * `.loadFromPublicPEM` and `.loadFromPrivatePEM` methods marked as private
 
 ### 0.1.40
