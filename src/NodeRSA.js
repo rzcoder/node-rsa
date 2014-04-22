@@ -48,7 +48,7 @@ module.exports = (function() {
         exp = 65537;
 
         if (bits % 2 == 1) {
-            throw Error('Key size must be even.')
+            throw Error('Key size must be even.');
         }
 
         this.keyPair.generate(bits, exp.toString(16));
