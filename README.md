@@ -104,7 +104,7 @@ key.encrypt(buffer, [encoding], [source_encoding]);
 ```
 Return encrypted data.<br/>
 **buffer** - data for encrypting, may be string, Buffer, or any object/array. Arrays and objects will encoded to JSON string first.<br/>
-**encoding** - encoding for output result, may be `'buffer'`, `'binary'`, `'hex'` or 'base64'. Default `'buffer'`.<br/>
+**encoding** - encoding for output result, may be `'buffer'`, `'binary'`, `'hex'` or `'base64'`. Default `'buffer'`.<br/>
 **source_encoding** - source encoding, works only with string buffer. Can take standard Node.js Buffer encodings (hex, utf8, base64, etc). `'utf8'` by default.<br/>
 
 ```js
