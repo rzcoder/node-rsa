@@ -60,19 +60,12 @@ describe("NodeRSA", function(){
         describe("Generating keys", function() {
             for (var size in keySizes) {
                 (function(size){
-                    it("should make key pair " + size.b + "-bit length and public exponent is " + size.e, function () {
+                    it("should make key pair " + size.b + "-bit length and public exponent is " + (size.e ? size.e : size.e + ' and should be 65537'), function () {
                         generatedKeys.push(new NodeRSA({b: size.b, e: size.e}));
                         assert.instanceOf(generatedKeys[generatedKeys.length - 1].keyPair, Object);
-
-                        if (size.e != null && size.e != undefined)
-                        {
-                            assert.equal(generatedKeys[generatedKeys.length - 1].keyPair.e, size.e);
-                        } else {
-                            assert.equal(generatedKeys[generatedKeys.length - 1].keyPair.e, 65537);
-                        }
-
                         assert.equal(generatedKeys[generatedKeys.length - 1].getKeySize(), size.b);
                         assert.equal(generatedKeys[generatedKeys.length - 1].getMaxMessageSize(), (size.b / 8 - 11));
+                        assert.equal(generatedKeys[generatedKeys.length - 1].keyPair.e, size.e || 65537);
                     });
                 })(keySizes[size]);
             }
