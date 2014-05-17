@@ -45,9 +45,9 @@ module.exports = (function() {
      */
     NodeRSA.prototype.generateKeyPair = function(bits, exp) {
         bits = bits || 2048;
-        exp = 65537;
+        exp = exp || 65537;
 
-        if (bits % 8 != 0) {
+        if (bits % 8 !== 0) {
             throw Error('Key size must be a multiple of 8.');
         }
 
