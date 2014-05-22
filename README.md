@@ -8,6 +8,20 @@ Based on jsbn library from Tom Wu http://www-cs-students.stanford.edu/~tjw/jsbn/
 * Generating keys
 * Supports long messages for encrypt/decrypt
 * Signing and verifying
+ 
+
+## Example
+
+```javascript
+var NodeRSA = require('node-rsa');
+var key = new NodeRSA({b: 512});
+
+var text = 'Hello RSA!';
+var encrypted = key.encrypt(text, 'base64');
+console.log('encrypted: ', encrypted);
+var decrypted = key.decrypt(encrypted, 'utf8');
+console.log('decrypted: ', decrypted);
+```
 
 
 ## Installing
@@ -29,7 +43,7 @@ This library developed and tested primary for Node.js, but it still can work in 
 ## Usage
 
 ### Create instance
-```js
+```javascript
 var NodeRSA = require('node-rsa');
 
 var key = new NodeRSA([key], [options]);
@@ -40,18 +54,18 @@ var key = new NodeRSA([key], [options]);
  * **signingAlgorithm** - hash algorithm used for signing and verifying. Can be `'sha1'`, `'sha256'`, `'md5'`. Default `'sha256'`.
 
 #### "Empty" key
-```js
+```javascript
 var key = new NodeRSA();
 ```
 
 ### Generate new key 512bit-length and with public exponent 65537
-```js
+```javascript
 var key = new NodeRSA({b: 512});
 ```
 
 ### Load key from PEM string
 
-```js
+```javascript
 var key = new NodeRSA('-----BEGIN RSA PRIVATE KEY-----\n'+
                       'MIIBOQIBAAJAVY6quuzCwyOWzymJ7C4zXjeV/232wt2ZgJZ1kHzjI73wnhQ3WQcL\n'+
                       'DFCSoi2lPUW8/zspk0qWvPdtp6Jg5Lu7hwIDAQABAkBEws9mQahZ6r1mq2zEm3D/\n'+
@@ -65,7 +79,7 @@ var key = new NodeRSA('-----BEGIN RSA PRIVATE KEY-----\n'+
 
 Also you can use next methods:
 
-```js
+```javascript
 key.generateKeyPair([bits], [exp]);
 key.loadFromPEM(pem_string);
 ```
@@ -73,7 +87,7 @@ key.loadFromPEM(pem_string);
 **exp** - public exponent. 65537 by default.
 
 ### Export keys
-```js
+```javascript
 key.getPrivatePEM();
 key.getPublicPEM();
 ```
@@ -81,25 +95,26 @@ key.getPublicPEM();
 ### Properties
 
 #### Key testing
-```js
+```javascript
 key.isPrivate();
 key.isPublic([strict]);
 ```
 **strict** - if true method will return false if key pair have private exponent. Default `false`.
 
 #### Key info
-```js
+```javascript
 key.getKeySize();
 ```
 Return key size in bits.
 
-```js
+```javascript
 key.getMaxMessageSize();
 ```
 Return max data size for encrypt in bytes.
 
 ### Encrypting/decrypting
-```js
+
+```javascript
 key.encrypt(buffer, [encoding], [source_encoding]);
 ```
 Return encrypted data.<br/>
@@ -107,7 +122,7 @@ Return encrypted data.<br/>
 **encoding** - encoding for output result, may be `'buffer'`, `'binary'`, `'hex'` or `'base64'`. Default `'buffer'`.<br/>
 **source_encoding** - source encoding, works only with string buffer. Can take standard Node.js Buffer encodings (hex, utf8, base64, etc). `'utf8'` by default.<br/>
 
-```js
+```javascript
 key.decrypt(buffer, [encoding]);
 ```
 Return decrypted data.<br/>
@@ -115,12 +130,12 @@ Return decrypted data.<br/>
 **encoding** - encoding for result string. Can also take `'buffer'` for raw Buffer object, or `'json'` for automatic JSON.parse result. Default `'buffer'`.
 
 ### Signing/Verifying
-```js
+```javascript
 key.sign(buffer, [encoding], [source_encoding]);
 ```
 Return signature for buffer. All the arguments are the same as for `encrypt` method.
 
-```js
+```javascript
 key.verify(buffer, signature, [source_encoding], [signature_encoding])
 ```
 Return result of check, `true` or `false`.<br/>
