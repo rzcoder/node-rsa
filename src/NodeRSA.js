@@ -61,9 +61,9 @@ module.exports = (function() {
      * @param pem {string}
      */
     NodeRSA.prototype.loadFromPEM = function(pem) {
-        if (/^-----BEGIN RSA PRIVATE KEY-----\s([A-Za-z0-9+/=]+\s)+-----END RSA PRIVATE KEY-----$/g.test(pem)) {
+        if (/^-----BEGIN RSA PRIVATE KEY-----\s([A-Za-z0-9+/=]+\s)+-----END RSA PRIVATE KEY-----\s*$/g.test(pem)) {
             this.$loadFromPrivatePEM(pem, 'base64');
-        } else if (/^-----BEGIN PUBLIC KEY-----\s([A-Za-z0-9+/=]+\s)+-----END PUBLIC KEY-----$/g.test(pem)) {
+        } else if (/^-----BEGIN PUBLIC KEY-----\s([A-Za-z0-9+/=]+\s)+-----END PUBLIC KEY-----\s*$/g.test(pem)) {
             this.$loadFromPublicPEM(pem, 'base64');
         } else
             throw Error('Invalid PEM format');
