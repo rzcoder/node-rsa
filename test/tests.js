@@ -117,17 +117,20 @@ describe("NodeRSA", function(){
                 "KY4kQIIx8JEBsAYzgyP2iy0CAwEAAQ==\n"+
                 "-----END PUBLIC KEY-----";
 
+            var privateKeyPEMNotTrimmed = '     \n\n    \n\n ' + privateKeyPEM + '\n \n  \n\n  ';
+            var publicKeyPEMNotTrimmed = '\n\n\n\n ' + publicKeyPEM + '\n \n\n\n  ';
+
             describe("Good cases", function () {
-                it(".loadFromPrivatePEM() should load private key from PEM string", function(){
-                    privateNodeRSA = new NodeRSA(privateKeyPEM);
+                it(".loadFromPrivatePEM() should load private key from (not trimmed) PEM string", function(){
+                    privateNodeRSA = new NodeRSA(privateKeyPEMNotTrimmed);
                     assert.instanceOf(privateNodeRSA.keyPair, Object);
                     assert(privateNodeRSA.isPrivate());
                     assert(privateNodeRSA.isPublic());
                     assert(!privateNodeRSA.isPublic(true));
                 });
 
-                it(".loadFromPublicPEM() should load public key from PEM string", function(){
-                    publicNodeRSA = new NodeRSA(publicKeyPEM);
+                it(".loadFromPublicPEM() should load public key from (not trimmed) PEM string", function(){
+                    publicNodeRSA = new NodeRSA(publicKeyPEMNotTrimmed);
                     assert.instanceOf(privateNodeRSA.keyPair, Object);
                     assert(publicNodeRSA.isPublic());
                     assert(publicNodeRSA.isPublic(true));
