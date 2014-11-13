@@ -17,10 +17,14 @@ var PUBLIC_RSA_OID = '1.2.840.113549.1.1.1';
 
 module.exports = (function() {
     /**
-     * @param key {string|object} Key in PEM format, or data for generate key {b: bits, e: exponent}
+     * @param key {string|buffer|object} Key in PEM format, or data for generate key {b: bits, e: exponent}
      * @constructor
      */
     function NodeRSA(key, options) {
+        if (! this instanceof NodeRSA) {
+            return new NodeRSA(key, options);
+        }
+
         this.keyPair = new rsa.Key();
         this.$cache = {};
 
@@ -29,10 +33,10 @@ module.exports = (function() {
             environment: utils.detectEnvironment()
         }, options  || {});
 
-        if (_.isObject(key)) {
-            this.generateKeyPair(key.b, key.e);
-        } else if (_.isString(key)) {
+        if (Buffer.isBuffer(key) || _.isString(key)) {
             this.loadFromPEM(key);
+        } else if (_.isObject(key)) {
+            this.generateKeyPair(key.b, key.e);
         }
     }
 
@@ -61,9 +65,13 @@ module.exports = (function() {
      * @param pem {string}
      */
     NodeRSA.prototype.loadFromPEM = function(pem) {
-        if (/^\s*-----BEGIN RSA PRIVATE KEY-----\s([A-Za-z0-9+/=]+\s)+-----END RSA PRIVATE KEY-----\s*$/g.test(pem)) {
+        if (Buffer.isBuffer(pem)) {
+            pem = pem.toString('utf8');
+        }
+
+        if (/^\s*-----BEGIN RSA PRIVATE KEY-----\s*([A-Za-z0-9+/=]+\s*)+-----END RSA PRIVATE KEY-----\s*$/g.test(pem)) {
             this.$loadFromPrivatePEM(pem, 'base64');
-        } else if (/^\s*-----BEGIN PUBLIC KEY-----\s([A-Za-z0-9+/=]+\s)+-----END PUBLIC KEY-----\s*$/g.test(pem)) {
+        } else if (/^\s*-----BEGIN PUBLIC KEY-----\s*([A-Za-z0-9+/=]+\s*)+-----END PUBLIC KEY-----\s*$/g.test(pem)) {
             this.$loadFromPublicPEM(pem, 'base64');
         } else
             throw Error('Invalid PEM format');
@@ -126,18 +134,25 @@ module.exports = (function() {
     };
 
     /**
-     * Check if keypair contains private key
+     * Check if key pair contains private key
      */
     NodeRSA.prototype.isPrivate = function() {
         return this.keyPair.n && this.keyPair.e && this.keyPair.d || false;
     };
 
     /**
-     * Check if keypair contains public key
+     * Check if key pair contains public key
      * @param strict {boolean} - public key only, return false if have private exponent
      */
     NodeRSA.prototype.isPublic = function(strict) {
         return this.keyPair.n && this.keyPair.e && !(strict && this.keyPair.d) || false;
+    };
+
+    /**
+     * Check if key pair doesn't contains any data
+     */
+    NodeRSA.prototype.isEmpty = function(strict) {
+        return !(this.keyPair.n || this.keyPair.e || this.keyPair.d);
     };
 
     /**

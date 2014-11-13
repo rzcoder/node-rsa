@@ -81,7 +81,7 @@ Also you can use next methods:
 
 ```javascript
 key.generateKeyPair([bits], [exp]);
-key.loadFromPEM(pem_string);
+key.loadFromPEM(pem_string|buffer_contains_pem);
 ```
 **bits** - key size in bits. 2048 by default.  
 **exp** - public exponent. 65537 by default.
@@ -100,6 +100,11 @@ key.isPrivate();
 key.isPublic([strict]);
 ```
 **strict** - if true method will return false if key pair have private exponent. Default `false`.
+
+```javascript
+key.isEmpty();
+```
+Return `true` if key pair doesn't have any data.
 
 #### Key info
 ```javascript
@@ -149,6 +154,13 @@ Return result of check, `true` or `false`.<br/>
 Questions, comments, bug reports, and pull requests are all welcome.
 
 ## Changelog
+
+### 0.1.54
+ * Added support for loading PEM key from Buffer (fs.readFileSync output)
+ * Added `isEmpty()` method
+
+### 0.1.54
+ * Improve work with not properly trimming PEM strings
 
 ### 0.1.50
  * Implemented native js signing and verifying for browsers

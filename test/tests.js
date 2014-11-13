@@ -2,9 +2,11 @@
  * TODO: tests for compatibility with other rsa libraries
  */
 
+var fs = require('fs');
 var assert = require("chai").assert;
 var _ = require("lodash");
 var NodeRSA = require("../src/NodeRSA");
+
 
 describe("NodeRSA", function(){
     var keySizes = [
@@ -60,15 +62,27 @@ describe("NodeRSA", function(){
         describe("Generating keys", function() {
             for (var size in keySizes) {
                 (function(size){
-                    it("should make key pair " + size.b + "-bit length and public exponent is " + (size.e ? size.e : size.e + ' and should be 65537'), function () {
+                    it("should make key pair " + size.b + "-bit length and public exponent is " + (size.e ? size.e : size.e + " and should be 65537"), function () {
                         generatedKeys.push(new NodeRSA({b: size.b, e: size.e}));
                         assert.instanceOf(generatedKeys[generatedKeys.length - 1].keyPair, Object);
+                        assert.equal(generatedKeys[generatedKeys.length - 1].isEmpty(), false);
                         assert.equal(generatedKeys[generatedKeys.length - 1].getKeySize(), size.b);
                         assert.equal(generatedKeys[generatedKeys.length - 1].getMaxMessageSize(), (size.b / 8 - 11));
                         assert.equal(generatedKeys[generatedKeys.length - 1].keyPair.e, size.e || 65537);
                     });
                 })(keySizes[size]);
             }
+
+            it("should make empty key pair", function () {
+                var key = new NodeRSA(null);
+                assert.equal(key.isEmpty(), true);
+            });
+
+            it("should make empty key pair with md5 signing option", function () {
+                var key = new NodeRSA(null, {signingAlgorithm: 'md5'});
+                assert.equal(key.isEmpty(), true);
+                assert.equal(key.options.signingAlgorithm, 'md5');
+            });
         });
 
         describe("PEM", function(){
@@ -120,6 +134,23 @@ describe("NodeRSA", function(){
             var privateKeyPEMNotTrimmed = '     \n\n    \n\n ' + privateKeyPEM + '\n \n  \n\n  ';
             var publicKeyPEMNotTrimmed = '\n\n\n\n ' + publicKeyPEM + '\n \n\n\n  ';
 
+            var fileKey = __dirname + "/private.key";
+            var fileKeyPEM = "-----BEGIN RSA PRIVATE KEY-----\n"+
+                "MIICXAIBAAKBgQCCdY+EpDC/vPa335l751SBM8d5Lf4z4QZX4bc+DqTY9zVY/rmP\n"+
+                "GbTkCueKnIKApuOGMXJOaCwNH9wUftNt7T0foEwjl16uIC8m4hwSjjNL5TKqMVey\n"+
+                "Syv04oBuidv76u5yNiLC4J85lbmW3WAyYkTCbm/VJZAXNJuqCm7AVWmQMQIDAQAB\n"+
+                "AoGAEYR3oPfrE9PrzQTZNyn4zuCFCGCEobK1h1dno42T1Q5cu3Z4tB5fi79rF9Gs\n"+
+                "NFo0cvBwyNZ0E88TXi0pdrlEW6mdPgQFd3CFxrOgKt9AGpOtI1zzVOb1Uddywq/m\n"+
+                "WBPyETwEKzq7lC2nAcMUr0rlFrrDmUT2dafHeuWnFMZ/1YECQQDCtftsH9/prbgu\n"+
+                "Q4F2lOWsLz96aix/jnI8FhBmukKmfLMXjCZYYv+Dsr8TIl/iriGqcSgGkBHHoGe1\n"+
+                "nmLUZ4EHAkEAq4YcB8T9DLIYUeaS+JRWwLOejU6/rYdgxBIaGn2m0Ldp/z7lLM7g\n"+
+                "b0H5Al+7POajkAdnDclBDhyxqInHO4VvBwJBAJ25jNEpgNhqQKg5RsYoF2RDYchn\n"+
+                "+WPan+7McLzGZPc4TFrmzKkMiK7GPMHjNokJRXwr7aBjVAPBjEEy7BvjPEECQFOJ\n"+
+                "4rcKAzEewGeLREObg9Eg6nTqSMLMb52vL1V9ozR+UDrHuDilnXuyhwPX+kqEDl+E\n"+
+                "q3V0cqHb6c8rI4TizRsCQANIyhoJ33ughNzbCIknkMPKtgvLOUARnbya/bkfRexL\n"+
+                "icyYzXPNuqZDY8JZQHlshN8cCcZcYjGPYYscd2LKB6o=\n"+
+                "-----END RSA PRIVATE KEY-----";
+
             describe("Good cases", function () {
                 it(".loadFromPrivatePEM() should load private key from (not trimmed) PEM string", function(){
                     privateNodeRSA = new NodeRSA(privateKeyPEMNotTrimmed);
@@ -147,6 +178,19 @@ describe("NodeRSA", function(){
 
                 it(".getPublicPEM() from private key should return public PEM string", function(){
                     assert.equal(privateNodeRSA.getPublicPEM(), publicKeyPEM);
+                });
+
+                it("should create key from buffer/fs.readFileSync output", function(){
+                    var key = new NodeRSA(fs.readFileSync(fileKey));
+                    assert.equal(key.getPrivatePEM(), fileKeyPEM);
+                });
+
+                it("should load PEM from buffer/fs.readFileSync output", function(){
+                    var key = new NodeRSA();
+                    assert.equal(key.isEmpty(), true);
+                    key.loadFromPEM(fs.readFileSync(fileKey));
+                    assert.equal(key.isEmpty(), false);
+                    assert.equal(key.getPrivatePEM(), fileKeyPEM);
                 });
             });
 
