@@ -156,7 +156,7 @@ Questions, comments, bug reports, and pull requests are all welcome.
 ## Changelog
 
 ### 0.1.54
- * Added support for loading PEM key from Buffer (fs.readFileSync output)
+ * Added support for loading PEM key from Buffer (`fs.readFileSync()` output)
  * Added `isEmpty()` method
 
 ### 0.1.52
