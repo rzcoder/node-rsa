@@ -45,9 +45,9 @@ var utils = require('../utils.js');
 var _ = require('lodash');
 
 var SIGNINFOHEAD = {
-    sha1:   new Buffer('3021300906052b0e03021a05000414','hex'),
-    sha256: new Buffer('3031300d060960864801650304020105000420','hex'),
-    md5:    new Buffer('3020300c06082a864886f70d020505000410','hex')
+    sha1:   new Buffer('3021300906052b0e03021a05000414', 'hex'),
+    sha256: new Buffer('3031300d060960864801650304020105000420', 'hex'),
+    md5:    new Buffer('3020300c06082a864886f70d020505000410', 'hex')
 };
 
 exports.BigInteger = BigInteger;
@@ -351,9 +351,7 @@ module.exports.Key = (function() {
         filled[0] = 1;
         filled[filled.length - 1] = 0;
 
-        var res = Buffer.concat([filled, data]);
-
-        return res;
+        return Buffer.concat([filled, data]);
     };
 
     /**

@@ -72,9 +72,9 @@ module.exports = (function() {
         if (/^\s*-----BEGIN RSA PRIVATE KEY-----\s*([A-Za-z0-9+/=]+\s*)+-----END RSA PRIVATE KEY-----\s*$/g.test(pem)) {
             this.$loadFromPrivatePEM(pem, 'base64');
         } else if (/^\s*-----BEGIN PUBLIC KEY-----\s*([A-Za-z0-9+/=]+\s*)+-----END PUBLIC KEY-----\s*$/g.test(pem)) {
-            this.$loadFromPublicPEM(pem, 'base64');
+            this.$loadFromPublicPKCS8(pem, 'base64');
         } else
-            throw Error('Invalid PEM format');
+            throw Error('Invalid key format');
 
         this.$recalculateCache();
     };
@@ -111,7 +111,7 @@ module.exports = (function() {
      *
      * @param publicPEM {string}
      */
-    NodeRSA.prototype.$loadFromPublicPEM = function(publicPEM, encoding) {
+    NodeRSA.prototype.$loadFromPublicPKCS8 = function(publicPEM, encoding) {
         var pem = publicPEM
             .replace('-----BEGIN PUBLIC KEY-----','')
             .replace('-----END PUBLIC KEY-----','')
