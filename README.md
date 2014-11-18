@@ -194,6 +194,12 @@ Questions, comments, bug reports, and pull requests are all welcome.
 
 ## Changelog
 
+### 0.1.55
+ * **The default schemes used to encrypt and sign data have changed from PKCS1 to the recommended OAEP and PSS standards**
+ * Overhauled the rsa.js library to allow for schemes and to allow for easy addition of schemes in the future and custom schemes.
+ * Modified NodeRSA functions to work with new rsa.js file.
+ * All changes should be backwards compatible
+
 ### 0.1.54
  * Added support for loading PEM key from Buffer (`fs.readFileSync()` output)
  * Added `isEmpty()` method
