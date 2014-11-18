@@ -44,10 +44,15 @@
  * 
  * Modified Key object to accept a padding key in it's options object.
  * padding key's value may be any object with the appropriate properties & method signatures:
+ *		Encryption Schemes
  *		maxMessageLength(key:RSA.Key):uint
  *		encrypt(key:RSA.Key, message:Buffer):Buffer
  *		decrypt(key:RSA.Key, encryptedMessage:Buffer):Buffer
- *		sign(key:RSA.key, data:Buffer, hash:String):Buffer
+ *		
+ *		Signature Schemes
+ *		sign(key:RSA.Key, data:Buffer):Buffer
+ *		verify(key:RSA.Key, data:Buffer, signature:Buffer):Boolean
+ *		
  * If a padding scheme has options then the padding value can be an instantiated class.
  * This allows for future changes by making it easy to add new schemes.
  * This also allows for users to implement their own padding schemes, although not recommended.
