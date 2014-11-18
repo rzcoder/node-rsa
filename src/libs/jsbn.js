@@ -34,6 +34,9 @@
 /*
  * Added Node.js Buffers support
  * 2014 rzcoder
+ * 
+ * Extended bnToBuffer to allow length specifying.
+ * 2014 BAM5
  */
 
 var crypt = require('crypto');
@@ -812,12 +815,26 @@ function bnToByteArray() {
 
 /**
  * return Buffer object
- * @param trim {boolean} slice buffer if first element == 0
+ * @param trimOrSize {boolean | uint} slice buffer if first element == 0
  * @returns {Buffer}
  */
-function bnToBuffer(trim) {
-    var res = new Buffer(this.toByteArray());
-    return trim && res[0] === 0 ? res.slice(1) : res;
+function bnToBuffer(trimOrSize) {
+	if(trimOrSize === true || trimOrSize === undefined){
+		var res = new Buffer(this.toByteArray());
+		return trimOrSize && res[0] === 0 ? res.slice(1) : res;
+	} else{
+		var res = new Buffer(this.toByteArray());
+		if(res.length > trimOrSize){
+			for(var i=0; i<res.length - trimOrSize; i++) if(res[i] !== 0) return null;
+			return res.slice(res.length - trimOrSize);
+		} else if(res.length < trimOrSize){
+			var padded = new Buffer(trimOrSize);
+			padded.fill(0, 0, trimOrSize - res.length);
+			res.copy(padded, trimOrSize - res.length);
+			return padded;
+		}
+		return res;
+	}
 }
 
 function bnEquals(a) {
