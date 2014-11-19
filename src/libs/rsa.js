@@ -44,10 +44,19 @@ var BigInteger = require("./jsbn.js");
 var utils = require('../utils.js');
 var _ = require('lodash');
 
-var SIGNINFOHEAD = {
-    sha1:   new Buffer('3021300906052b0e03021a05000414','hex'),
-    sha256: new Buffer('3031300d060960864801650304020105000420','hex'),
-    md5:    new Buffer('3020300c06082a864886f70d020505000410','hex')
+var SIGN_INFO_HEAD = {
+    md2:       new Buffer('3020300c06082a864886f70d020205000410', 'hex'),
+    md5:       new Buffer('3020300c06082a864886f70d020505000410', 'hex'),
+    sha1:      new Buffer('3021300906052b0e03021a05000414', 'hex'),
+    sha224:    new Buffer('302d300d06096086480165030402040500041c', 'hex'),
+    sha256:    new Buffer('3031300d060960864801650304020105000420', 'hex'),
+    sha384:    new Buffer('3041300d060960864801650304020205000430', 'hex'),
+    sha512:    new Buffer('3051300d060960864801650304020305000440', 'hex'),
+    ripemd160: new Buffer('3021300906052b2403020105000414', 'hex')
+};
+
+var SIGN_HASH_ALIASES = {
+    'rmd160': 'ripemd160'
 };
 
 exports.BigInteger = BigInteger;
@@ -337,10 +346,12 @@ module.exports.Key = (function() {
      * @returns {*}
      */
     RSAKey.prototype.$$pkcs1 = function (hashBuf, hashAlgorithm, n) {
-        if(!SIGNINFOHEAD[hashAlgorithm])
+        var digest = SIGN_HASH_ALIASES[hashAlgorithm] || hashAlgorithm;
+        if(!digest) {
             throw Error('Unsupported hash algorithm');
+        }
 
-        var data = Buffer.concat([SIGNINFOHEAD[hashAlgorithm], hashBuf]);
+        var data = Buffer.concat([SIGN_INFO_HEAD[hashAlgorithm], hashBuf]);
 
         if (data.length + 10 > this.encryptedDataLength) {
             throw Error('Key is too short for signing algorithm (' + hashAlgorithm + ')');

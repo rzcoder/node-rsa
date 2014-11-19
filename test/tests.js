@@ -18,7 +18,10 @@ describe("NodeRSA", function(){
         {b: 1024} // 'e' should be 65537
     ];
 
-    var signAlgorithms = ['md5', 'sha1', 'sha256'];
+    var signAlgorithms = {
+        'node': ['MD4', 'MD5', 'RIPEMD160', 'SHA', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512'],
+        'browser': ['MD5', 'RIPEMD160', 'SHA1', 'SHA256', 'SHA512']
+    };
 
     var environments = ['browser', 'node'];
 
@@ -277,14 +280,14 @@ describe("NodeRSA", function(){
                         })(i);
                     }
 
-                    for (var alg in signAlgorithms) {
+                    for (var alg in signAlgorithms[env]) {
                         (function (alg) {
                             it("signing with custom algorithm (" + alg + ")", function () {
-                                var key = new NodeRSA(generatedKeys[0].getPrivatePEM(), {signingAlgorithm: alg, environment: env});
+                                var key = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingAlgorithm: alg, environment: env});
                                 var signed = key.sign('data');
                                 assert(key.verify('data', signed));
                             });
-                        })(signAlgorithms[alg]);
+                        })(signAlgorithms[env][alg]);
                     }
 
                 });
@@ -329,31 +332,30 @@ describe("NodeRSA", function(){
         }
 
         describe("Compatibility of different environments", function () {
-            for (var alg in signAlgorithms) {
+            for (var alg in signAlgorithms['browser']) {
                 (function (alg) {
-                    it("signing with custom algorithm (" + alg + ")", function () {
-                        var nodeKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {signingAlgorithm: alg, environment: 'node'});
-                        var browserKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {signingAlgorithm: alg, environment: 'browser'});
+                    it("signing with custom algorithm (" + alg + ") (equal test)", function () {
+                        var nodeKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingAlgorithm: alg, environment: 'node'});
+                        var browserKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingAlgorithm: alg, environment: 'browser'});
 
                         assert.equal(nodeKey.sign('data', 'hex'), browserKey.sign('data', 'hex'));
                     });
 
                     it("sign in node & verify in browser (" + alg + ")", function () {
-                        var nodeKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {signingAlgorithm: alg, environment: 'node'});
-                        var browserKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {signingAlgorithm: alg, environment: 'browser'});
+                        var nodeKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingAlgorithm: alg, environment: 'node'});
+                        var browserKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingAlgorithm: alg, environment: 'browser'});
 
                         assert(browserKey.verify('data', nodeKey.sign('data')));
                     });
 
                     it("sign in browser & verify in node (" + alg + ")", function () {
-                        var nodeKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {signingAlgorithm: alg, environment: 'node'});
-                        var browserKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {signingAlgorithm: alg, environment: 'browser'});
+                        var nodeKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingAlgorithm: alg, environment: 'node'});
+                        var browserKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingAlgorithm: alg, environment: 'browser'});
 
                         assert(nodeKey.verify('data', browserKey.sign('data')));
                     });
-                })(signAlgorithms[alg]);
+                })(signAlgorithms['browser'][alg]);
             }
-
         });
     });
 });

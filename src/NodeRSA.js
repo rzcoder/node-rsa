@@ -16,6 +16,11 @@ var utils = require('./utils');
 var PUBLIC_RSA_OID = '1.2.840.113549.1.1.1';
 
 module.exports = (function() {
+    var SUPPORTED_SIGNING_ALGORITHMS = {
+        node: ['MD4', 'MD5', 'RIPEMD160', 'SHA', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512'],
+        browser: ['MD5', 'RIPEMD160', 'SHA1', 'SHA256', 'SHA512']
+    };
+
     /**
      * @param key {string|buffer|object} Key in PEM format, or data for generate key {b: bits, e: exponent}
      * @constructor
@@ -30,6 +35,7 @@ module.exports = (function() {
 
         this.options = _.merge({
             signingAlgorithm: 'sha256',
+            paddingScheme: 'PKCS1_OAEP', //PKCS1, PKCS1_OAEP
             environment: utils.detectEnvironment()
         }, options  || {});
 
@@ -39,6 +45,12 @@ module.exports = (function() {
             this.generateKeyPair(key.b, key.e);
         }
     }
+
+    NodeRSA.prototype.$$checkOptions = function () {
+        if (_.indexOf(SUPPORTED_SIGNING_ALGORITHMS[this.options.environment], this.options.signingAlgorithm.toUpperCase())) {
+            throw Error('Unsupported signing algorithm for ' + this.options.environment + ' environment');
+        }
+    };
 
     /**
      * Generate private/public keys pair
