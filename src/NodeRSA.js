@@ -8,7 +8,6 @@
  */
 
 var rsa = require('./libs/rsa.js');
-var crypt = require('crypto');
 var ber = require('asn1').Ber;
 var _ = require('lodash');
 var utils = require('./utils');
@@ -21,17 +20,21 @@ module.exports = (function() {
      * @constructor
      */
     function NodeRSA(key, options) {
-        if (! this instanceof NodeRSA) {
+        if (! this instanceof NodeRSA)
             return new NodeRSA(key, options);
-        }
 
         this.keyPair = new rsa.Key();
         this.$cache = {};
-
-        this.options = _.merge({
-            signingAlgorithm: 'sha256',
-            environment: utils.detectEnvironment()
-        }, options  || {});
+		
+		if(options){
+			console.warn("There are no more options and the parameter is deprecated. It may be removed in the future.");
+			if(options.signingAlgorithm){
+				console.warn("options.signingAlgorithm has been removed. In order to change the signature hashing algorithm create a signature scheme with the appropriate options and set NodeRSA.schemeSignature to that object. Schemes are defined in src/libs/rsa.js Default is RSASSA-PSS (RSA.PSS) with the hashing function sha1");
+				this.schemeSignature = new rsa.PKCS1({hash: options.signingAlgorithm});
+			}
+			if(options.environment)
+				console.warn("options.environment has been removed since all encryption is now done through the rsa.js library");
+		}
 
         if (Buffer.isBuffer(key) || _.isString(key)) {
             this.loadFromPEM(key);
@@ -39,6 +42,8 @@ module.exports = (function() {
             this.generateKeyPair(key.b, key.e);
         }
     }
+	
+	NodeRSA.RSA = rsa;
 
     /**
      * Generate private/public keys pair
@@ -155,6 +160,25 @@ module.exports = (function() {
         return !(this.keyPair.n || this.keyPair.e || this.keyPair.d);
     };
 
+	/*
+	 * In order to use a different encryption/signing/padding scheme then the default (OAEP for encrypting and PSS for signing)
+	 * create a new scheme object with desired options and set the appropriate variable to that scheme object.
+	 * Scheme classes are located in rsa.js and new ones can be easily added.
+	 */
+    Object.defineProperties(NodeRSA.prototype, {
+		schemeEncryption: {
+			enumerable: true,
+			get: function(){ return this.keyPair.schemeEncryption; },
+			set: function(scheme){ this.keyPair.schemeEncryption = scheme; }
+		},
+		
+		schemeSignature: {
+			enumerable: true,
+			get: function(){ return this.keyPair.schemeSignature; },
+			set: function(scheme){ this.keyPair.schemeSignature = scheme; }
+		}
+	});
+	
     /**
      * Encrypting data method
      *
@@ -163,8 +187,14 @@ module.exports = (function() {
      * @param source_encoding {string} - optional. Encoding for given string. Default utf8.
      * @returns {string|Buffer}
      */
-    NodeRSA.prototype.encrypt = function(buffer, encoding, source_encoding) {
-        var res = this.keyPair.encrypt(this.$getDataForEcrypt(buffer, source_encoding));
+    NodeRSA.prototype.encrypt = function(buffer, encoding, source_encoding){
+		buffer = this.$getDataForEcrypt(buffer, source_encoding);
+		try{
+	        var res = this.keyPair.encrypt(buffer);
+		} catch(e){
+			console.warn(e.message);
+			return null;
+		}
 
         if (encoding == 'buffer' || !encoding) {
             return res;
@@ -176,13 +206,20 @@ module.exports = (function() {
     /**
      * Decrypting data method
      *
-     * @param buffer {Buffer} - buffer for decrypting
-     * @param encoding - encoding for result string, can also take 'json' or 'buffer' for the automatic conversion of this type
-     * @returns {Buffer|object|string}
+     * @param buffer {Buffer} - buffer for decrypting, or base64 string
+     * @param encoding - encoding for result string, can also take 'json' or 'buffer' for the automatic conversion of this type. Default "utf8"
+     * @returns {string|Buffer|object}
      */
-    NodeRSA.prototype.decrypt = function(buffer, encoding) {
+    NodeRSA.prototype.decrypt = function(buffer, encoding){
         buffer = _.isString(buffer) ? new Buffer(buffer, 'base64') : buffer;
-        return this.$getDecryptedData(this.keyPair.decrypt(buffer), encoding);
+		var clone = new Buffer(buffer.length);
+			buffer.copy(clone);
+		try{
+	        return this.$getDecryptedData(this.keyPair.decrypt(clone), encoding);
+		} catch(e){
+			console.warn(e.message);
+			return null;
+		}
     };
 
     /**
@@ -193,24 +230,21 @@ module.exports = (function() {
      * @param source_encoding {string} - optional. Encoding for given string. Default utf8.
      * @returns {string|Buffer}
      */
-    NodeRSA.prototype.sign = function(buffer, encoding, source_encoding) {
-        if (!this.isPrivate()) {
-            throw Error("It is not private key");
-        }
-
-        if (this.options.environment == 'browser') {
-            var res = this.keyPair.sign(this.$getDataForEcrypt(buffer, source_encoding), this.options.signingAlgorithm.toLowerCase());
-            if (encoding && encoding != 'buffer') {
-                return res.toString(encoding);
-            } else {
-                return res;
-            }
-        } else {
-            encoding = (!encoding || encoding == 'buffer' ? null : encoding);
-            var signer = crypt.createSign('RSA-' + this.options.signingAlgorithm.toUpperCase());
-            signer.update(this.$getDataForEcrypt(buffer, source_encoding));
-            return signer.sign(this.getPrivatePEM(), encoding);
-        }
+    NodeRSA.prototype.sign = function(buffer, encoding, source_encoding){
+        if(!this.isPrivate()) throw Error("It is not private key");
+		
+		// Move all the lifting to rsa.js module due to its wider options.
+		try{
+			var res = this.keyPair.sign(this.$getDataForEcrypt(buffer, source_encoding));
+		} catch(e){
+			console.warn(e.message);
+			return null;
+		}
+		
+		if(encoding && encoding != 'buffer')
+			return res.toString(encoding);
+		
+		return res;
     };
 
     /**
@@ -222,20 +256,16 @@ module.exports = (function() {
      * @param signature_encoding - optional. Encoding of given signature. May be 'buffer', 'binary', 'hex' or 'base64'. Default 'buffer'.
      * @returns {*}
      */
-    NodeRSA.prototype.verify = function(buffer, signature, source_encoding, signature_encoding) {
-        if (!this.isPublic()) {
-            throw Error("It is not public key");
-        }
+    NodeRSA.prototype.verify = function(buffer, signature, source_encoding, signature_encoding){
+		if(!this.isPublic()) throw Error("It is not public key");
 
-        signature_encoding = (!signature_encoding || signature_encoding == 'buffer' ? null : signature_encoding);
-
-        if (this.options.environment == 'browser') {
-            return this.keyPair.verify(this.$getDataForEcrypt(buffer, source_encoding), signature, signature_encoding, this.options.signingAlgorithm.toLowerCase());
-        } else {
-            var verifier = crypt.createVerify('RSA-' + this.options.signingAlgorithm.toUpperCase());
-            verifier.update(this.$getDataForEcrypt(buffer, source_encoding));
-            return verifier.verify(this.getPublicPEM(), signature, signature_encoding);
-        }
+		signature_encoding = (!signature_encoding || signature_encoding == 'buffer' ? null : signature_encoding);
+		try{
+			return this.keyPair.verify(this.$getDataForEcrypt(buffer, source_encoding), signature, signature_encoding);
+		} catch(e){
+			console.warn(e.message);
+			return false;
+		}
     };
 
     NodeRSA.prototype.getPrivatePEM = function () {
