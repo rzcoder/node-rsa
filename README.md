@@ -120,7 +120,7 @@ Return max data size for encrypt in bytes.
 PKCS1 is still available with the following configuring*
 
 ```javascript
-key.schemeEncryption = new NodeRSA.RSA.PKCS1.Default;
+key.schemeEncryption = NodeRSA.RSA.PKCS1.Default;
 ```
 
 ```javascript
@@ -144,7 +144,7 @@ Return decrypted data.<br/>
 PKCS1 is still available with the following configuring*
 
 ```javascript
-key.schemeSignature = new NodeRSA.RSA.PKCS1.Default;
+key.schemeSignature = NodeRSA.RSA.PKCS1.Default;
 ```
 
 ```javascript
