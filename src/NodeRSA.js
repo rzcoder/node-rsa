@@ -17,9 +17,11 @@ var PUBLIC_RSA_OID = '1.2.840.113549.1.1.1';
 
 module.exports = (function() {
     var SUPPORTED_SIGNING_ALGORITHMS = {
-        node: ['MD4', 'MD5', 'RIPEMD160', 'SHA', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512'],
-        browser: ['MD5', 'RIPEMD160', 'SHA1', 'SHA256', 'SHA512']
+        node: ['md4', 'md5', 'ripemd160', 'sha', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'],
+        browser: ['md5', 'ripemd160', 'sha1', 'sha256', 'sha512']
     };
+
+    var SUPPORTED_PADDING_SCHEMES = ['pkcs1_oaep', 'pkcs1'];
 
     /**
      * @param key {string|buffer|object} Key in PEM format, or data for generate key {b: bits, e: exponent}
@@ -33,11 +35,7 @@ module.exports = (function() {
         this.keyPair = new rsa.Key();
         this.$cache = {};
 
-        this.options = _.merge({
-            signingAlgorithm: 'sha256',
-            paddingScheme: 'PKCS1_OAEP', //PKCS1, PKCS1_OAEP
-            environment: utils.detectEnvironment()
-        }, options  || {});
+        this.$$setupOptions(options);
 
         if (Buffer.isBuffer(key) || _.isString(key)) {
             this.loadFromPEM(key);
@@ -46,8 +44,28 @@ module.exports = (function() {
         }
     }
 
+    NodeRSA.prototype.$$setupOptions = function (options) {
+        //todo object with getters/setters and validation on change
+        this.options = _.merge({
+            signingAlgorithm: 'sha256',
+            paddingScheme: 'pkcs1_oaep',
+            environment: utils.detectEnvironment()
+        }, options  || {});
+
+        this.$$normalizeOptions();
+        this.$$checkOptions();
+    };
+
+    NodeRSA.prototype.$$normalizeOptions = function () {
+        this.options.signingAlgorithm = this.options.signingAlgorithm.toLowerCase();
+        this.options.paddingScheme = this.options.paddingScheme.toLowerCase();
+    };
+
     NodeRSA.prototype.$$checkOptions = function () {
-        if (_.indexOf(SUPPORTED_SIGNING_ALGORITHMS[this.options.environment], this.options.signingAlgorithm.toUpperCase())) {
+        if (_.indexOf(SUPPORTED_PADDING_SCHEMES, this.options.paddingScheme) == -1) {
+            throw Error('Unsupported padding scheme');
+        }
+        if (_.indexOf(SUPPORTED_SIGNING_ALGORITHMS[this.options.environment], this.options.signingAlgorithm) == -1) {
             throw Error('Unsupported signing algorithm for ' + this.options.environment + ' environment');
         }
     };

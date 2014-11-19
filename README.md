@@ -51,8 +51,9 @@ var key = new NodeRSA([key], [options]);
 **key** - parameters of a generated key or the key in PEM format.<br/>
 **options** - additional settings
  * **environment** - working environment, `'browser'` or `'node'`. Default autodetect.
- * **signingAlgorithm** - hash algorithm used for signing and verifying. Can be `'MD5'`, `'RIPEMD160'`, `'SHA1'`,
- `'SHA256'`, `'SHA512'` hashes in browser environments and additional `'MD4'`, `'SHA224'`, `'SHA384'` in nodejs. Default `'SHA256'`.
+ * **signingAlgorithm** - hash algorithm used for signing and verifying. Can be `'md5'`, `'ripemd160'`, `'sha1'`,
+ `'sha256'`, `'sha512'` in browser environment and additional `'md4'`, `'sha'`, `'sha224'`, `'sha384'` in nodejs.
+ Default `'sha256'`.
 
 #### "Empty" key
 ```javascript
@@ -157,8 +158,8 @@ Questions, comments, bug reports, and pull requests are all welcome.
 ## Changelog
 
 ### 0.2.0
- * Signing algorithm now supports `'MD5'`, `'RIPEMD160'`, `'SHA1'`, `'SHA256'`, `'SHA512'` hashes in both environments
- and additional `'MD4'`, `'SHA224'`, `'SHA384'` for nodejs env.
+ * Signing now supports `'md5'`, `'ripemd160'`, `'sha1'`, `'sha256'`, `'sha512'` hash algorithms in both environments
+ and additional `'md4'`, `'sha'`, `'sha224'`, `'sha384'` for nodejs env.
 
 ### 0.1.54
  * Added support for loading PEM key from Buffer (`fs.readFileSync()` output)

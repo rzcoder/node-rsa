@@ -55,8 +55,8 @@ var SIGN_INFO_HEAD = {
     ripemd160: new Buffer('3021300906052b2403020105000414', 'hex')
 };
 
-var SIGN_HASH_ALIASES = {
-    'rmd160': 'ripemd160'
+var SIGN_ALG_TO_HASH_ALIASES = {
+    'ripemd160': 'rmd160'
 };
 
 exports.BigInteger = BigInteger;
@@ -284,7 +284,7 @@ module.exports.Key = (function() {
     };
 
     RSAKey.prototype.sign = function (buffer, hashAlgorithm) {
-        var hasher = crypt.createHash(hashAlgorithm);
+        var hasher = crypt.createHash(SIGN_ALG_TO_HASH_ALIASES[hashAlgorithm] || hashAlgorithm);
         hasher.update(buffer);
         var hash = this.$$pkcs1(hasher.digest(), hashAlgorithm);
         var encryptedBuffer = this.$doPrivate(new BigInteger(hash)).toBuffer(true);
@@ -298,12 +298,11 @@ module.exports.Key = (function() {
     };
 
     RSAKey.prototype.verify = function (buffer, signature, signature_encoding, hashAlgorithm) {
-
         if (signature_encoding) {
             signature = new Buffer(signature, signature_encoding);
         }
 
-        var hasher = crypt.createHash(hashAlgorithm);
+        var hasher = crypt.createHash(SIGN_ALG_TO_HASH_ALIASES[hashAlgorithm] || hashAlgorithm);
         hasher.update(buffer);
 
         var hash = this.$$pkcs1(hasher.digest(), hashAlgorithm);
@@ -346,12 +345,12 @@ module.exports.Key = (function() {
      * @returns {*}
      */
     RSAKey.prototype.$$pkcs1 = function (hashBuf, hashAlgorithm, n) {
-        var digest = SIGN_HASH_ALIASES[hashAlgorithm] || hashAlgorithm;
+        var digest = SIGN_INFO_HEAD[hashAlgorithm]
         if(!digest) {
             throw Error('Unsupported hash algorithm');
         }
 
-        var data = Buffer.concat([SIGN_INFO_HEAD[hashAlgorithm], hashBuf]);
+        var data = Buffer.concat([digest, hashBuf]);
 
         if (data.length + 10 > this.encryptedDataLength) {
             throw Error('Key is too short for signing algorithm (' + hashAlgorithm + ')');
