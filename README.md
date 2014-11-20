@@ -161,7 +161,7 @@ Questions, comments, bug reports, and pull requests are all welcome.
  * Signing now supports `'md5'`, `'ripemd160'`, `'sha1'`, `'sha256'`, `'sha512'` hash algorithms in both environments
  and additional `'md4'`, `'sha'`, `'sha224'`, `'sha384'` for nodejs env.
  * `options.signingAlgorithm` rename to `options.signingScheme`
- * `key.options` now mark as private and unavailable for edit after key created.
+ * Property `key.options` now mark as private. Added `key.setOptions(options)` method.
 
 ### 0.1.54
  * Added support for loading PEM key from Buffer (`fs.readFileSync()` output)

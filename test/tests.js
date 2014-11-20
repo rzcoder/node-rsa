@@ -18,13 +18,13 @@ describe("NodeRSA", function(){
         {b: 1024} // 'e' should be 65537
     ];
 
-    var signAlgorithms = {
+    var environments = ['browser', 'node'];
+    var encryptSchemes = ['pkcs1'];
+    var signSchemes = ['pkcs1'];
+    var signHashAlgorithms = {
         'node': ['MD4', 'MD5', 'RIPEMD160', 'SHA', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512'],
         'browser': ['MD5', 'RIPEMD160', 'SHA1', 'SHA256', 'SHA512']
     };
-
-    var environments = ['browser', 'node'];
-
     var dataBundle = {
         "string": {
             data: "ascii + 12345678",
@@ -61,30 +61,60 @@ describe("NodeRSA", function(){
     var publicNodeRSA = null;
 
     describe("Work with keys", function(){
-
         describe("Generating keys", function() {
-            for (var size in keySizes) {
-                (function(size){
-                    it("should make key pair " + size.b + "-bit length and public exponent is " + (size.e ? size.e : size.e + " and should be 65537"), function () {
-                        generatedKeys.push(new NodeRSA({b: size.b, e: size.e}));
-                        assert.instanceOf(generatedKeys[generatedKeys.length - 1].keyPair, Object);
-                        assert.equal(generatedKeys[generatedKeys.length - 1].isEmpty(), false);
-                        assert.equal(generatedKeys[generatedKeys.length - 1].getKeySize(), size.b);
-                        assert.equal(generatedKeys[generatedKeys.length - 1].getMaxMessageSize(), (size.b / 8 - 11));
-                        assert.equal(generatedKeys[generatedKeys.length - 1].keyPair.e, size.e || 65537);
-                    });
-                })(keySizes[size]);
-            }
+            describe("Good cases", function() {
+                it("should make empty key pair", function () {
+                    var key = new NodeRSA(null);
+                    assert.equal(key.isEmpty(), true);
+                });
 
-            it("should make empty key pair", function () {
-                var key = new NodeRSA(null);
-                assert.equal(key.isEmpty(), true);
+                it("should make empty key pair with pkcs1 scheme and  hash alg", function () {
+                    var key = new NodeRSA(null);
+                    assert.equal(key.isEmpty(), true);
+                    assert.equal(key.$options.signingScheme, 'pkcs1');
+                    assert.equal(key.$options.signingSchemeOptions.hash, 'sha256');
+                });
+
+                it("should make key pair with pkcs1 scheme and md5 hash alg", function () {
+                    var key = new NodeRSA(null, {signingScheme: 'md5'});
+                    assert.equal(key.$options.signingScheme, 'pkcs1');
+                    assert.equal(key.$options.signingSchemeOptions.hash, 'md5');
+                });
+
+                it("should make key pair with pss scheme and sha512 hash alg", function () {
+                    var key = new NodeRSA(null, {signingScheme: 'pss-sha512'});
+                    assert.equal(key.$options.signingScheme, 'pss');
+                    assert.equal(key.$options.signingSchemeOptions.hash, 'sha512');
+                });
+
+                for (var size in keySizes) {
+                    (function (size) {
+                        it("should make key pair " + size.b + "-bit length and public exponent is " + (size.e ? size.e : size.e + " and should be 65537"), function () {
+                            generatedKeys.push(new NodeRSA({b: size.b, e: size.e}));
+                            assert.instanceOf(generatedKeys[generatedKeys.length - 1].keyPair, Object);
+                            assert.equal(generatedKeys[generatedKeys.length - 1].isEmpty(), false);
+                            assert.equal(generatedKeys[generatedKeys.length - 1].getKeySize(), size.b);
+                            assert.equal(generatedKeys[generatedKeys.length - 1].getMaxMessageSize(), (size.b / 8 - 11));
+                            assert.equal(generatedKeys[generatedKeys.length - 1].keyPair.e, size.e || 65537);
+                        });
+                    })(keySizes[size]);
+                }
             });
 
-            it("should make empty key pair with md5 signing option", function () {
-                var key = new NodeRSA(null, {signingAlgorithm: 'md5'});
-                assert.equal(key.isEmpty(), true);
-                assert.equal(key.$options.signingAlgorithm, 'md5');
+            describe("Bad cases", function() {
+                it("should throw \"unsupported signing algorithm\" exception", function () {
+                    var key = new NodeRSA(null);
+                    assert.equal(key.isEmpty(), true);
+                    assert.equal(key.$options.signingScheme, 'pkcs1');
+                    assert.equal(key.$options.signingSchemeOptions.hash, 'sha256');
+
+                    assert.throw(function(){
+                        key.setOptions({
+                            environment: 'browser',
+                            signingScheme: 'md4'
+                        });
+                    }, Error, "Unsupported signing algorithm");
+                });
             });
         });
 
@@ -213,32 +243,39 @@ describe("NodeRSA", function(){
         });
     });
 
-    describe("Encrypting & decrypting", function(){
+    describe("Encrypting & decrypting", function () {
         describe("Good cases", function () {
             var encrypted = {};
             var decrypted = {};
 
-            for(var i in dataBundle) {
-                (function(i) {
-                    var key = null;
-                    var suit = dataBundle[i];
+            for (var scheme_i in encryptSchemes) {
+                (function (scheme) {
+                    describe("Encryption scheme: " + scheme, function () {
+                        for (var i in dataBundle) {
+                            (function (i) {
+                                var key = null;
+                                var suit = dataBundle[i];
 
-                    it("should encrypt " + i, function () {
-                        key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length];
-                        encrypted[i] = key.encrypt(suit.data);
-                        assert(Buffer.isBuffer(encrypted[i]));
-                        assert(encrypted[i].length > 0);
-                    });
+                                it("should encrypt " + i, function () {
+                                    key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length];
+                                    key.setOptions({encryptionScheme: scheme});
+                                    encrypted[i] = key.encrypt(suit.data);
+                                    assert(Buffer.isBuffer(encrypted[i]));
+                                    assert(encrypted[i].length > 0);
+                                });
 
-                    it("should decrypt " + i, function () {
-                        decrypted[i] = key.decrypt(encrypted[i], _.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding);
-                        if(Buffer.isBuffer(decrypted[i])) {
-                            assert.equal(suit.data.toString('hex'), decrypted[i].toString('hex'));
-                        } else {
-                            assert(_.isEqual(suit.data, decrypted[i]));
+                                it("should decrypt " + i, function () {
+                                    decrypted[i] = key.decrypt(encrypted[i], _.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding);
+                                    if (Buffer.isBuffer(decrypted[i])) {
+                                        assert.equal(suit.data.toString('hex'), decrypted[i].toString('hex'));
+                                    } else {
+                                        assert(_.isEqual(suit.data, decrypted[i]));
+                                    }
+                                });
+                            })(i);
                         }
                     });
-                })(i);
+                })(encryptSchemes[scheme_i]);
             }
         });
 
@@ -255,7 +292,6 @@ describe("NodeRSA", function(){
             });
         });
     });
-
 
     describe("Signing & verifying", function () {
         for(var env in environments) {
@@ -280,14 +316,14 @@ describe("NodeRSA", function(){
                         })(i);
                     }
 
-                    for (var alg in signAlgorithms[env]) {
+                    for (var alg in signHashAlgorithms[env]) {
                         (function (alg) {
                             it("signing with custom algorithm (" + alg + ")", function () {
                                 var key = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingAlgorithm: alg, environment: env});
                                 var signed = key.sign('data');
                                 assert(key.verify('data', signed));
                             });
-                        })(signAlgorithms[env][alg]);
+                        })(signHashAlgorithms[env][alg]);
                     }
 
                 });
@@ -332,7 +368,7 @@ describe("NodeRSA", function(){
         }
 
         describe("Compatibility of different environments", function () {
-            for (var alg in signAlgorithms['browser']) {
+            for (var alg in signHashAlgorithms['browser']) {
                 (function (alg) {
                     it("signing with custom algorithm (" + alg + ") (equal test)", function () {
                         var nodeKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingAlgorithm: alg, environment: 'node'});
@@ -354,7 +390,7 @@ describe("NodeRSA", function(){
 
                         assert(nodeKey.verify('data', browserKey.sign('data')));
                     });
-                })(signAlgorithms['browser'][alg]);
+                })(signHashAlgorithms['browser'][alg]);
             }
         });
     });

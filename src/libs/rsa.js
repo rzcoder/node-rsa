@@ -43,6 +43,7 @@ var _ = require('lodash');
 var crypt = require('crypto');
 var BigInteger = require('./jsbn.js');
 var utils = require('../utils.js');
+var schemes = require('../schemes/schemes.js');
 
 exports.BigInteger = BigInteger;
 module.exports.Key = (function() {
@@ -58,7 +59,7 @@ module.exports.Key = (function() {
      * dmq1 - exponent2 -- d mod (q-1)
      * coeff - coefficient -- (inverse of q) mod p
      */
-    function RSAKey(options) {
+    function RSAKey() {
         this.n = null;
         this.e = 0;
         this.d = null;
@@ -67,14 +68,19 @@ module.exports.Key = (function() {
         this.dmp1 = null;
         this.dmq1 = null;
         this.coeff = null;
-
-        if (options.encryptionScheme == options.signingScheme) {
-            this.signingScheme = this.encryptionScheme = options.encryptionScheme.makeScheme(this);
-        } else {
-            this.encryptionScheme = options.encryptionScheme.makeScheme(this);
-            this.signingScheme = options.signingScheme.makeScheme(this);
-        }
     }
+
+    RSAKey.prototype.setOptions = function (options) {
+        var signingSchemeProvider = schemes[options.signingScheme];
+        var encryptionSchemeProvider = schemes[options.encryptionScheme];
+
+        if (signingSchemeProvider === encryptionSchemeProvider) {
+            this.signingScheme = this.encryptionScheme = encryptionSchemeProvider.makeScheme(this, options);
+        } else {
+            this.encryptionScheme = encryptionSchemeProvider.makeScheme(this, options);
+            this.signingScheme = signingSchemeProvider.makeScheme(this, options);
+        }
+    };
 
     /**
      * Generate a new random private key B bits long, using public expt E

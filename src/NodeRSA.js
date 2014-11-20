@@ -24,6 +24,8 @@ module.exports = (function() {
 
     var DEFAULT_ENCRYPTION_SCHEME = 'pkcs1';
     var DEFAULT_SIGNING_SCHEME = 'pkcs1';
+    var DEFAULT_SIGNING_HASH = 'sha256';
+
 
     /**
      * @param key {string|buffer|object} Key in PEM format, or data for generate key {b: bits, e: exponent}
@@ -34,8 +36,16 @@ module.exports = (function() {
             return new NodeRSA(key, options);
         }
 
-        this.$options = this.$$setupOptions(options);
-        this.keyPair = new rsa.Key(this.$options);
+        this.$options = {
+            signingScheme: DEFAULT_SIGNING_SCHEME,
+            signingSchemeOptions: {
+                hash: DEFAULT_SIGNING_HASH
+            },
+            encryptionScheme: DEFAULT_ENCRYPTION_SCHEME,
+            environment: utils.detectEnvironment()
+        };
+        this.keyPair = new rsa.Key();
+        this.setOptions(options);
         this.$cache = {};
 
         if (Buffer.isBuffer(key) || _.isString(key)) {
@@ -45,47 +55,48 @@ module.exports = (function() {
         }
     }
 
-    NodeRSA.prototype.$$setupOptions = function (options) {
-        //ToDo: object with getters/setters and validation on change
-        options = _.merge({
-            signingScheme: 'sha256',
-            encryptionScheme: DEFAULT_ENCRYPTION_SCHEME,
-            environment: utils.detectEnvironment()
-        }, options  || {});
-
-        options.signingScheme = options.signingScheme.toLowerCase().split('-');
-        options.encryptionScheme = options.encryptionScheme.toLowerCase();
-
-        if (options.signingScheme.length == 1) {
-            options.signingOptions = {
-                hash: options.signingScheme[0]
-            };
-            options.signingScheme = DEFAULT_SIGNING_SCHEME;
-        } else {
-            options.signingOptions = {
-                hash: options.signingScheme[1]
-            };
-            options.signingScheme = options.signingScheme[0];
+    /**
+     * Set and validate options for key instance
+     * @param options
+     */
+    NodeRSA.prototype.setOptions = function (options) {
+        options = options || {};
+        if (options.environment) {
+            this.$options.environment = options.environment;
         }
 
-        if (!schemes.isSignature(options.signingScheme)) {
-            throw Error('Unsupported signing scheme');
+        if (options.signingScheme) {
+            var signingScheme = options.signingScheme.toLowerCase().split('-');
+            if (signingScheme.length == 1) {
+                this.$options.signingSchemeOptions = {
+                    hash: signingScheme[0]
+                };
+                this.$options.signingScheme = DEFAULT_SIGNING_SCHEME;
+            } else {
+                this.$options.signingSchemeOptions = {
+                    hash: options.signingScheme[1]
+                };
+                this.$options.signingScheme = options.signingScheme[0];
+            }
+
+            if (!schemes.isSignature(this.$options.signingScheme)) {
+                throw Error('Unsupported signing scheme');
+            }
+
+            if (_.indexOf(SUPPORTED_HASH_ALGORITHMS[this.$options.environment], this.$options.signingSchemeOptions.hash) == -1) {
+                throw Error('Unsupported signing algorithm for ' + this.$options.environment + ' environment');
+            }
         }
 
-        if (_.indexOf(SUPPORTED_HASH_ALGORITHMS[options.environment], options.signingOptions.hash) == -1) {
-            throw Error('Unsupported signing algorithm for ' + options.environment + ' environment');
+        if (options.encryptionScheme) {
+            this.$options.encryptionScheme = options.encryptionScheme.toLowerCase();
+            if (!schemes.isEncryption(this.$options.encryptionScheme)) {
+                throw Error('Unsupported encryption scheme');
+            }
         }
 
-        if (!schemes.isEncryption(options.encryptionScheme)) {
-            throw Error('Unsupported encryption scheme');
-        }
-
-        options.signingScheme = schemes[options.signingScheme];
-        options.encryptionScheme = schemes[options.encryptionScheme];
-
-        return options;
+        this.keyPair.setOptions(this.$options);
     };
-
 
     /**
      * Generate private/public keys pair
