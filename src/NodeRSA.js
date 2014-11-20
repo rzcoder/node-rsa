@@ -16,7 +16,7 @@ var schemes = require('./schemes/schemes.js');
 
 var PUBLIC_RSA_OID = '1.2.840.113549.1.1.1';
 
-module.exports = (function() {
+module.exports = (function () {
     var SUPPORTED_HASH_ALGORITHMS = {
         node: ['md4', 'md5', 'ripemd160', 'sha', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'],
         browser: ['md5', 'ripemd160', 'sha1', 'sha256', 'sha512']
@@ -32,7 +32,7 @@ module.exports = (function() {
      * @constructor
      */
     function NodeRSA(key, options) {
-        if (! this instanceof NodeRSA) {
+        if (!this instanceof NodeRSA) {
             return new NodeRSA(key, options);
         }
 
@@ -75,9 +75,9 @@ module.exports = (function() {
                 this.$options.signingScheme = DEFAULT_SIGNING_SCHEME;
             } else {
                 this.$options.signingSchemeOptions = {
-                    hash: options.signingScheme[1]
+                    hash: signingScheme[1]
                 };
-                this.$options.signingScheme = options.signingScheme[0];
+                this.$options.signingScheme = signingScheme[0];
             }
 
             if (!schemes.isSignature(this.$options.signingScheme)) {
@@ -106,7 +106,7 @@ module.exports = (function() {
      * @param exp {int} public exponent. Default 65537.
      * @returns {NodeRSA}
      */
-    NodeRSA.prototype.generateKeyPair = function(bits, exp) {
+    NodeRSA.prototype.generateKeyPair = function (bits, exp) {
         bits = bits || 2048;
         exp = exp || 65537;
 
@@ -123,7 +123,7 @@ module.exports = (function() {
      * Load key from PEM string
      * @param pem {string}
      */
-    NodeRSA.prototype.loadFromPEM = function(pem) {
+    NodeRSA.prototype.loadFromPEM = function (pem) {
         if (Buffer.isBuffer(pem)) {
             pem = pem.toString('utf8');
         }
@@ -143,10 +143,10 @@ module.exports = (function() {
      *
      * @param privatePEM {string}
      */
-    NodeRSA.prototype.$loadFromPrivatePEM = function(privatePEM, encoding) {
+    NodeRSA.prototype.$loadFromPrivatePEM = function (privatePEM, encoding) {
         var pem = privatePEM
-            .replace('-----BEGIN RSA PRIVATE KEY-----','')
-            .replace('-----END RSA PRIVATE KEY-----','')
+            .replace('-----BEGIN RSA PRIVATE KEY-----', '')
+            .replace('-----END RSA PRIVATE KEY-----', '')
             .replace(/\s+|\n\r|\n|\r$/gm, '');
         var reader = new ber.Reader(new Buffer(pem, 'base64'));
 
@@ -170,10 +170,10 @@ module.exports = (function() {
      *
      * @param publicPEM {string}
      */
-    NodeRSA.prototype.$loadFromPublicPEM = function(publicPEM, encoding) {
+    NodeRSA.prototype.$loadFromPublicPEM = function (publicPEM, encoding) {
         var pem = publicPEM
-            .replace('-----BEGIN PUBLIC KEY-----','')
-            .replace('-----END PUBLIC KEY-----','')
+            .replace('-----BEGIN PUBLIC KEY-----', '')
+            .replace('-----END PUBLIC KEY-----', '')
             .replace(/\s+|\n\r|\n|\r$/gm, '');
         var reader = new ber.Reader(new Buffer(pem, 'base64'));
 
@@ -195,7 +195,7 @@ module.exports = (function() {
     /**
      * Check if key pair contains private key
      */
-    NodeRSA.prototype.isPrivate = function() {
+    NodeRSA.prototype.isPrivate = function () {
         return this.keyPair.n && this.keyPair.e && this.keyPair.d || false;
     };
 
@@ -203,14 +203,14 @@ module.exports = (function() {
      * Check if key pair contains public key
      * @param strict {boolean} - public key only, return false if have private exponent
      */
-    NodeRSA.prototype.isPublic = function(strict) {
+    NodeRSA.prototype.isPublic = function (strict) {
         return this.keyPair.n && this.keyPair.e && !(strict && this.keyPair.d) || false;
     };
 
     /**
      * Check if key pair doesn't contains any data
      */
-    NodeRSA.prototype.isEmpty = function(strict) {
+    NodeRSA.prototype.isEmpty = function (strict) {
         return !(this.keyPair.n || this.keyPair.e || this.keyPair.d);
     };
 
@@ -222,7 +222,7 @@ module.exports = (function() {
      * @param source_encoding {string} - optional. Encoding for given string. Default utf8.
      * @returns {string|Buffer}
      */
-    NodeRSA.prototype.encrypt = function(buffer, encoding, source_encoding) {
+    NodeRSA.prototype.encrypt = function (buffer, encoding, source_encoding) {
         var res = this.keyPair.encrypt(this.$getDataForEcrypt(buffer, source_encoding));
 
         if (encoding == 'buffer' || !encoding) {
@@ -239,7 +239,7 @@ module.exports = (function() {
      * @param encoding - encoding for result string, can also take 'json' or 'buffer' for the automatic conversion of this type
      * @returns {Buffer|object|string}
      */
-    NodeRSA.prototype.decrypt = function(buffer, encoding) {
+    NodeRSA.prototype.decrypt = function (buffer, encoding) {
         buffer = _.isString(buffer) ? new Buffer(buffer, 'base64') : buffer;
         return this.$getDecryptedData(this.keyPair.decrypt(buffer), encoding);
     };
@@ -305,7 +305,7 @@ module.exports = (function() {
      * @param encoding {string} - optional. Encoding for given string. Default utf8.
      * @returns {Buffer}
      */
-    NodeRSA.prototype.$getDataForEcrypt = function(buffer, encoding) {
+    NodeRSA.prototype.$getDataForEcrypt = function (buffer, encoding) {
         if (_.isString(buffer) || _.isNumber(buffer)) {
             return new Buffer('' + buffer, encoding || 'utf8');
         } else if (Buffer.isBuffer(buffer)) {
@@ -323,7 +323,7 @@ module.exports = (function() {
      * @param encoding - optional. Encoding for result output. May be 'buffer', 'json' or any of Node.js Buffer supported encoding.
      * @returns {*}
      */
-    NodeRSA.prototype.$getDecryptedData = function(buffer, encoding) {
+    NodeRSA.prototype.$getDecryptedData = function (buffer, encoding) {
         encoding = encoding || 'buffer';
 
         if (encoding == 'buffer') {
@@ -339,7 +339,7 @@ module.exports = (function() {
      * private
      * Recalculating properties
      */
-    NodeRSA.prototype.$recalculateCache = function() {
+    NodeRSA.prototype.$recalculateCache = function () {
         this.$cache.privatePEM = this.$makePrivatePEM();
         this.$cache.publicPEM = this.$makePublicPEM();
     };
@@ -348,7 +348,7 @@ module.exports = (function() {
      * private
      * @returns {string} private PEM string
      */
-    NodeRSA.prototype.$makePrivatePEM = function() {
+    NodeRSA.prototype.$makePrivatePEM = function () {
         if (!this.isPrivate()) {
             return null;
         }
@@ -385,7 +385,7 @@ module.exports = (function() {
      * private
      * @returns {string} public PEM string
      */
-    NodeRSA.prototype.$makePublicPEM = function() {
+    NodeRSA.prototype.$makePublicPEM = function () {
         if (!this.isPublic()) {
             return null;
         }

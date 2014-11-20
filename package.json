@@ -18,7 +18,10 @@
     "encryption",
     "decryption",
     "sign",
-    "verify"
+    "verify",
+    "pkcs1",
+    "oaep",
+    "pss"
   ],
   "author": "rzcoder",
   "license": "BSD",
