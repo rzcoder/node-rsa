@@ -11,7 +11,8 @@ var SIGN_INFO_HEAD = {
     sha256: new Buffer('3031300d060960864801650304020105000420', 'hex'),
     sha384: new Buffer('3041300d060960864801650304020205000430', 'hex'),
     sha512: new Buffer('3051300d060960864801650304020305000440', 'hex'),
-    ripemd160: new Buffer('3021300906052b2403020105000414', 'hex')
+    ripemd160: new Buffer('3021300906052b2403020105000414', 'hex'),
+    rmd160: new Buffer('3021300906052b2403020105000414', 'hex')
 };
 
 var SIGN_ALG_TO_HASH_ALIASES = {
@@ -91,6 +92,53 @@ module.exports = {
             return res;
         };
 
+        Scheme.prototype.sign = function (buffer, encoding) {
+            if (this.options.environment == 'browser') {
+                var hashAlgorithm = this.options.signingSchemeOptions.hash;
+                hashAlgorithm = SIGN_ALG_TO_HASH_ALIASES[hashAlgorithm] || hashAlgorithm;
+
+                var hasher = crypt.createHash(hashAlgorithm);
+                hasher.update(buffer);
+                var hash = this.pkcs1pad(hasher.digest(), hashAlgorithm);
+                var res = this.key.$doPrivate(new BigInteger(hash)).toBuffer(true);
+
+                while (res.length < this.encryptedDataLength) {
+                    res = Buffer.concat([new Buffer([0]), res]);
+                }
+
+                if (encoding && encoding != 'buffer') {
+                    res = res.toString(encoding);
+                }
+                return res;
+            } else {
+                encoding = (!encoding || encoding == 'buffer' ? null : encoding);
+                var signer = crypt.createSign('RSA-' + this.options.signingSchemeOptions.hash.toUpperCase());
+                signer.update(buffer);
+                return signer.sign(this.options.rsaUtils.getPrivatePEM(), encoding);
+            }
+        };
+
+        Scheme.prototype.verify = function (buffer, signature, signature_encoding) {
+            if (this.options.environment == 'browser') {
+                var hashAlgorithm = this.options.signingSchemeOptions.hash;
+                hashAlgorithm = SIGN_ALG_TO_HASH_ALIASES[hashAlgorithm] || hashAlgorithm;
+
+                if (signature_encoding) {
+                    signature = new Buffer(signature, signature_encoding);
+                }
+
+                var hasher = crypt.createHash(hashAlgorithm);
+                hasher.update(buffer);
+                var hash = this.pkcs1pad(hasher.digest(), hashAlgorithm);
+                var m = this.key.$doPublic(new BigInteger(signature));
+
+                return m.toBuffer().toString('hex') == hash.toString('hex');
+            } else {
+                var verifier = crypt.createVerify('RSA-' + this.options.signingSchemeOptions.hash.toUpperCase());
+                verifier.update(buffer);
+                return verifier.verify(this.options.rsaUtils.getPublicPEM(), signature, signature_encoding);
+            }
+        };
 
         /**
          * PKCS#1 pad input buffer to max data length

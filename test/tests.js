@@ -319,7 +319,7 @@ describe("NodeRSA", function(){
                     for (var alg in signHashAlgorithms[env]) {
                         (function (alg) {
                             it("signing with custom algorithm (" + alg + ")", function () {
-                                var key = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingAlgorithm: alg, environment: env});
+                                var key = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingScheme: alg, environment: env});
                                 var signed = key.sign('data');
                                 assert(key.verify('data', signed));
                             });
@@ -358,8 +358,8 @@ describe("NodeRSA", function(){
                     });
 
                     it("different algorithms", function () {
-                        var singKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {signingAlgorithm: 'md5', environment: env});
-                        var verifyKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {signingAlgorithm: 'sha1', environment: env});
+                        var singKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {signingScheme: 'md5', environment: env});
+                        var verifyKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {signingScheme: 'sha1', environment: env});
                         var signed = singKey.sign('data');
                         assert(!verifyKey.verify('data', signed));
                     });
@@ -371,22 +371,22 @@ describe("NodeRSA", function(){
             for (var alg in signHashAlgorithms['browser']) {
                 (function (alg) {
                     it("signing with custom algorithm (" + alg + ") (equal test)", function () {
-                        var nodeKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingAlgorithm: alg, environment: 'node'});
-                        var browserKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingAlgorithm: alg, environment: 'browser'});
+                        var nodeKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingScheme: alg, environment: 'node'});
+                        var browserKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingScheme: alg, environment: 'browser'});
 
                         assert.equal(nodeKey.sign('data', 'hex'), browserKey.sign('data', 'hex'));
                     });
 
                     it("sign in node & verify in browser (" + alg + ")", function () {
-                        var nodeKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingAlgorithm: alg, environment: 'node'});
-                        var browserKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingAlgorithm: alg, environment: 'browser'});
+                        var nodeKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingScheme: alg, environment: 'node'});
+                        var browserKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingScheme: alg, environment: 'browser'});
 
                         assert(browserKey.verify('data', nodeKey.sign('data')));
                     });
 
                     it("sign in browser & verify in node (" + alg + ")", function () {
-                        var nodeKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingAlgorithm: alg, environment: 'node'});
-                        var browserKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingAlgorithm: alg, environment: 'browser'});
+                        var nodeKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingScheme: alg, environment: 'node'});
+                        var browserKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {signingScheme: alg, environment: 'browser'});
 
                         assert(nodeKey.verify('data', browserKey.sign('data')));
                     });

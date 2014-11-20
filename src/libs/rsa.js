@@ -280,32 +280,12 @@ module.exports.Key = (function() {
         return Buffer.concat(result);
     };
 
-    RSAKey.prototype.sign = function (buffer, hashAlgorithm) {
-        var hasher = crypt.createHash(SIGN_ALG_TO_HASH_ALIASES[hashAlgorithm] || hashAlgorithm);
-        hasher.update(buffer);
-        var hash = this.$$pkcs1(hasher.digest(), hashAlgorithm);
-        var encryptedBuffer = this.$doPrivate(new BigInteger(hash)).toBuffer(true);
-
-        while (encryptedBuffer.length < this.encryptedDataLength) {
-            encryptedBuffer = Buffer.concat([new Buffer([0]), encryptedBuffer]);
-        }
-
-        return encryptedBuffer;
-
+    RSAKey.prototype.sign = function (buffer, encoding) {
+        return this.signingScheme.sign.apply(this.signingScheme, arguments);
     };
 
-    RSAKey.prototype.verify = function (buffer, signature, signature_encoding, hashAlgorithm) {
-        if (signature_encoding) {
-            signature = new Buffer(signature, signature_encoding);
-        }
-
-        var hasher = crypt.createHash(SIGN_ALG_TO_HASH_ALIASES[hashAlgorithm] || hashAlgorithm);
-        hasher.update(buffer);
-
-        var hash = this.$$pkcs1(hasher.digest(), hashAlgorithm);
-        var m = this.$doPublic(new BigInteger(signature));
-
-        return m.toBuffer().toString('hex') == hash.toString('hex');
+    RSAKey.prototype.verify = function (buffer, signature, signature_encoding) {
+        return this.signingScheme.verify.apply(this.signingScheme, arguments);
     };
 
     Object.defineProperty(RSAKey.prototype, 'keySize', {

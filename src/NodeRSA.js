@@ -42,7 +42,8 @@ module.exports = (function() {
                 hash: DEFAULT_SIGNING_HASH
             },
             encryptionScheme: DEFAULT_ENCRYPTION_SCHEME,
-            environment: utils.detectEnvironment()
+            environment: utils.detectEnvironment(),
+            rsaUtils: this
         };
         this.keyPair = new rsa.Key();
         this.setOptions(options);
@@ -251,24 +252,11 @@ module.exports = (function() {
      * @param source_encoding {string} - optional. Encoding for given string. Default utf8.
      * @returns {string|Buffer}
      */
-    NodeRSA.prototype.sign = function(buffer, encoding, source_encoding) {
+    NodeRSA.prototype.sign = function (buffer, encoding, source_encoding) {
         if (!this.isPrivate()) {
             throw Error("It is not private key");
         }
-
-        if (this.options.environment == 'browser') {
-            var res = this.keyPair.sign(this.$getDataForEcrypt(buffer, source_encoding), this.options.signingAlgorithm.toLowerCase());
-            if (encoding && encoding != 'buffer') {
-                return res.toString(encoding);
-            } else {
-                return res;
-            }
-        } else {
-            encoding = (!encoding || encoding == 'buffer' ? null : encoding);
-            var signer = crypt.createSign('RSA-' + this.options.signingAlgorithm.toUpperCase());
-            signer.update(this.$getDataForEcrypt(buffer, source_encoding));
-            return signer.sign(this.getPrivatePEM(), encoding);
-        }
+        return this.keyPair.sign(this.$getDataForEcrypt(buffer, source_encoding), encoding);
     };
 
     /**
@@ -280,27 +268,18 @@ module.exports = (function() {
      * @param signature_encoding - optional. Encoding of given signature. May be 'buffer', 'binary', 'hex' or 'base64'. Default 'buffer'.
      * @returns {*}
      */
-    NodeRSA.prototype.verify = function(buffer, signature, source_encoding, signature_encoding) {
+    NodeRSA.prototype.verify = function (buffer, signature, source_encoding, signature_encoding) {
         if (!this.isPublic()) {
             throw Error("It is not public key");
         }
-
         signature_encoding = (!signature_encoding || signature_encoding == 'buffer' ? null : signature_encoding);
-
-        if (this.options.environment == 'browser') {
-            return this.keyPair.verify(this.$getDataForEcrypt(buffer, source_encoding), signature, signature_encoding, this.options.signingAlgorithm.toLowerCase());
-        } else {
-            var verifier = crypt.createVerify('RSA-' + this.options.signingAlgorithm.toUpperCase());
-            verifier.update(this.$getDataForEcrypt(buffer, source_encoding));
-            return verifier.verify(this.getPublicPEM(), signature, signature_encoding);
-        }
+        return this.keyPair.verify(this.$getDataForEcrypt(buffer, source_encoding), signature, signature_encoding);
     };
 
     NodeRSA.prototype.getPrivatePEM = function () {
         if (!this.isPrivate()) {
             throw Error("It is not private key");
         }
-
         return this.$cache.privatePEM;
     };
 
@@ -308,7 +287,6 @@ module.exports = (function() {
         if (!this.isPublic()) {
             throw Error("It is not public key");
         }
-
         return this.$cache.publicPEM;
     };
 
