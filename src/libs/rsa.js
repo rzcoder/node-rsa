@@ -39,25 +39,10 @@
  * 2014 rzcoder
  */
 
-var crypt = require('crypto');
-var BigInteger = require("./jsbn.js");
-var utils = require('../utils.js');
 var _ = require('lodash');
-
-var SIGN_INFO_HEAD = {
-    md2:       new Buffer('3020300c06082a864886f70d020205000410', 'hex'),
-    md5:       new Buffer('3020300c06082a864886f70d020505000410', 'hex'),
-    sha1:      new Buffer('3021300906052b0e03021a05000414', 'hex'),
-    sha224:    new Buffer('302d300d06096086480165030402040500041c', 'hex'),
-    sha256:    new Buffer('3031300d060960864801650304020105000420', 'hex'),
-    sha384:    new Buffer('3041300d060960864801650304020205000430', 'hex'),
-    sha512:    new Buffer('3051300d060960864801650304020305000440', 'hex'),
-    ripemd160: new Buffer('3021300906052b2403020105000414', 'hex')
-};
-
-var SIGN_ALG_TO_HASH_ALIASES = {
-    'ripemd160': 'rmd160'
-};
+var crypt = require('crypto');
+var BigInteger = require('./jsbn.js');
+var utils = require('../utils.js');
 
 exports.BigInteger = BigInteger;
 module.exports.Key = (function() {
@@ -73,7 +58,7 @@ module.exports.Key = (function() {
      * dmq1 - exponent2 -- d mod (q-1)
      * coeff - coefficient -- (inverse of q) mod p
      */
-    function RSAKey() {
+    function RSAKey(options) {
         this.n = null;
         this.e = 0;
         this.d = null;
@@ -82,6 +67,13 @@ module.exports.Key = (function() {
         this.dmp1 = null;
         this.dmq1 = null;
         this.coeff = null;
+
+        if (options.encryptionScheme == options.signingScheme) {
+            this.signingScheme = this.encryptionScheme = options.encryptionScheme.makeScheme(this);
+        } else {
+            this.encryptionScheme = options.encryptionScheme.makeScheme(this);
+            this.signingScheme = options.signingScheme.makeScheme(this);
+        }
     }
 
     /**
@@ -178,15 +170,17 @@ module.exports.Key = (function() {
      * @returns {*}
      */
     RSAKey.prototype.$doPrivate = function (x) {
-        if (this.p || this.q)
+        if (this.p || this.q) {
             return x.modPow(this.d, this.n);
+        }
 
         // TODO: re-calculate any missing CRT params
         var xp = x.mod(this.p).modPow(this.dmp1, this.p);
         var xq = x.mod(this.q).modPow(this.dmq1, this.q);
 
-        while (xp.compareTo(xq) < 0)
+        while (xp.compareTo(xq) < 0) {
             xp = xp.add(this.p);
+        }
         return xp.subtract(xq).multiply(this.coeff).mod(this.p).multiply(this.q).add(xq);
     };
 
@@ -209,7 +203,6 @@ module.exports.Key = (function() {
     RSAKey.prototype.encrypt = function (buffer) {
         var buffers = [];
         var results = [];
-
         var bufferSize = buffer.length;
         var buffersCount = Math.ceil(bufferSize / this.maxMessageLength) || 1; // total buffers count for encrypt
         var dividedSize = Math.ceil(bufferSize / buffersCount || 1); // each buffer size
@@ -225,7 +218,7 @@ module.exports.Key = (function() {
         for(var i in buffers) {
             var buf = buffers[i];
 
-            var m = this.$$pkcs1pad2(buf);
+            var m = this.encryptionScheme.encPad(buf);
 
             if (m === null) {
                 return null;
@@ -259,10 +252,8 @@ module.exports.Key = (function() {
             throw Error('Incorrect data or key');
 
         var result = [];
-
         var offset = 0;
         var length = 0;
-
         var buffersCount = buffer.length / this.encryptedDataLength;
 
         for (var i = 0; i < buffersCount; i++) {
@@ -277,7 +268,7 @@ module.exports.Key = (function() {
                 return null;
             }
 
-            result.push(this.$$pkcs1unpad2(m));
+            result.push(this.encryptionScheme.encUnPad(m));
         }
 
         return Buffer.concat(result);
@@ -335,95 +326,6 @@ module.exports.Key = (function() {
         }
 
         this.cache.keyByteLength = (this.cache.keyBitLength + 6) >> 3;
-    };
-
-    /**
-     * PKCS#1 pad input buffer to max data length
-     * @param hashBuf
-     * @param hashAlgorithm
-     * @param n
-     * @returns {*}
-     */
-    RSAKey.prototype.$$pkcs1 = function (hashBuf, hashAlgorithm, n) {
-        var digest = SIGN_INFO_HEAD[hashAlgorithm]
-        if(!digest) {
-            throw Error('Unsupported hash algorithm');
-        }
-
-        var data = Buffer.concat([digest, hashBuf]);
-
-        if (data.length + 10 > this.encryptedDataLength) {
-            throw Error('Key is too short for signing algorithm (' + hashAlgorithm + ')');
-        }
-
-        var filled = new Buffer(this.encryptedDataLength - data.length - 1);
-        filled.fill(0xff, 0, filled.length - 1);
-        filled[0] = 1;
-        filled[filled.length - 1] = 0;
-
-        var res = Buffer.concat([filled, data]);
-
-        return res;
-    };
-
-    /**
-     * PKCS#1 (type 2, random) pad input buffer to encryptedDataLength bytes, and return a bigint
-     * @param buffer
-     * @returns {*}
-     */
-    RSAKey.prototype.$$pkcs1pad2 = function (buffer) {
-        if (buffer.length > this.maxMessageLength) {
-            throw new Error("Message too long for RSA (n=" + this.encryptedDataLength + ", l=" + buffer.length + ")");
-        }
-
-        // TO-DO: make n-length buffer
-        var ba = Array.prototype.slice.call(buffer, 0);
-
-        // random padding
-        ba.unshift(0);
-        var rand = crypt.randomBytes(this.encryptedDataLength - ba.length - 2);
-        for(var i = 0; i < rand.length; i++) {
-            var r = rand[i];
-            while (r === 0) { // non-zero only
-                r = crypt.randomBytes(1)[0];
-            }
-            ba.unshift(r);
-        }
-        ba.unshift(2);
-        ba.unshift(0);
-
-        return new BigInteger(ba);
-    };
-
-    /**
-     * Undo PKCS#1 (type 2, random) padding and, if valid, return the plaintext
-     * @param d
-     * @returns {Buffer}
-     */
-    RSAKey.prototype.$$pkcs1unpad2 = function (d) {
-        var b = d.toByteArray();
-        var i = 0;
-        while (i < b.length && b[i] === 0) {
-            ++i;
-        }
-
-        if (b.length - i != this.encryptedDataLength - 1 || b[i] != 2) {
-            return null;
-        }
-
-        ++i;
-        while (b[i] !== 0) {
-            if (++i >= b.length) {
-                return null;
-            }
-        }
-
-        var c = 0;
-        var res = new Buffer(b.length - i - 1);
-        while (++i < b.length) {
-            res[c++] = b[i] & 255;
-        }
-        return res;
     };
 
     return RSAKey;

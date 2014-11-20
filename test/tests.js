@@ -84,7 +84,7 @@ describe("NodeRSA", function(){
             it("should make empty key pair with md5 signing option", function () {
                 var key = new NodeRSA(null, {signingAlgorithm: 'md5'});
                 assert.equal(key.isEmpty(), true);
-                assert.equal(key.options.signingAlgorithm, 'md5');
+                assert.equal(key.$options.signingAlgorithm, 'md5');
             });
         });
 

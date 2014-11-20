@@ -12,16 +12,18 @@ var crypt = require('crypto');
 var ber = require('asn1').Ber;
 var _ = require('lodash');
 var utils = require('./utils');
+var schemes = require('./schemes/schemes.js');
 
 var PUBLIC_RSA_OID = '1.2.840.113549.1.1.1';
 
 module.exports = (function() {
-    var SUPPORTED_SIGNING_ALGORITHMS = {
+    var SUPPORTED_HASH_ALGORITHMS = {
         node: ['md4', 'md5', 'ripemd160', 'sha', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'],
         browser: ['md5', 'ripemd160', 'sha1', 'sha256', 'sha512']
     };
 
-    var SUPPORTED_PADDING_SCHEMES = ['pkcs1_oaep', 'pkcs1'];
+    var DEFAULT_ENCRYPTION_SCHEME = 'pkcs1';
+    var DEFAULT_SIGNING_SCHEME = 'pkcs1';
 
     /**
      * @param key {string|buffer|object} Key in PEM format, or data for generate key {b: bits, e: exponent}
@@ -32,10 +34,9 @@ module.exports = (function() {
             return new NodeRSA(key, options);
         }
 
-        this.keyPair = new rsa.Key();
+        this.$options = this.$$setupOptions(options);
+        this.keyPair = new rsa.Key(this.$options);
         this.$cache = {};
-
-        this.$$setupOptions(options);
 
         if (Buffer.isBuffer(key) || _.isString(key)) {
             this.loadFromPEM(key);
@@ -45,30 +46,46 @@ module.exports = (function() {
     }
 
     NodeRSA.prototype.$$setupOptions = function (options) {
-        //todo object with getters/setters and validation on change
-        this.options = _.merge({
-            signingAlgorithm: 'sha256',
-            paddingScheme: 'pkcs1_oaep',
+        //ToDo: object with getters/setters and validation on change
+        options = _.merge({
+            signingScheme: 'sha256',
+            encryptionScheme: DEFAULT_ENCRYPTION_SCHEME,
             environment: utils.detectEnvironment()
         }, options  || {});
 
-        this.$$normalizeOptions();
-        this.$$checkOptions();
+        options.signingScheme = options.signingScheme.toLowerCase().split('-');
+        options.encryptionScheme = options.encryptionScheme.toLowerCase();
+
+        if (options.signingScheme.length == 1) {
+            options.signingOptions = {
+                hash: options.signingScheme[0]
+            };
+            options.signingScheme = DEFAULT_SIGNING_SCHEME;
+        } else {
+            options.signingOptions = {
+                hash: options.signingScheme[1]
+            };
+            options.signingScheme = options.signingScheme[0];
+        }
+
+        if (!schemes.isSignature(options.signingScheme)) {
+            throw Error('Unsupported signing scheme');
+        }
+
+        if (_.indexOf(SUPPORTED_HASH_ALGORITHMS[options.environment], options.signingOptions.hash) == -1) {
+            throw Error('Unsupported signing algorithm for ' + options.environment + ' environment');
+        }
+
+        if (!schemes.isEncryption(options.encryptionScheme)) {
+            throw Error('Unsupported encryption scheme');
+        }
+
+        options.signingScheme = schemes[options.signingScheme];
+        options.encryptionScheme = schemes[options.encryptionScheme];
+
+        return options;
     };
 
-    NodeRSA.prototype.$$normalizeOptions = function () {
-        this.options.signingAlgorithm = this.options.signingAlgorithm.toLowerCase();
-        this.options.paddingScheme = this.options.paddingScheme.toLowerCase();
-    };
-
-    NodeRSA.prototype.$$checkOptions = function () {
-        if (_.indexOf(SUPPORTED_PADDING_SCHEMES, this.options.paddingScheme) == -1) {
-            throw Error('Unsupported padding scheme');
-        }
-        if (_.indexOf(SUPPORTED_SIGNING_ALGORITHMS[this.options.environment], this.options.signingAlgorithm) == -1) {
-            throw Error('Unsupported signing algorithm for ' + this.options.environment + ' environment');
-        }
-    };
 
     /**
      * Generate private/public keys pair
