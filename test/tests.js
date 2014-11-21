@@ -19,7 +19,7 @@ describe("NodeRSA", function(){
 
     var environments = ['browser', 'node'];
     var encryptSchemes = ['pkcs1'];
-    var signingSchemes = [/*'pkcs1',*/ 'pss'];
+    var signingSchemes = ['pkcs1', 'pss'];
     var signHashAlgorithms = {
         'node': ['MD4', 'MD5', 'RIPEMD160', 'SHA', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512'],
         'browser': ['MD5', 'RIPEMD160', 'SHA1', 'SHA256', 'SHA512']
@@ -31,7 +31,7 @@ describe("NodeRSA", function(){
         },
         "unicode string": {
             data: "ascii + юникод スラ ⑨",
-            encoding: "utf8"            
+            encoding: "utf8"
         },
         "empty string": {
             data: "",
@@ -303,7 +303,7 @@ describe("NodeRSA", function(){
                     }
                     for (var env in envs) {
                         (function (env) {
-                            describe("Good cases in " + env + " environment", function () {
+                            describe("Good cases" + (envs.length > 1 ? " in " + env + " environment" : ""), function () {
                                 var signed = {};
                                 var key = null;
 
@@ -346,7 +346,7 @@ describe("NodeRSA", function(){
                                 }
                             });
 
-                            describe("Bad cases in " + env + " environment", function () {
+                            describe("Bad cases" + (envs.length > 1 ? " in " + env + " environment" : ""), function () {
                                 it("incorrect data for verifying", function () {
                                     var key = new NodeRSA(generatedKeys[0].getPrivatePEM(), {
                                         signingScheme: scheme + '-sha256',

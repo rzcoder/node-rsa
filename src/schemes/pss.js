@@ -29,27 +29,7 @@ module.exports.makeScheme = function (key, options) {
 
     Scheme.prototype.sign = function (buffer, encoding) {
         var encoded = this.emsa_pss_encode(buffer, this.key.keySize - 1);
-        //var res = this.key.$doPrivate(new BigInteger(encoded)).toBuffer(this.key.encryptedDataLength);
-        var m = this.key.$doPrivate(new BigInteger(encoded));
-        var p = this.key.$doPublic(m).toBuffer();
-        var ph, eh;
-        if((ph = p.toString('hex')) != (eh = encoded.toString('hex')) ) {
-            console.log('========================== BAD:');
-            console.log('ph:', ph);
-            console.log('eh:', eh);
-            console.log('bl:', (new BigInteger(encoded)).bitLength())
-        } else {
-            console.log('GOOD:');
-            console.log('ph:', ph);
-            console.log('eh:', eh);
-            console.log('bl:', (new BigInteger(encoded)).bitLength())
-        }
-
         var res = this.key.$doPrivate(new BigInteger(encoded)).toBuffer(this.key.encryptedDataLength);
-
-
-
-
         if (encoding && encoding != 'buffer') {
             res = res.toString(encoding);
         }
@@ -88,12 +68,12 @@ module.exports.makeScheme = function (key, options) {
             throw new Error("Output length passed to emBits(" + emBits + ") is too small for the options " +
                 "specified(" + hash + ", " + sLen + "). To fix this issue increase the value of emBits. (minimum size: " +
                 (8 * hLen + 8 * sLen + 9) + ")"
-            )
+            );
         }
 
         var mHash = crypt.createHash(hash);
-        mHash.end(M);
-        mHash = mHash.read();
+        mHash.update(M);
+        mHash = mHash.digest();
 
         var salt = crypt.randomBytes(sLen);
 
@@ -103,33 +83,32 @@ module.exports.makeScheme = function (key, options) {
         salt.copy(Mapostrophe, 8 + mHash.length);
 
         var H = crypt.createHash(hash);
-        H.end(Mapostrophe);
-        H = H.read();
+        H.update(Mapostrophe);
+        H = H.digest();
 
         var PS = new Buffer(emLen - salt.length - hLen - 2);
         PS.fill(0);
 
         var DB = new Buffer(PS.length + 1 + salt.length);
         PS.copy(DB);
-        DB[PS.length] = 1;
+        DB[PS.length] = 0x01;
         salt.copy(DB, PS.length + 1);
 
         var dbMask = mgf(H, DB.length, hash);
 
         // XOR DB and dbMask together
-        for (var i = 0; i < DB.length; i++) {
-            DB[i] ^= dbMask[i];
+        var maskedDB = new Buffer(DB.length);
+        for (var i = 0; i < dbMask.length; i++) {
+            maskedDB[i] = DB[i] ^ dbMask[i];
         }
 
-        var mask = 0;
-        for (var i = 0, bits = emBits - 8 * (emLen - 1); i < bits; i++) {
-            mask |= 1 << i;
-        }
-        DB[0] &= mask;
+        var bits = emBits - 8 * (emLen - 1);
+        var mask = 255 << 8 - bits >> 8 - bits;
+        maskedDB[0] &= ((maskedDB[0] ^ mask) & maskedDB[0]);
 
-        var EM = new Buffer(DB.length + H.length + 1);
-        DB.copy(EM, 0);
-        H.copy(EM, DB.length);
+        var EM = new Buffer(maskedDB.length + H.length + 1);
+        maskedDB.copy(EM, 0);
+        H.copy(EM, maskedDB.length);
         EM[EM.length - 1] = 0xbc;
 
         return EM;
@@ -160,9 +139,11 @@ module.exports.makeScheme = function (key, options) {
         EM.copy(DB, 0, 0, emLen - hLen - 1);
 
         var mask = 0;
-        for (var i = 0, bits = 8 * emLen - emBits; i < bits; i++)
+        for (var i = 0, bits = 8 * emLen - emBits; i < bits; i++) {
             mask |= 1 << (7 - i);
-        if ((DB[0] & mask) != 0) {
+        }
+
+        if ((DB[0] & mask) !== 0) {
             return false;
         }
 
@@ -170,8 +151,9 @@ module.exports.makeScheme = function (key, options) {
         var dbMask = mgf(H, DB.length, hash);
 
         // Unmask DB
-        for (var i = 0; i < DB.length; i++)
+        for (i = 0; i < DB.length; i++) {
             DB[i] ^= dbMask[i];
+        }
 
         var mask = 0;
         for (var i = 0, bits = emBits - 8 * (emLen - 1); i < bits; i++) {
@@ -180,7 +162,7 @@ module.exports.makeScheme = function (key, options) {
         DB[0] &= mask;
 
         // Filter out padding
-        while (DB[i++] == 0 && i < DB.length);
+        while (DB[i++] === 0 && i < DB.length);
         if (DB[i - 1] != 1) {
             return false;
         }
