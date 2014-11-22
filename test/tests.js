@@ -18,7 +18,7 @@ describe("NodeRSA", function(){
     ];
 
     var environments = ['browser', 'node'];
-    var encryptSchemes = ['pkcs1', 'pkcs1_oaep'];
+    var encryptSchemes = [/*'pkcs1',*/ 'pkcs1_oaep'];
     var signingSchemes = ['pkcs1', 'pss'];
     var signHashAlgorithms = {
         'node': ['MD4', 'MD5', 'RIPEMD160', 'SHA', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512'],
