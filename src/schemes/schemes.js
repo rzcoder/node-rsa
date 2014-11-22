@@ -1,6 +1,6 @@
 module.exports = schemes = {
     pkcs1: require('./pkcs1'),
-    oaep: require('./oaep'),
+    pkcs1_oaep: require('./oaep'),
     pss: require('./pss'),
 
     /**

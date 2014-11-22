@@ -32,10 +32,10 @@ module.exports.makeScheme = function (key, options) {
     }
 
     /**
-     * Pad input buffer to encryptedDataLength bytes, and return a BigInteger
+     * Pad input Buffer to encryptedDataLength bytes, and return new Buffer
      * alg: PKCS#1 (type 2, random)
      * @param buffer
-     * @returns {BigInteger}
+     * @returns {Buffer}
      */
     Scheme.prototype.encPad = function (buffer) {
         if (buffer.length > this.key.maxMessageLength) {
@@ -58,38 +58,38 @@ module.exports.makeScheme = function (key, options) {
         ba.unshift(2);
         ba.unshift(0);
 
-        return new BigInteger(ba);
+        return ba;
     };
 
     /**
-     * Unpad input BigInteger and, if valid, return the Buffer object
+     * Unpad input Buffer and, if valid, return the Buffer object
      * alg: PKCS#1 (type 2, random)
      * @param buffer
      * @returns {Buffer}
      */
     Scheme.prototype.encUnPad = function (buffer) {
-        var b = buffer.toByteArray();
+        //var buffer = buffer.toByteArray();
         var i = 0;
 
-        while (i < b.length && b[i] === 0) {
+        while (i < buffer.length && buffer[i] === 0) {
             ++i;
         }
 
-        if (b.length - i != this.key.encryptedDataLength - 1 || b[i] != 2) {
+        if (buffer.length - i != this.key.encryptedDataLength - 1 || buffer[i] != 2) {
             return null;
         }
 
         ++i;
-        while (b[i] !== 0) {
-            if (++i >= b.length) {
+        while (buffer[i] !== 0) {
+            if (++i >= buffer.length) {
                 return null;
             }
         }
 
         var c = 0;
-        var res = new Buffer(b.length - i - 1);
-        while (++i < b.length) {
-            res[c++] = b[i] & 255;
+        var res = new Buffer(buffer.length - i - 1);
+        while (++i < buffer.length) {
+            res[c++] = buffer[i] & 255;
         }
 
         return res;

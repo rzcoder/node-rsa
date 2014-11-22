@@ -26,7 +26,6 @@ module.exports = (function () {
     var DEFAULT_SIGNING_SCHEME = 'pkcs1';
     var DEFAULT_SIGNING_HASH = 'sha256';
 
-
     /**
      * @param key {string|buffer|object} Key in PEM format, or data for generate key {b: bits, e: exponent}
      * @constructor
@@ -94,6 +93,7 @@ module.exports = (function () {
             if (!schemes.isEncryption(this.$options.encryptionScheme)) {
                 throw Error('Unsupported encryption scheme');
             }
+            this.$options.encryptionSchemeOptions = {}
         }
 
         this.keyPair.setOptions(this.$options);

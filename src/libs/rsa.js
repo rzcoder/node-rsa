@@ -224,23 +224,18 @@ module.exports.Key = (function() {
         for(var i in buffers) {
             var buf = buffers[i];
 
-            var m = this.encryptionScheme.encPad(buf);
-
-            if (m === null) {
-                return null;
-            }
-
+            var m = new BigInteger(this.encryptionScheme.encPad(buf));
             var c = this.$doPublic(m);
 
             if (c === null) {
                 return null;
             }
 
-            var encryptedBuffer = c.toBuffer(true);
-
+            var encryptedBuffer = c.toBuffer(this.encryptedDataLength);
+            /*var encryptedBuffer = c.toBuffer(true);
             while (encryptedBuffer.length < this.encryptedDataLength) {
                 encryptedBuffer = Buffer.concat([new Buffer([0]), encryptedBuffer]);
-            }
+            }*/
 
             results.push(encryptedBuffer);
         }
@@ -254,8 +249,9 @@ module.exports.Key = (function() {
      * @returns {Buffer}
      */
     RSAKey.prototype.decrypt = function (buffer) {
-        if (buffer.length % this.encryptedDataLength > 0)
+        if (buffer.length % this.encryptedDataLength > 0) {
             throw Error('Incorrect data or key');
+        }
 
         var result = [];
         var offset = 0;
@@ -267,14 +263,8 @@ module.exports.Key = (function() {
             length = offset + this.encryptedDataLength;
 
             var c = new BigInteger(buffer.slice(offset, Math.min(length, buffer.length)));
-
             var m = this.$doPrivate(c);
-
-            if (m === null) {
-                return null;
-            }
-
-            result.push(this.encryptionScheme.encUnPad(m));
+            result.push(this.encryptionScheme.encUnPad(m.toBuffer()));
         }
 
         return Buffer.concat(result);

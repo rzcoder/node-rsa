@@ -11,7 +11,7 @@ module.exports = {
 };
 
 module.exports.makeScheme = function (key, options) {
-    var OAEP = require('./schemes').oaep;
+    var OAEP = require('./schemes').pkcs1_oaep;
 
     /**
      * @param key
@@ -52,8 +52,7 @@ module.exports.makeScheme = function (key, options) {
      * emBits	[uint]		Maximum length of output in bits. Must be at least 8hLen + 8sLen + 9 (hLen = Hash digest length in bytes | sLen = length of salt in bytes)
      * @returns {Buffer} The encoded message
      */
-    Scheme.prototype.emsa_pss_encode = function (M, emBits, options) {
-        if (!options) options = {};
+    Scheme.prototype.emsa_pss_encode = function (M, emBits) {
         var hash = this.options.signingSchemeOptions.hash || 'sha1';
         var mgf = this.options.signingSchemeOptions.mgf || OAEP.eme_oaep_mgf1;
         var sLen = this.options.signingSchemeOptions.sLen || 20;
@@ -120,7 +119,6 @@ module.exports.makeScheme = function (key, options) {
      * @returns {Boolean} True if signature(EM) matches message(M)
      */
     Scheme.prototype.emsa_pss_verify = function (M, EM, emBits) {
-        if (!options) options = {};
         var hash = this.options.signingSchemeOptions.hash || 'sha1';
         var mgf = this.options.signingSchemeOptions.mgf || OAEP.eme_oaep_mgf1;
         var sLen = this.options.signingSchemeOptions.sLen || 20;
