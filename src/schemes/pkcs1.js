@@ -95,7 +95,7 @@ module.exports.makeScheme = function (key, options) {
         return res;
     };
 
-    Scheme.prototype.sign = function (buffer, encoding) {
+    Scheme.prototype.sign = function (buffer) {
         if (this.options.environment == 'browser') {
             var hashAlgorithm = this.options.signingSchemeOptions.hash;
             hashAlgorithm = SIGN_ALG_TO_HASH_ALIASES[hashAlgorithm] || hashAlgorithm;
@@ -109,15 +109,11 @@ module.exports.makeScheme = function (key, options) {
                 res = Buffer.concat([new Buffer([0]), res]);
             }
 
-            if (encoding && encoding != 'buffer') {
-                res = res.toString(encoding);
-            }
             return res;
         } else {
-            encoding = (!encoding || encoding == 'buffer' ? null : encoding);
             var signer = crypt.createSign('RSA-' + this.options.signingSchemeOptions.hash.toUpperCase());
             signer.update(buffer);
-            return signer.sign(this.options.rsaUtils.getPrivatePEM(), encoding);
+            return signer.sign(this.options.rsaUtils.getPrivatePEM());
         }
     };
 

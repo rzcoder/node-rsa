@@ -27,12 +27,9 @@ module.exports.makeScheme = function (key, options) {
         this.options = options;
     }
 
-    Scheme.prototype.sign = function (buffer, encoding) {
+    Scheme.prototype.sign = function (buffer) {
         var encoded = this.emsa_pss_encode(buffer, this.key.keySize - 1);
         var res = this.key.$doPrivate(new BigInteger(encoded)).toBuffer(this.key.encryptedDataLength);
-        if (encoding && encoding != 'buffer') {
-            res = res.toString(encoding);
-        }
         return res;
     };
 

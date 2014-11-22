@@ -280,7 +280,7 @@ module.exports.Key = (function() {
         return Buffer.concat(result);
     };
 
-    RSAKey.prototype.sign = function (buffer, encoding) {
+    RSAKey.prototype.sign = function (buffer) {
         return this.signingScheme.sign.apply(this.signingScheme, arguments);
     };
 

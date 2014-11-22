@@ -256,7 +256,12 @@ module.exports = (function () {
         if (!this.isPrivate()) {
             throw Error("It is not private key");
         }
-        return this.keyPair.sign(this.$getDataForEcrypt(buffer, source_encoding), encoding);
+        var res = this.keyPair.sign(this.$getDataForEcrypt(buffer, source_encoding));
+
+        if (encoding && encoding != 'buffer') {
+            res = res.toString(encoding);
+        }
+        return res;
     };
 
     /**
