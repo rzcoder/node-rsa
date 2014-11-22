@@ -299,7 +299,7 @@ describe("NodeRSA", function(){
                     if (scheme == 'pkcs1') {
                         var envs = environments;
                     } else {
-                        var envs = ['browser'];
+                        var envs = ['node'];
                     }
                     for (var env in envs) {
                         (function (env) {
@@ -400,11 +400,11 @@ describe("NodeRSA", function(){
                                     assert(!verifyKey.verify('data', signed));
                                 });
                             });
-                        })(environments[env]);
+                        })(envs[env]);
                     }
 
                     if (scheme !== 'pkcs1') {
-                        return
+                        return;
                     }
 
                     describe("Compatibility of different environments", function () {

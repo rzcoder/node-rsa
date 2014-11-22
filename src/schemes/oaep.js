@@ -38,18 +38,18 @@ module.exports.digestLength = {
  *		To add another algorythm the algorythem must be accepted by crypto.createHash, and then the length of the output of the hash function (the digest) must be added to the digestLength object below.
  *		Most RSA implementations will be expecting sha1
  */
-module.exports.eme_oaep_mgf1 = function(seed, maskLength, hashFunction){
+module.exports.eme_oaep_mgf1 = function (seed, maskLength, hashFunction) {
     hashFunction = hashFunction || "sha1";
     var hLen = module.exports.digestLength[hashFunction];
     var count = Math.ceil(maskLength / hLen);
     var T = new Buffer(hLen * count);
     var c = new Buffer(4);
-    for(var i = 0; i < count; ++i) {
+    for (var i = 0; i < count; ++i) {
         var hash = crypt.createHash(hashFunction);
         hash.write(seed);
         c.writeUInt32BE(i, 0);
         hash.end(c);
-        hash.read().copy(T, i*hLen);
+        hash.read().copy(T, i * hLen);
     }
     return T.slice(0, maskLength);
 };

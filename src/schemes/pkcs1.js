@@ -103,11 +103,7 @@ module.exports.makeScheme = function (key, options) {
             var hasher = crypt.createHash(hashAlgorithm);
             hasher.update(buffer);
             var hash = this.pkcs1pad(hasher.digest(), hashAlgorithm);
-            var res = this.key.$doPrivate(new BigInteger(hash)).toBuffer(true);
-
-            while (res.length < this.encryptedDataLength) {
-                res = Buffer.concat([new Buffer([0]), res]);
-            }
+            var res = this.key.$doPrivate(new BigInteger(hash)).toBuffer(this.key.encryptedDataLength);
 
             return res;
         } else {
