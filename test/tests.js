@@ -18,7 +18,7 @@ describe("NodeRSA", function(){
     ];
 
     var environments = ['browser', 'node'];
-    var encryptSchemes = [/*'pkcs1',*/ 'pkcs1_oaep'];
+    var encryptSchemes = ['pkcs1', 'pkcs1_oaep'];
     var signingSchemes = ['pkcs1', 'pss'];
     var signHashAlgorithms = {
         'node': ['MD4', 'MD5', 'RIPEMD160', 'SHA', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512'],
@@ -284,7 +284,7 @@ describe("NodeRSA", function(){
 
                         it("incorrect key for decrypting", function(){
                             var encrypted = generatedKeys[0].encrypt('data');
-                            assert.notEqual('data', generatedKeys[1].decrypt(encrypted));
+                            assert.throw(function(){ generatedKeys[1].decrypt(encrypted); }, Error, "Error during decryption");
                         });
                     });
                 });
@@ -292,7 +292,7 @@ describe("NodeRSA", function(){
         }
     });
 
-    describe.skip("Signing & verifying", function () {
+    describe("Signing & verifying", function () {
         for (var scheme_i in signingSchemes) {
             (function (scheme) {
                 describe("Signing scheme: " + scheme, function () {

@@ -31,6 +31,10 @@ module.exports.makeScheme = function (key, options) {
         this.options = options;
     }
 
+    Scheme.prototype.maxMessageLength = function () {
+        return this.key.encryptedDataLength - 11;
+    };
+
     /**
      * Pad input Buffer to encryptedDataLength bytes, and return new Buffer
      * alg: PKCS#1 (type 2, random)

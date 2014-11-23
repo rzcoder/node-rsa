@@ -62,8 +62,8 @@ module.exports.makeScheme = function (key, options) {
         this.options = options;
     }
 
-    Scheme.prototype.maxMessageLength = function (key) {
-        return key.encryptedDataLength - 2 * RSA.$$digestLength[this.hash] - 2;
+    Scheme.prototype.maxMessageLength = function () {
+        return this.key.encryptedDataLength - 2 * module.exports.digestLength[this.options.encryptionSchemeOptions.hash || DEFAULT_HASH_FUNCTION] - 2;
     };
 
     /**
@@ -72,10 +72,11 @@ module.exports.makeScheme = function (key, options) {
      *
      * https://tools.ietf.org/html/rfc3447#section-7.1.1
      */
-    Scheme.prototype.encPad = function (buffer, emLen, options) {
+    Scheme.prototype.encPad = function (buffer) {
         var hash = this.options.encryptionSchemeOptions.hash || DEFAULT_HASH_FUNCTION;
         var mgf = this.options.encryptionSchemeOptions.mgf || module.exports.eme_oaep_mgf1;
         var label = this.options.encryptionSchemeOptions.label || new Buffer(0);
+        var emLen  = this.key.encryptedDataLength;
 
         var hLen = module.exports.digestLength[hash];
 

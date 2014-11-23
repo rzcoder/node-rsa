@@ -264,7 +264,7 @@ module.exports.Key = (function() {
 
             var c = new BigInteger(buffer.slice(offset, Math.min(length, buffer.length)));
             var m = this.$doPrivate(c);
-            result.push(this.encryptionScheme.encUnPad(m.toBuffer()));
+            result.push(this.encryptionScheme.encUnPad(m.toBuffer(this.encryptedDataLength)));
         }
 
         return Buffer.concat(result);
@@ -287,7 +287,7 @@ module.exports.Key = (function() {
     });
 
     Object.defineProperty(RSAKey.prototype, 'maxMessageLength', {
-        get: function() { return this.encryptedDataLength - 11; }
+        get: function() { return this.encryptionScheme.maxMessageLength() }
     });
 
     /**

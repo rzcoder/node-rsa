@@ -223,12 +223,16 @@ module.exports = (function () {
      * @returns {string|Buffer}
      */
     NodeRSA.prototype.encrypt = function (buffer, encoding, source_encoding) {
-        var res = this.keyPair.encrypt(this.$getDataForEcrypt(buffer, source_encoding));
+        try {
+            var res = this.keyPair.encrypt(this.$getDataForEcrypt(buffer, source_encoding));
 
-        if (encoding == 'buffer' || !encoding) {
-            return res;
-        } else {
-            return res.toString(encoding);
+            if (encoding == 'buffer' || !encoding) {
+                return res;
+            } else {
+                return res.toString(encoding);
+            }
+        } catch (e) {
+            throw Error('Error during encryption. Original error: ' + e);
         }
     };
 
@@ -240,8 +244,16 @@ module.exports = (function () {
      * @returns {Buffer|object|string}
      */
     NodeRSA.prototype.decrypt = function (buffer, encoding) {
-        buffer = _.isString(buffer) ? new Buffer(buffer, 'base64') : buffer;
-        return this.$getDecryptedData(this.keyPair.decrypt(buffer), encoding);
+        try {
+            buffer = _.isString(buffer) ? new Buffer(buffer, 'base64') : buffer;
+            var res = this.keyPair.decrypt(buffer);
+            if (res == null) {
+                throw Error('Key decrypt method returns null.')
+            }
+            return this.$getDecryptedData(res, encoding);
+        } catch (e) {
+            throw Error('Error during decryption (probably incorrect key). Original error: ' + e);
+        }
     };
 
     /**
