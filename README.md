@@ -48,24 +48,48 @@ var NodeRSA = require('node-rsa');
 
 var key = new NodeRSA([key], [options]);
 ```
+
 **key** - parameters of a generated key or the key in PEM format.<br/>
 **options** - additional settings
- * **environment** - working environment, `'browser'` or `'node'`. Default autodetect.
- * **signingAlgorithm** - hash algorithm used for signing and verifying. Can be `'md5'`, `'ripemd160'`, `'sha1'`,
- `'sha256'`, `'sha512'` in browser environment and additional `'md4'`, `'sha'`, `'sha224'`, `'sha384'` in nodejs.
- Default `'sha256'`.
 
-#### "Empty" key
+#### Options
+You can specify some options when key create (by second constructor argument) or over `key.setOptions()` method.
+
+* **environment** - working environment, `'browser'` or `'node'`. Default autodetect.
+* **encryptionScheme** - padding scheme for encrypt/decrypt. Can be `'pkcs1_oaep'` or `'pkcs1'`. Default `'pkcs1_oaep'`.
+* **signingScheme** - scheme used for signing and verifying. Can be `'pkcs1'` or `'pss'` or 'scheme-hash' format string (eg `'pss-sha1'`). Default `'pkcs1-sha256'`, or, if chosen pss: `'pss-sha1'`.
+
+**Advanced options:**<br/>
+You also can specify advanced options for some schemes like this:
+```
+options = {
+  encryptionScheme: {
+    scheme: 'pkcs1_oaep', //scheme
+    hash: 'md5', //hash using for scheme
+    mgf: function(...) {...} //mask generation function
+  },
+  signingScheme: {
+    scheme: 'pss', //scheme
+    hash: 'sha1', //hash using for scheme
+    saltLength: 20 //salt length for pss sign
+  }
+}
+```
+
+This lib supporting next hash algorithms: `'md5'`, `'ripemd160'`, `'sha1'`, `'sha256'`, `'sha512'` in browser and node environment and additional `'md4'`, `'sha'`, `'sha224'`, `'sha384'` in node only.
+
+
+#### Creating "empty" key
 ```javascript
 var key = new NodeRSA();
 ```
 
-### Generate new key 512bit-length and with public exponent 65537
+#### Generate new key 512bit-length and with public exponent 65537
 ```javascript
 var key = new NodeRSA({b: 512});
 ```
 
-### Load key from PEM string
+#### Load key from PEM string
 
 ```javascript
 var key = new NodeRSA('-----BEGIN RSA PRIVATE KEY-----\n'+
@@ -158,9 +182,13 @@ Questions, comments, bug reports, and pull requests are all welcome.
 ## Changelog
 
 ### 0.2.0
+ * Added PKCS1_OAEP encrypting/decrypting support
+     * **PKCS1_OAEP now default scheme, you need to specify 'encryptingScheme' option to 'pkcs1' for compatibility with 0.1.x version of NodeRSA**
+ * Added PSS signing/verifying support
  * Signing now supports `'md5'`, `'ripemd160'`, `'sha1'`, `'sha256'`, `'sha512'` hash algorithms in both environments
  and additional `'md4'`, `'sha'`, `'sha224'`, `'sha384'` for nodejs env.
  * `options.signingAlgorithm` rename to `options.signingScheme`
+ * Added `encryptingScheme` option
  * Property `key.options` now mark as private. Added `key.setOptions(options)` method.
 
 ### 0.1.54

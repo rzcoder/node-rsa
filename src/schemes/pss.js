@@ -58,7 +58,7 @@ module.exports.makeScheme = function (key, options) {
     Scheme.prototype.emsa_pss_encode = function (M, emBits) {
         var hash = this.options.signingSchemeOptions.hash || DEFAULT_HASH_FUNCTION;
         var mgf = this.options.signingSchemeOptions.mgf || OAEP.eme_oaep_mgf1;
-        var sLen = this.options.signingSchemeOptions.sLen || DEFAULT_SALT_LENGTH;
+        var sLen = this.options.signingSchemeOptions.saltLength || DEFAULT_SALT_LENGTH;
 
         var hLen = OAEP.digestLength[hash];
         var emLen = Math.ceil(emBits / 8);
@@ -124,7 +124,7 @@ module.exports.makeScheme = function (key, options) {
     Scheme.prototype.emsa_pss_verify = function (M, EM, emBits) {
         var hash = this.options.signingSchemeOptions.hash || DEFAULT_HASH_FUNCTION;
         var mgf = this.options.signingSchemeOptions.mgf || OAEP.eme_oaep_mgf1;
-        var sLen = this.options.signingSchemeOptions.sLen || DEFAULT_SALT_LENGTH;
+        var sLen = this.options.signingSchemeOptions.saltLength || DEFAULT_SALT_LENGTH;
 
         var hLen = OAEP.digestLength[hash];
         var emLen = Math.ceil(emBits / 8);

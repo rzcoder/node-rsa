@@ -60,62 +60,90 @@ describe("NodeRSA", function(){
     var privateNodeRSA = null;
     var publicNodeRSA = null;
 
-    describe("Work with keys", function(){
-        describe("Generating keys", function() {
-            describe("Good cases", function() {
-                it("should make empty key pair", function () {
-                    var key = new NodeRSA(null);
-                    assert.equal(key.isEmpty(), true);
-                });
+    describe("Setup options", function(){
+        it("should make empty key pair with default options", function () {
+            var key = new NodeRSA(null);
+            assert.equal(key.isEmpty(), true);
+            assert.equal(key.$options.signingScheme, 'pkcs1');
+            assert.equal(key.$options.signingSchemeOptions.hash, 'sha256');
+            assert.equal(key.$options.signingSchemeOptions.saltLength, null);
 
-                it("should make empty key pair with pkcs1 scheme and  hash alg", function () {
-                    var key = new NodeRSA(null);
-                    assert.equal(key.isEmpty(), true);
-                    assert.equal(key.$options.signingScheme, 'pkcs1');
-                    assert.equal(key.$options.signingSchemeOptions.hash, 'sha256');
-                });
+            assert.equal(key.$options.encryptionScheme, 'pkcs1_oaep');
+            assert.equal(key.$options.encryptionSchemeOptions.hash, 'sha1');
+            assert.equal(key.$options.encryptionSchemeOptions.label, null);
+        });
 
-                it("should make key pair with pkcs1 scheme and md5 hash alg", function () {
-                    var key = new NodeRSA(null, {signingScheme: 'md5'});
-                    assert.equal(key.$options.signingScheme, 'pkcs1');
-                    assert.equal(key.$options.signingSchemeOptions.hash, 'md5');
-                });
+        it("should make key pair with pkcs1-md5 signing scheme", function () {
+            var key = new NodeRSA(null, {signingScheme: 'md5'});
+            assert.equal(key.$options.signingScheme, 'pkcs1');
+            assert.equal(key.$options.signingSchemeOptions.hash, 'md5');
+        });
 
-                it("should make key pair with pss scheme and sha512 hash alg", function () {
-                    var key = new NodeRSA(null, {signingScheme: 'pss-sha512'});
-                    assert.equal(key.$options.signingScheme, 'pss');
-                    assert.equal(key.$options.signingSchemeOptions.hash, 'sha512');
-                });
+        it("should make key pair with pss-sha512 signing scheme", function () {
+            var key = new NodeRSA(null, {signingScheme: 'pss-sha512'});
+            assert.equal(key.$options.signingScheme, 'pss');
+            assert.equal(key.$options.signingSchemeOptions.hash, 'sha512');
+        });
 
-                for (var size in keySizes) {
-                    (function (size) {
-                        it("should make key pair " + size.b + "-bit length and public exponent is " + (size.e ? size.e : size.e + " and should be 65537"), function () {
-                            generatedKeys.push(new NodeRSA({b: size.b, e: size.e}));
-                            assert.instanceOf(generatedKeys[generatedKeys.length - 1].keyPair, Object);
-                            assert.equal(generatedKeys[generatedKeys.length - 1].isEmpty(), false);
-                            assert.equal(generatedKeys[generatedKeys.length - 1].getKeySize(), size.b);
-                            assert.equal(generatedKeys[generatedKeys.length - 1].getMaxMessageSize(), (size.b / 8 - 11));
-                            assert.equal(generatedKeys[generatedKeys.length - 1].keyPair.e, size.e || 65537);
-                        });
-                    })(keySizes[size]);
+        it("should make key pair with pkcs1 encryption scheme, and pss-sha1 signing scheme", function () {
+            var key = new NodeRSA(null, {encryptionScheme: 'pkcs1', signingScheme: 'pss'});
+            assert.equal(key.$options.encryptionScheme, 'pkcs1');
+            assert.equal(key.$options.signingScheme, 'pss');
+            assert.equal(key.$options.signingSchemeOptions.hash, null);
+        });
+
+        it("advanced options change", function () {
+            var key = new NodeRSA(null);
+            key.setOptions({
+                encryptionScheme: {
+                    scheme: 'pkcs1_oaep',
+                    hash: 'sha512',
+                    label: 'horay'
+                },
+                signingScheme: {
+                    scheme: 'pss',
+                    hash: 'md5',
+                    saltLength: 15
                 }
             });
 
-            describe("Bad cases", function() {
-                it("should throw \"unsupported signing algorithm\" exception", function () {
-                    var key = new NodeRSA(null);
-                    assert.equal(key.isEmpty(), true);
-                    assert.equal(key.$options.signingScheme, 'pkcs1');
-                    assert.equal(key.$options.signingSchemeOptions.hash, 'sha256');
+            assert.equal(key.$options.signingScheme, 'pss');
+            assert.equal(key.$options.signingSchemeOptions.hash, 'md5');
+            assert.equal(key.$options.signingSchemeOptions.saltLength, 15);
+            assert.equal(key.$options.encryptionScheme, 'pkcs1_oaep');
+            assert.equal(key.$options.encryptionSchemeOptions.hash, 'sha512');
+            assert.equal(key.$options.encryptionSchemeOptions.label, 'horay');
+        });
 
-                    assert.throw(function(){
-                        key.setOptions({
-                            environment: 'browser',
-                            signingScheme: 'md4'
-                        });
-                    }, Error, "Unsupported signing algorithm");
+        it("should throw \"unsupported hashing algorithm\" exception", function () {
+            var key = new NodeRSA(null);
+            assert.equal(key.isEmpty(), true);
+            assert.equal(key.$options.signingScheme, 'pkcs1');
+            assert.equal(key.$options.signingSchemeOptions.hash, 'sha256');
+
+            assert.throw(function(){
+                key.setOptions({
+                    environment: 'browser',
+                    signingScheme: 'md4'
                 });
-            });
+            }, Error, "Unsupported hashing algorithm");
+        });
+    });
+
+    /*describe("Work with keys", function() {
+        describe("Generating keys", function() {
+            for (var size in keySizes) {
+                (function (size) {
+                    it("should make key pair " + size.b + "-bit length and public exponent is " + (size.e ? size.e : size.e + " and should be 65537"), function () {
+                        generatedKeys.push(new NodeRSA({b: size.b, e: size.e}, {encryptionScheme: 'pkcs1'}));
+                        assert.instanceOf(generatedKeys[generatedKeys.length - 1].keyPair, Object);
+                        assert.equal(generatedKeys[generatedKeys.length - 1].isEmpty(), false);
+                        assert.equal(generatedKeys[generatedKeys.length - 1].getKeySize(), size.b);
+                        assert.equal(generatedKeys[generatedKeys.length - 1].getMaxMessageSize(), (size.b / 8 - 11));
+                        assert.equal(generatedKeys[generatedKeys.length - 1].keyPair.e, size.e || 65537);
+                    });
+                })(keySizes[size]);
+            }
         });
 
         describe("PEM", function(){
@@ -454,5 +482,5 @@ describe("NodeRSA", function(){
                 });
             })(signingSchemes[scheme_i]);
         }
-    });
+    });*/
 });

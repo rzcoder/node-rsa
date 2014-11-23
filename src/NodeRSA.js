@@ -22,9 +22,8 @@ module.exports = (function () {
         browser: ['md5', 'ripemd160', 'sha1', 'sha256', 'sha512']
     };
 
-    var DEFAULT_ENCRYPTION_SCHEME = 'pkcs1';
+    var DEFAULT_ENCRYPTION_SCHEME = 'pkcs1_oaep';
     var DEFAULT_SIGNING_SCHEME = 'pkcs1';
-    var DEFAULT_SIGNING_HASH = 'sha256';
 
     /**
      * @param key {string|buffer|object} Key in PEM format, or data for generate key {b: bits, e: exponent}
@@ -38,9 +37,14 @@ module.exports = (function () {
         this.$options = {
             signingScheme: DEFAULT_SIGNING_SCHEME,
             signingSchemeOptions: {
-                hash: DEFAULT_SIGNING_HASH
+                hash: 'sha256',
+                saltLength: null
             },
             encryptionScheme: DEFAULT_ENCRYPTION_SCHEME,
+            encryptionSchemeOptions: {
+                hash: 'sha1',
+                label: null
+            },
             environment: utils.detectEnvironment(),
             rsaUtils: this
         };
@@ -66,34 +70,50 @@ module.exports = (function () {
         }
 
         if (options.signingScheme) {
-            var signingScheme = options.signingScheme.toLowerCase().split('-');
-            if (signingScheme.length == 1) {
-                this.$options.signingSchemeOptions = {
-                    hash: signingScheme[0]
-                };
-                this.$options.signingScheme = DEFAULT_SIGNING_SCHEME;
-            } else {
-                this.$options.signingSchemeOptions = {
-                    hash: signingScheme[1]
-                };
-                this.$options.signingScheme = signingScheme[0];
+            if (_.isString(options.signingScheme)) {
+                var signingScheme = options.signingScheme.toLowerCase().split('-');
+                if (signingScheme.length == 1) {
+                    this.$options.signingSchemeOptions = {
+                        hash: signingScheme[0]
+                    };
+                    this.$options.signingScheme = DEFAULT_SIGNING_SCHEME;
+                } else {
+                    this.$options.signingSchemeOptions = {
+                        hash: signingScheme[1]
+                    };
+                    this.$options.signingScheme = signingScheme[0];
+                }
+            } else if (_.isObject(options.signingScheme)) {
+                this.$options.signingScheme = options.signingScheme.scheme || DEFAULT_SIGNING_SCHEME;
+                this.$options.signingSchemeOptions = _.omit(options.signingScheme, 'scheme');
             }
 
             if (!schemes.isSignature(this.$options.signingScheme)) {
                 throw Error('Unsupported signing scheme');
             }
-
-            if (_.indexOf(SUPPORTED_HASH_ALGORITHMS[this.$options.environment], this.$options.signingSchemeOptions.hash) == -1) {
-                throw Error('Unsupported signing algorithm for ' + this.$options.environment + ' environment');
+            if (this.$options.signingSchemeOptions.hash &&
+                _.indexOf(SUPPORTED_HASH_ALGORITHMS[this.$options.environment], this.$options.signingSchemeOptions.hash) == -1) {
+                throw Error('Unsupported hashing algorithm for ' + this.$options.environment + ' environment');
             }
         }
 
         if (options.encryptionScheme) {
-            this.$options.encryptionScheme = options.encryptionScheme.toLowerCase();
+            if (_.isString(options.encryptionScheme)) {
+                this.$options.encryptionScheme = options.encryptionScheme.toLowerCase();
+                this.$options.encryptionSchemeOptions = {};
+            } else if (_.isObject(options.encryptionScheme)) {
+                this.$options.encryptionScheme = options.encryptionScheme.scheme || DEFAULT_ENCRYPTION_SCHEME;
+                this.$options.encryptionSchemeOptions = _.omit(options.encryptionScheme, 'scheme');
+            }
+
             if (!schemes.isEncryption(this.$options.encryptionScheme)) {
                 throw Error('Unsupported encryption scheme');
             }
-            this.$options.encryptionSchemeOptions = {};
+
+            if (this.$options.encryptionSchemeOptions.hash &&
+                _.indexOf(SUPPORTED_HASH_ALGORITHMS[this.$options.environment], this.$options.encryptionSchemeOptions.hash) == -1) {
+                throw Error('Unsupported hashing algorithm for ' + this.$options.environment + ' environment');
+            }
         }
 
         this.keyPair.setOptions(this.$options);
