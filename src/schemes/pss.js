@@ -153,8 +153,8 @@ module.exports.makeScheme = function (key, options) {
             DB[i] ^= dbMask[i];
         }
 
-        var mask = 0;
-        for (var i = 0, bits = emBits - 8 * (emLen - 1); i < bits; i++) {
+        mask = 0;
+        for (i = 0, bits = emBits - 8 * (emLen - 1); i < bits; i++) {
             mask |= 1 << i;
         }
         DB[0] &= mask;

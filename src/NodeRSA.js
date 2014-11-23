@@ -93,7 +93,7 @@ module.exports = (function () {
             if (!schemes.isEncryption(this.$options.encryptionScheme)) {
                 throw Error('Unsupported encryption scheme');
             }
-            this.$options.encryptionSchemeOptions = {}
+            this.$options.encryptionSchemeOptions = {};
         }
 
         this.keyPair.setOptions(this.$options);
@@ -247,8 +247,8 @@ module.exports = (function () {
         try {
             buffer = _.isString(buffer) ? new Buffer(buffer, 'base64') : buffer;
             var res = this.keyPair.decrypt(buffer);
-            if (res == null) {
-                throw Error('Key decrypt method returns null.')
+            if (res === null) {
+                throw Error('Key decrypt method returns null.');
             }
             return this.$getDecryptedData(res, encoding);
         } catch (e) {

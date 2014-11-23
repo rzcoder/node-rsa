@@ -287,7 +287,7 @@ module.exports.Key = (function() {
     });
 
     Object.defineProperty(RSAKey.prototype, 'maxMessageLength', {
-        get: function() { return this.encryptionScheme.maxMessageLength() }
+        get: function() { return this.encryptionScheme.maxMessageLength(); }
     });
 
     /**

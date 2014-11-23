@@ -168,7 +168,7 @@ module.exports.makeScheme = function (key, options) {
 
         // Filter out padding
         i = hLen;
-        while (DB[i++] == 0 && i < DB.length);
+        while (DB[i++] === 0 && i < DB.length);
         if (DB[i - 1] != 1) {
             throw new Error("Error decoding message, there is no padding message separator byte");
         }
