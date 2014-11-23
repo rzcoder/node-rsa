@@ -53,7 +53,7 @@ var key = new NodeRSA([key], [options]);
 **options** - additional settings
 
 #### Options
-You can specify some options when key create (by second constructor argument) or over `key.setOptions()` method.
+You can specify some options by second constructor argument, or over `key.setOptions()` method.
 
 * **environment** - working environment, `'browser'` or `'node'`. Default autodetect.
 * **encryptionScheme** - padding scheme for encrypt/decrypt. Can be `'pkcs1_oaep'` or `'pkcs1'`. Default `'pkcs1_oaep'`.
