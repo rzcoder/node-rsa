@@ -73,10 +73,17 @@ module.exports = (function () {
             if (_.isString(options.signingScheme)) {
                 var signingScheme = options.signingScheme.toLowerCase().split('-');
                 if (signingScheme.length == 1) {
-                    this.$options.signingSchemeOptions = {
-                        hash: signingScheme[0]
-                    };
-                    this.$options.signingScheme = DEFAULT_SIGNING_SCHEME;
+                    if (_.indexOf(SUPPORTED_HASH_ALGORITHMS.node, signingScheme[0]) > -1) {
+                        this.$options.signingSchemeOptions = {
+                            hash: signingScheme[0]
+                        };
+                        this.$options.signingScheme = DEFAULT_SIGNING_SCHEME;
+                    } else {
+                        this.$options.signingScheme = signingScheme[0];
+                        this.$options.signingSchemeOptions = {
+                            hash: null
+                        };
+                    }
                 } else {
                     this.$options.signingSchemeOptions = {
                         hash: signingScheme[1]

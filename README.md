@@ -6,8 +6,8 @@ Based on jsbn library from Tom Wu http://www-cs-students.stanford.edu/~tjw/jsbn/
 * Pure JavaScript
 * No needed OpenSSL
 * Generating keys
-* Supports long messages for encrypt/decrypt (PKCS1 and PKCS1_OAEP schemes)
-* Signing and verifying (PKCS1 and PSS schemes)
+* Supports long messages for encrypt/decrypt
+* Signing and verifying
 
 
 ## Example

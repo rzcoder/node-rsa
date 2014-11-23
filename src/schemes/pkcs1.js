@@ -20,6 +20,8 @@ var SIGN_ALG_TO_HASH_ALIASES = {
     'ripemd160': 'rmd160'
 };
 
+var DEFAULT_HASH_FUNCTION = 'sha256';
+
 module.exports = {
     isEncryption: true,
     isSignature: true
@@ -100,8 +102,8 @@ module.exports.makeScheme = function (key, options) {
     };
 
     Scheme.prototype.sign = function (buffer) {
+        var hashAlgorithm = this.options.signingSchemeOptions.hash || DEFAULT_HASH_FUNCTION;
         if (this.options.environment == 'browser') {
-            var hashAlgorithm = this.options.signingSchemeOptions.hash;
             hashAlgorithm = SIGN_ALG_TO_HASH_ALIASES[hashAlgorithm] || hashAlgorithm;
 
             var hasher = crypt.createHash(hashAlgorithm);
@@ -111,15 +113,15 @@ module.exports.makeScheme = function (key, options) {
 
             return res;
         } else {
-            var signer = crypt.createSign('RSA-' + this.options.signingSchemeOptions.hash.toUpperCase());
+            var signer = crypt.createSign('RSA-' + hashAlgorithm.toUpperCase());
             signer.update(buffer);
             return signer.sign(this.options.rsaUtils.getPrivatePEM());
         }
     };
 
     Scheme.prototype.verify = function (buffer, signature, signature_encoding) {
+        var hashAlgorithm = this.options.signingSchemeOptions.hash || DEFAULT_HASH_FUNCTION;
         if (this.options.environment == 'browser') {
-            var hashAlgorithm = this.options.signingSchemeOptions.hash;
             hashAlgorithm = SIGN_ALG_TO_HASH_ALIASES[hashAlgorithm] || hashAlgorithm;
 
             if (signature_encoding) {
@@ -133,7 +135,7 @@ module.exports.makeScheme = function (key, options) {
 
             return m.toBuffer().toString('hex') == hash.toString('hex');
         } else {
-            var verifier = crypt.createVerify('RSA-' + this.options.signingSchemeOptions.hash.toUpperCase());
+            var verifier = crypt.createVerify('RSA-' + hashAlgorithm.toUpperCase());
             verifier.update(buffer);
             return verifier.verify(this.options.rsaUtils.getPublicPEM(), signature, signature_encoding);
         }
