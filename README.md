@@ -8,7 +8,7 @@ Based on jsbn library from Tom Wu http://www-cs-students.stanford.edu/~tjw/jsbn/
 * Generating keys
 * Supports long messages for encrypt/decrypt
 * Signing and verifying
- 
+
 
 ## Example
 
@@ -48,19 +48,48 @@ var NodeRSA = require('node-rsa');
 
 var key = new NodeRSA([key], [options]);
 ```
-**key** - parameters of a generated key or the key in PEM format.<br/>
 
-#### "Empty" key
+**key** - parameters of a generated key or the key in PEM format.<br/>
+**options** - additional settings
+
+#### Options
+You can specify some options when key create (by second constructor argument) or over `key.setOptions()` method.
+
+* **environment** - working environment, `'browser'` or `'node'`. Default autodetect.
+* **encryptionScheme** - padding scheme for encrypt/decrypt. Can be `'pkcs1_oaep'` or `'pkcs1'`. Default `'pkcs1_oaep'`.
+* **signingScheme** - scheme used for signing and verifying. Can be `'pkcs1'` or `'pss'` or 'scheme-hash' format string (eg `'pss-sha1'`). Default `'pkcs1-sha256'`, or, if chosen pss: `'pss-sha1'`.
+
+**Advanced options:**<br/>
+You also can specify advanced options for some schemes like this:
+```
+options = {
+  encryptionScheme: {
+    scheme: 'pkcs1_oaep', //scheme
+    hash: 'md5', //hash using for scheme
+    mgf: function(...) {...} //mask generation function
+  },
+  signingScheme: {
+    scheme: 'pss', //scheme
+    hash: 'sha1', //hash using for scheme
+    saltLength: 20 //salt length for pss sign
+  }
+}
+```
+
+This lib supporting next hash algorithms: `'md5'`, `'ripemd160'`, `'sha1'`, `'sha256'`, `'sha512'` in browser and node environment and additional `'md4'`, `'sha'`, `'sha224'`, `'sha384'` in node only.
+
+
+#### Creating "empty" key
 ```javascript
 var key = new NodeRSA();
 ```
 
-### Generate new key 512bit-length and with public exponent 65537
+#### Generate new key 512bit-length and with public exponent 65537
 ```javascript
 var key = new NodeRSA({b: 512});
 ```
 
-### Load key from PEM string
+#### Load key from PEM string
 
 ```javascript
 var key = new NodeRSA('-----BEGIN RSA PRIVATE KEY-----\n'+
@@ -116,13 +145,6 @@ Return max data size for encrypt in bytes.
 
 ### Encrypting/decrypting
 
-*As of v0.1.55 the default encryption scheme is RSAES-OAEP using sha1 and mgf1.
-PKCS1 is still available with the following configuring*
-
-```javascript
-key.schemeEncryption = NodeRSA.RSA.PKCS1.Default;
-```
-
 ```javascript
 key.encrypt(buffer, [encoding], [source_encoding]);
 ```
@@ -139,14 +161,6 @@ Return decrypted data.<br/>
 **encoding** - encoding for result string. Can also take `'buffer'` for raw Buffer object, or `'json'` for automatic JSON.parse result. Default `'buffer'`.
 
 ### Signing/Verifying
-
-*As of v0.1.55 the default signature scheme is RSASSA-PSS using sha1.
-PKCS1 is still available with the following configuring*
-
-```javascript
-key.schemeSignature = NodeRSA.RSA.PKCS1.Default;
-```
-
 ```javascript
 key.sign(buffer, [encoding], [source_encoding]);
 ```
@@ -161,44 +175,21 @@ Return result of check, `true` or `false`.<br/>
 **source_encoding** - same as for `encrypt` method.<br/>
 **signature_encoding** - encoding of given signature. May be `'buffer'`, `'binary'`, `'hex'` or `'base64'`. Default `'buffer'`.
 
-### Changing Encryption/Signature schemes.
-
-Schemes are the way RSA packs up it's data before encrypting/decrypting/signing/verifying and there are a few ways that it can do it. The most common are RSAES-OAEP, RSASSA-PSS, RSAES-PKCS1-v1_5(encryption/decryption), and RSASSA-PKCS1-v1_5(signing/verifying).
-As of v0.1.55 these 4 mentioned schemes are included in the package with the ability to easily add more later and by users. See below for how to configure NodeRSA to use these different schemes.
-
-*Note: The default encryption / signature schemes have been changed from PKCS1 to the more secure OAEP(encryption) and PSS(signature) schemes as per the recommendations of the spec, this can be breaking.*
-
-```javascript
-key.schemeSignature = NodeRSA.RSA.PSS.Default; // This is an object that has been automatically instantiated and has the default settings for PSS signing.
-key.schemeSignature = NodeRSA.RSA.PKCS1.Default; // This is an object that has been automatically instantiated and has the default settings for PKCS1 signing/encrypting.
-
-key.schemeEncryption = NodeRSA.RSA.OAEP.Default; // This is an object that has been automatically instantiated and has the default settings for OAEP encrypting.
-key.schemeEncryption = NodeRSA.RSA.PKCS1.Default; // This is an object that has been automatically instantiated and has the default settings for PKCS1 signing/encrypting.
-```
-To change schemes between the various defaults, each provided scheme class has a property named "Default" that provides a scheme object with the default settings for that scheme.
-
-```javascript
-var pssMD5Scheme = new NodeRSA.RSA.PSS({
-	// The options a scheme accepts should be documented in the scheme definition.
-	hash: "md5", // Use a different type of hashing function instead of sha1
-	mgf:  customMaskGenerationFunction // Use a custom mask generation function that accepts 3 parameters (seed, maskLength, hashFunction)
-});
-key.schemeSignature = pssMD5Scheme;
-key2.schemeSignature = pssMD5Scheme;
-```
-Schemes can also be initialized with custom options and can be shared between keys.
-
 ## Contributing
 
 Questions, comments, bug reports, and pull requests are all welcome.
 
 ## Changelog
 
-### 0.1.55
- * **The default schemes used to encrypt and sign data have changed from PKCS1 to the recommended OAEP and PSS standards**
- * Overhauled the rsa.js library to allow for schemes and to allow for easy addition of schemes in the future and custom schemes.
- * Modified NodeRSA functions to work with new rsa.js file.
- * All changes should be backwards compatible
+### 0.2.0
+ * Added PKCS1_OAEP encrypting/decrypting support
+     * **PKCS1_OAEP now default scheme, you need to specify 'encryptingScheme' option to 'pkcs1' for compatibility with 0.1.x version of NodeRSA**
+ * Added PSS signing/verifying support
+ * Signing now supports `'md5'`, `'ripemd160'`, `'sha1'`, `'sha256'`, `'sha512'` hash algorithms in both environments
+ and additional `'md4'`, `'sha'`, `'sha224'`, `'sha384'` for nodejs env.
+ * `options.signingAlgorithm` rename to `options.signingScheme`
+ * Added `encryptingScheme` option
+ * Property `key.options` now mark as private. Added `key.setOptions(options)` method.
 
 ### 0.1.54
  * Added support for loading PEM key from Buffer (`fs.readFileSync()` output)

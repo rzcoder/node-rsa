@@ -7,7 +7,6 @@ var assert = require("chai").assert;
 var _ = require("lodash");
 var NodeRSA = require("../src/NodeRSA");
 
-
 describe("NodeRSA", function(){
     var keySizes = [
         {b: 512, e: 3},
@@ -18,15 +17,13 @@ describe("NodeRSA", function(){
         {b: 1024} // 'e' should be 65537
     ];
 
-    var signAlgorithms = ['md5', 'sha1', "sha256", "sha384", "sha512"];
-	var schemeSigning = {
-		pss: NodeRSA.RSA.PSS.Default,
-		pkcs1: NodeRSA.RSA.PKCS1.Default
-	};
-	var schemeEncrypting = {
-		oaep: NodeRSA.RSA.OAEP.Default,
-		pkcs1: NodeRSA.RSA.PKCS1.Default
-	};
+    var environments = ['browser', 'node'];
+    var encryptSchemes = ['pkcs1', 'pkcs1_oaep'];
+    var signingSchemes = ['pkcs1', 'pss'];
+    var signHashAlgorithms = {
+        'node': ['MD4', 'MD5', 'RIPEMD160', 'SHA', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512'],
+        'browser': ['MD5', 'RIPEMD160', 'SHA1', 'SHA256', 'SHA512']
+    };
 
     var dataBundle = {
         "string": {
@@ -35,7 +32,7 @@ describe("NodeRSA", function(){
         },
         "unicode string": {
             data: "ascii + юникод スラ ⑨",
-            encoding: "utf8"            
+            encoding: "utf8"
         },
         "empty string": {
             data: "",
@@ -63,33 +60,90 @@ describe("NodeRSA", function(){
     var privateNodeRSA = null;
     var publicNodeRSA = null;
 
-    describe("Work with keys", function(){
+    describe("Setup options", function(){
+        it("should make empty key pair with default options", function () {
+            var key = new NodeRSA(null);
+            assert.equal(key.isEmpty(), true);
+            assert.equal(key.$options.signingScheme, 'pkcs1');
+            assert.equal(key.$options.signingSchemeOptions.hash, 'sha256');
+            assert.equal(key.$options.signingSchemeOptions.saltLength, null);
 
+            assert.equal(key.$options.encryptionScheme, 'pkcs1_oaep');
+            assert.equal(key.$options.encryptionSchemeOptions.hash, 'sha1');
+            assert.equal(key.$options.encryptionSchemeOptions.label, null);
+        });
+
+        it("should make key pair with pkcs1-md5 signing scheme", function () {
+            var key = new NodeRSA(null, {signingScheme: 'md5'});
+            assert.equal(key.$options.signingScheme, 'pkcs1');
+            assert.equal(key.$options.signingSchemeOptions.hash, 'md5');
+        });
+
+        it("should make key pair with pss-sha512 signing scheme", function () {
+            var key = new NodeRSA(null, {signingScheme: 'pss-sha512'});
+            assert.equal(key.$options.signingScheme, 'pss');
+            assert.equal(key.$options.signingSchemeOptions.hash, 'sha512');
+        });
+
+        it("should make key pair with pkcs1 encryption scheme, and pss-sha1 signing scheme", function () {
+            var key = new NodeRSA(null, {encryptionScheme: 'pkcs1', signingScheme: 'pss'});
+            assert.equal(key.$options.encryptionScheme, 'pkcs1');
+            assert.equal(key.$options.signingScheme, 'pss');
+            assert.equal(key.$options.signingSchemeOptions.hash, null);
+        });
+
+        it("advanced options change", function () {
+            var key = new NodeRSA(null);
+            key.setOptions({
+                encryptionScheme: {
+                    scheme: 'pkcs1_oaep',
+                    hash: 'sha512',
+                    label: 'horay'
+                },
+                signingScheme: {
+                    scheme: 'pss',
+                    hash: 'md5',
+                    saltLength: 15
+                }
+            });
+
+            assert.equal(key.$options.signingScheme, 'pss');
+            assert.equal(key.$options.signingSchemeOptions.hash, 'md5');
+            assert.equal(key.$options.signingSchemeOptions.saltLength, 15);
+            assert.equal(key.$options.encryptionScheme, 'pkcs1_oaep');
+            assert.equal(key.$options.encryptionSchemeOptions.hash, 'sha512');
+            assert.equal(key.$options.encryptionSchemeOptions.label, 'horay');
+        });
+
+        it("should throw \"unsupported hashing algorithm\" exception", function () {
+            var key = new NodeRSA(null);
+            assert.equal(key.isEmpty(), true);
+            assert.equal(key.$options.signingScheme, 'pkcs1');
+            assert.equal(key.$options.signingSchemeOptions.hash, 'sha256');
+
+            assert.throw(function(){
+                key.setOptions({
+                    environment: 'browser',
+                    signingScheme: 'md4'
+                });
+            }, Error, "Unsupported hashing algorithm");
+        });
+    });
+
+    /*describe("Work with keys", function() {
         describe("Generating keys", function() {
             for (var size in keySizes) {
-                (function(size){
+                (function (size) {
                     it("should make key pair " + size.b + "-bit length and public exponent is " + (size.e ? size.e : size.e + " and should be 65537"), function () {
-                        generatedKeys.push(new NodeRSA({b: size.b, e: size.e}));
-						generatedKeys[generatedKeys.length - 1].schemeEncryption = NodeRSA.RSA.PKCS1.Default;
+                        generatedKeys.push(new NodeRSA({b: size.b, e: size.e}, {encryptionScheme: 'pkcs1'}));
                         assert.instanceOf(generatedKeys[generatedKeys.length - 1].keyPair, Object);
                         assert.equal(generatedKeys[generatedKeys.length - 1].isEmpty(), false);
                         assert.equal(generatedKeys[generatedKeys.length - 1].getKeySize(), size.b);
-                        //assert.equal(generatedKeys[generatedKeys.length - 1].getMaxMessageSize(), (size.b / 8 - 11)); // This one depends on the scheme the key uses
+                        assert.equal(generatedKeys[generatedKeys.length - 1].getMaxMessageSize(), (size.b / 8 - 11));
                         assert.equal(generatedKeys[generatedKeys.length - 1].keyPair.e, size.e || 65537);
                     });
                 })(keySizes[size]);
             }
-
-            it("should make empty key pair", function () {
-                var key = new NodeRSA(null);
-                assert.equal(key.isEmpty(), true);
-            });
-
-            it.skip("should make empty key pair with md5 signing option", function () {
-                var key = new NodeRSA(null, {signingAlgorithm: 'md5'});
-                assert.equal(key.isEmpty(), true);
-                assert.equal(key.options.signingAlgorithm, 'md5');
-            });
         });
 
         describe("PEM", function(){
@@ -217,159 +271,216 @@ describe("NodeRSA", function(){
         });
     });
 
-    describe("Encrypting & decrypting", function(){
-        describe("Good cases", function () {
-			for(var scheme in schemeEncrypting){
-				(function(scheme) {
-					var encrypted = {};
-					var decrypted = {};
-                    for(var i in dataBundle) {
-						(function(i) {
-							var key = null;
-							var suit = dataBundle[i];
+    describe("Encrypting & decrypting", function () {
+        for (var scheme_i in encryptSchemes) {
+            (function (scheme) {
+                describe("Encryption scheme: " + scheme, function () {
+                    describe("Good cases", function () {
+                        var encrypted = {};
+                        var decrypted = {};
+                        for (var i in dataBundle) {
+                            (function (i) {
+                                var key = null;
+                                var suit = dataBundle[i];
 
-							it("should encrypt " + i + " using " + scheme, function () {
-								console.log();
-								key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length];
-								key.schemeEncryption = schemeEncrypting[scheme];
-								encrypted[i] = key.encrypt(suit.data);
-								assert(Buffer.isBuffer(encrypted[i]));
-								assert(encrypted[i].length > 0);
-							});
+                                it("should encrypt " + i, function () {
+                                    key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length];
+                                    key.setOptions({encryptionScheme: scheme});
+                                    encrypted[i] = key.encrypt(suit.data);
+                                    assert(Buffer.isBuffer(encrypted[i]));
+                                    assert(encrypted[i].length > 0);
+                                });
 
-							it("should decrypt " + i + " using " + scheme, function () {
-								console.log();
-								decrypted[i] = key.decrypt(encrypted[i], _.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding);
-								if(Buffer.isBuffer(decrypted[i])) {
-									assert.equal(suit.data.toString('hex'), decrypted[i].toString('hex'));
-								} else {
-									assert(_.isEqual(suit.data, decrypted[i]));
-								}
-							});
-						})(i);
-					}
-                })(scheme);
-			}
-        });
+                                it("should decrypt " + i, function () {
+                                    decrypted[i] = key.decrypt(encrypted[i], _.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding);
+                                    if (Buffer.isBuffer(decrypted[i])) {
+                                        assert.equal(suit.data.toString('hex'), decrypted[i].toString('hex'));
+                                    } else {
+                                        assert(_.isEqual(suit.data, decrypted[i]));
+                                    }
+                                });
+                            })(i);
+                        }
+                    });
 
-        describe("Bad cases", function () {
-            it("unsupported data types", function(){
-                assert.throw(function(){ generatedKeys[0].encrypt(null); }, Error, "Unexpected data type");
-                assert.throw(function(){ generatedKeys[0].encrypt(undefined); }, Error, "Unexpected data type");
-                assert.throw(function(){ generatedKeys[0].encrypt(true); }, Error, "Unexpected data type");
-            });
+                    describe("Bad cases", function () {
+                        it("unsupported data types", function(){
+                            assert.throw(function(){ generatedKeys[0].encrypt(null); }, Error, "Unexpected data type");
+                            assert.throw(function(){ generatedKeys[0].encrypt(undefined); }, Error, "Unexpected data type");
+                            assert.throw(function(){ generatedKeys[0].encrypt(true); }, Error, "Unexpected data type");
+                        });
 
-            it("incorrect key for decrypting", function(){
-                var encrypted = generatedKeys[0].encrypt('data');
-                assert.notEqual('data', generatedKeys[1].decrypt(encrypted));
-            });
-        });
+                        it("incorrect key for decrypting", function(){
+                            var encrypted = generatedKeys[0].encrypt('data');
+                            assert.throw(function(){ generatedKeys[1].decrypt(encrypted); }, Error, "Error during decryption");
+                        });
+                    });
+                });
+            })(encryptSchemes[scheme_i]);
+        }
     });
-
 
     describe("Signing & verifying", function () {
-		describe("Good cases", function () {
-			for(var scheme in schemeSigning){
-				(function(scheme){
-					for (var alg in signAlgorithms) {
-						(function (alg) {
-							var signed = {};
-							var key = null;
+        for (var scheme_i in signingSchemes) {
+            (function (scheme) {
+                describe("Signing scheme: " + scheme, function () {
+                    if (scheme == 'pkcs1') {
+                        var envs = environments;
+                    } else {
+                        var envs = ['node'];
+                    }
+                    for (var env in envs) {
+                        (function (env) {
+                            describe("Good cases" + (envs.length > 1 ? " in " + env + " environment" : ""), function () {
+                                var signed = {};
+                                var key = null;
 
-							for (var i in dataBundle) {
-								(function (i) {
-									var suit = dataBundle[i];
-									it("should sign " + i + " using " + scheme + " with hashing algorithm " + alg, function () {
-										//key = new NodeRSA(generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length].getPrivatePEM());
-										key = new NodeRSA(generatedKeys[5].getPrivatePEM()); // Some signatures+hash combinations will be larger than some of the smaller keys being tested. When that happens the signing process throws an error.
-										key.schemeSignature = schemeSigning[scheme];
-										key.schemeSignature.options.hash = alg;
-										signed[i] = key.sign(suit.data);
-										assert(Buffer.isBuffer(signed[i]));
-										assert(signed[i].length > 0);
-									});
+                                for (var i in dataBundle) {
+                                    (function (i) {
+                                        var suit = dataBundle[i];
+                                        it("should sign " + i, function () {
+                                            key = new NodeRSA(generatedKeys[generatedKeys.length - 1].getPrivatePEM(), {
+                                                signingScheme: scheme + '-sha256',
+                                                environment: env
+                                            });
+                                            signed[i] = key.sign(suit.data);
+                                            assert(Buffer.isBuffer(signed[i]));
+                                            assert(signed[i].length > 0);
+                                        });
 
-									it("should verify " + i + " using " + scheme + " with hashing algorithm " + alg, function () {
-										assert(key.verify(suit.data, signed[i]));
-									});
-								})(i);
-							}
-						})(signAlgorithms[alg]);
-					}
-				})(scheme);
-			}
-		});
-		
-		
-		describe("Bad cases", function () {
-			it("incorrect data for verifying", function () {
-				var key = new NodeRSA(generatedKeys[5].getPrivatePEM());
-				key.schemeSignature.options.hash = "sha1";
-				var signed = key.sign('data1');
-				assert(!key.verify('data2', signed));
-			});
+                                        it("should verify " + i, function () {
+                                            if(!key.verify(suit.data, signed[i])) {
+                                                key.verify(suit.data, signed[i]);
+                                            }
+                                            assert(key.verify(suit.data, signed[i]));
+                                        });
+                                    })(i);
+                                }
 
-			it("incorrect key for signing", function () {
-				var key = new NodeRSA(generatedKeys[5].getPublicPEM());
-				key.schemeSignature.options.hash = "sha1";
-				assert.throw(function () {
-					key.sign('data');
-				}, Error, "It is not private key");
-			});
+                                for (var alg in signHashAlgorithms[env]) {
+                                    (function (alg) {
+                                        it("signing with custom algorithm (" + alg + ")", function () {
+                                            var key = new NodeRSA(generatedKeys[generatedKeys.length - 1].getPrivatePEM(), {
+                                                signingScheme: scheme + '-' + alg,
+                                                environment: env
+                                            });
+                                            var signed = key.sign('data');
+                                            if(!key.verify('data', signed)) {
+                                                key.verify('data', signed);
+                                            }
+                                            assert(key.verify('data', signed));
+                                        });
+                                    })(signHashAlgorithms[env][alg]);
+                                }
+                            });
 
-			it("incorrect key for verifying", function () {
-				var key1 = new NodeRSA(generatedKeys[5].getPrivatePEM());
-				var key2 = new NodeRSA(generatedKeys[1].getPublicPEM());
-				var signed = key1.sign('data');
-				assert(!key2.verify('data', signed));
-			});
+                            describe("Bad cases" + (envs.length > 1 ? " in " + env + " environment" : ""), function () {
+                                it("incorrect data for verifying", function () {
+                                    var key = new NodeRSA(generatedKeys[0].getPrivatePEM(), {
+                                        signingScheme: scheme + '-sha256',
+                                        environment: env
+                                    });
+                                    var signed = key.sign('data1');
+                                    assert(!key.verify('data2', signed));
+                                });
 
-			it("incorrect key for verifying (empty)", function () {
-				var key = new NodeRSA(null);
-				key.schemeSignature.options.hash = "sha1";
+                                it("incorrect key for signing", function () {
+                                    var key = new NodeRSA(generatedKeys[0].getPublicPEM(), {
+                                        signingScheme: scheme + '-sha256',
+                                        environment: env
+                                    });
+                                    assert.throw(function () {
+                                        key.sign('data');
+                                    }, Error, "It is not private key");
+                                });
 
-				assert.throw(function () {
-					key.verify('data', 'somesignature');
-				}, Error, "It is not public key");
-			});
+                                it("incorrect key for verifying", function () {
+                                    var key1 = new NodeRSA(generatedKeys[0].getPrivatePEM(), {
+                                        signingScheme: scheme + '-sha256',
+                                        environment: env
+                                    });
+                                    var key2 = new NodeRSA(generatedKeys[1].getPublicPEM(), {
+                                        signingScheme: scheme + '-sha256',
+                                        environment: env
+                                    });
+                                    var signed = key1.sign('data');
+                                    assert(!key2.verify('data', signed));
+                                });
 
-			it("different algorithms", function () {
-				var signKey = new NodeRSA(generatedKeys[0].getPrivatePEM());
-				var verifyKey = new NodeRSA(generatedKeys[0].getPrivatePEM());
-				NodeRSA.RSA.PSS.Default.options.hash = "sha1";
-				var pssMD5 = new NodeRSA.RSA.PSS({hash: "md5"});
-				verifyKey.schemeSignature = pssMD5;
-				var signed = signKey.sign('data');
-				assert(!verifyKey.verify('data', signed));
-			});
-		});
+                                it("incorrect key for verifying (empty)", function () {
+                                    var key = new NodeRSA(null, {environment: env});
 
-        describe.skip("Compatibility of different environments", function () { // This should no longer apply as both node and browser environments are using the rsa.js library
-            for (var alg in signAlgorithms) {
-                (function (alg) {
-                    it("signing with custom algorithm (" + alg + ")", function () {
-                        var nodeKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {signingAlgorithm: alg, environment: 'node'});
-                        var browserKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {signingAlgorithm: alg, environment: 'browser'});
+                                    assert.throw(function () {
+                                        key.verify('data', 'somesignature');
+                                    }, Error, "It is not public key");
+                                });
 
-                        assert.equal(nodeKey.sign('data', 'hex'), browserKey.sign('data', 'hex'));
+                                it("different algorithms", function () {
+                                    var singKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {
+                                        signingScheme: scheme + '-md5',
+                                        environment: env
+                                    });
+                                    var verifyKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {
+                                        signingScheme: scheme + '-sha1',
+                                        environment: env
+                                    });
+                                    var signed = singKey.sign('data');
+                                    assert(!verifyKey.verify('data', signed));
+                                });
+                            });
+                        })(envs[env]);
+                    }
+
+                    if (scheme !== 'pkcs1') {
+                        return;
+                    }
+
+                    describe("Compatibility of different environments", function () {
+                        for (var alg in signHashAlgorithms['browser']) {
+                            (function (alg) {
+                                it("signing with custom algorithm (" + alg + ") (equal test)", function () {
+                                    var nodeKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {
+                                        signingScheme: scheme + '-' + alg,
+                                        environment: 'node'
+                                    });
+                                    var browserKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {
+                                        signingScheme: scheme + '-' + alg,
+                                        environment: 'browser'
+                                    });
+
+                                    assert.equal(nodeKey.sign('data', 'hex'), browserKey.sign('data', 'hex'));
+                                });
+
+                                it("sign in node & verify in browser (" + alg + ")", function () {
+                                    var nodeKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {
+                                        signingScheme: scheme + '-' + alg,
+                                        environment: 'node'
+                                    });
+                                    var browserKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {
+                                        signingScheme: scheme + '-' + alg,
+                                        environment: 'browser'
+                                    });
+
+                                    assert(browserKey.verify('data', nodeKey.sign('data')));
+                                });
+
+                                it("sign in browser & verify in node (" + alg + ")", function () {
+                                    var nodeKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {
+                                        signingScheme: scheme + '-' + alg,
+                                        environment: 'node'
+                                    });
+                                    var browserKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {
+                                        signingScheme: scheme + '-' + alg,
+                                        environment: 'browser'
+                                    });
+
+                                    assert(nodeKey.verify('data', browserKey.sign('data')));
+                                });
+                            })(signHashAlgorithms['browser'][alg]);
+                        }
                     });
-
-                    it("sign in node & verify in browser (" + alg + ")", function () {
-                        var nodeKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {signingAlgorithm: alg, environment: 'node'});
-                        var browserKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {signingAlgorithm: alg, environment: 'browser'});
-
-                        assert(browserKey.verify('data', nodeKey.sign('data')));
-                    });
-
-                    it("sign in browser & verify in node (" + alg + ")", function () {
-                        var nodeKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {signingAlgorithm: alg, environment: 'node'});
-                        var browserKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {signingAlgorithm: alg, environment: 'browser'});
-
-                        assert(nodeKey.verify('data', browserKey.sign('data')));
-                    });
-                })(signAlgorithms[alg]);
-            }
-
-        });
-    });
+                });
+            })(signingSchemes[scheme_i]);
+        }
+    });*/
 });
