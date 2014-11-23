@@ -93,9 +93,9 @@ describe("NodeRSA", function(){
         });
 
         it("change options", function () {
-            var key = new NodeRSA(null, {signingScheme: 'pss'});
+            var key = new NodeRSA(null, {signingScheme: 'pss-sha1'});
             assert.equal(key.$options.signingScheme, 'pss');
-            assert.equal(key.$options.signingSchemeOptions.hash, null);
+            assert.equal(key.$options.signingSchemeOptions.hash, 'sha1');
             key.setOptions({signingScheme: 'pkcs1'});
             assert.equal(key.$options.signingScheme, 'pkcs1');
             assert.equal(key.$options.signingSchemeOptions.hash, null);
