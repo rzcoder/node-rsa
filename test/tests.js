@@ -92,6 +92,19 @@ describe("NodeRSA", function(){
             assert.equal(key.$options.signingSchemeOptions.hash, null);
         });
 
+        it("change options", function () {
+            var key = new NodeRSA(null, {signingScheme: 'pss'});
+            assert.equal(key.$options.signingScheme, 'pss');
+            assert.equal(key.$options.signingSchemeOptions.hash, null);
+            key.setOptions({signingScheme: 'pkcs1'});
+            assert.equal(key.$options.signingScheme, 'pkcs1');
+            assert.equal(key.$options.signingSchemeOptions.hash, null);
+            key.setOptions({signingScheme: 'pkcs1-sha256'});
+            assert.equal(key.$options.signingScheme, 'pkcs1');
+            assert.equal(key.$options.signingSchemeOptions.hash, 'sha256');
+        });
+
+
         it("advanced options change", function () {
             var key = new NodeRSA(null);
             key.setOptions({
@@ -130,7 +143,7 @@ describe("NodeRSA", function(){
         });
     });
 
-    /*describe("Work with keys", function() {
+    describe("Work with keys", function() {
         describe("Generating keys", function() {
             for (var size in keySizes) {
                 (function (size) {
@@ -482,5 +495,5 @@ describe("NodeRSA", function(){
                 });
             })(signingSchemes[scheme_i]);
         }
-    });*/
+    });
 });
