@@ -19,7 +19,7 @@ module.exports.linebrk = function (str, maxLen) {
     return res + str.substring(i, str.length);
 };
 
-module.exports.detectEnvironment = function() {
+module.exports.detectEnvironment = function () {
     if (process && process.title != 'browser') {
         return 'node';
     } else if (window) {
@@ -43,8 +43,8 @@ module.exports.get32IntFromBuffer = function (buffer, offset) {
             return buffer.readUInt32BE(offset);
         } else {
             var res = 0;
-            for (var i = offset + size, d = 0; i > offset; i--, d+=2) {
-                res += buffer[i-1] * Math.pow(16, d);
+            for (var i = offset + size, d = 0; i > offset; i--, d += 2) {
+                res += buffer[i - 1] * Math.pow(16, d);
             }
             return res;
         }
