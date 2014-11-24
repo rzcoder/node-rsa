@@ -242,43 +242,46 @@ describe("NodeRSA", function(){
                     assert(!publicNodeRSA.isPrivate());
                 });
 
-                it(".getPrivatePEM() should return private PEM string", function(){
-                    assert.equal(privateNodeRSA.getPrivatePEM(), privateKeyPEM);
+                it(".exportPrivate() should return private PEM string", function(){
+                    assert.equal(privateNodeRSA.exportPrivate(), privateKeyPEM);
                 });
 
-                it(".getPublicPEM() from public key should return public PEM string", function(){
-                    assert.equal(publicNodeRSA.getPublicPEM(), publicKeyPEM);
+                it(".exportPublic() from public key should return public PEM string", function(){
+                    assert.equal(publicNodeRSA.exportPublic(), publicKeyPEM);
                 });
 
-                it(".getPublicPEM() from private key should return public PEM string", function(){
-                    assert.equal(privateNodeRSA.getPublicPEM(), publicKeyPEM);
+                it(".exportPublic() from private key should return public PEM string", function(){
+                    assert.equal(privateNodeRSA.exportPublic(), publicKeyPEM);
                 });
 
                 it("should create key from buffer/fs.readFileSync output", function(){
                     var key = new NodeRSA(fs.readFileSync(fileKey));
-                    assert.equal(key.getPrivatePEM(), fileKeyPEM);
+                    assert.equal(key.exportPrivate(), fileKeyPEM);
+                    key = new NodeRSA();
+                    key.importKey(fs.readFileSync(fileKey));
+                    assert.equal(key.exportPrivate(), fileKeyPEM);
                 });
 
                 it("should load PEM from buffer/fs.readFileSync output", function(){
                     var key = new NodeRSA();
                     assert.equal(key.isEmpty(), true);
-                    key.loadFromPEM(fs.readFileSync(fileKey));
+                    key.importKey(fs.readFileSync(fileKey));
                     assert.equal(key.isEmpty(), false);
-                    assert.equal(key.getPrivatePEM(), fileKeyPEM);
+                    assert.equal(key.exportPrivate(), fileKeyPEM);
                 });
             });
 
             describe("Bad cases", function () {
                 it("not public key", function(){
                     var key = new NodeRSA();
-                    assert.throw(function(){ key.getPrivatePEM(); }, Error, "It is not private key");
-                    assert.throw(function(){ key.getPublicPEM(); }, Error, "It is not public key");
+                    assert.throw(function(){ key.exportPrivate(); }, Error, "It is not private key");
+                    assert.throw(function(){ key.exportPublic(); }, Error, "It is not public key");
                 });
 
                 it("not private key", function(){
                     var key = new NodeRSA(publicKeyPEM);
-                    assert.throw(function(){ key.getPrivatePEM(); }, Error, "It is not private key");
-                    assert.doesNotThrow(function(){ key.getPublicPEM(); }, Error, "It is not public key");
+                    assert.throw(function(){ key.exportPrivate(); }, Error, "It is not private key");
+                    assert.doesNotThrow(function(){ key.exportPublic(); }, Error, "It is not public key");
                 });
             });
         });
@@ -352,7 +355,7 @@ describe("NodeRSA", function(){
                                     (function (i) {
                                         var suit = dataBundle[i];
                                         it("should sign " + i, function () {
-                                            key = new NodeRSA(generatedKeys[generatedKeys.length - 1].getPrivatePEM(), {
+                                            key = new NodeRSA(generatedKeys[generatedKeys.length - 1].exportPrivate(), {
                                                 signingScheme: scheme + '-sha256',
                                                 environment: env
                                             });
@@ -373,7 +376,7 @@ describe("NodeRSA", function(){
                                 for (var alg in signHashAlgorithms[env]) {
                                     (function (alg) {
                                         it("signing with custom algorithm (" + alg + ")", function () {
-                                            var key = new NodeRSA(generatedKeys[generatedKeys.length - 1].getPrivatePEM(), {
+                                            var key = new NodeRSA(generatedKeys[generatedKeys.length - 1].exportPrivate(), {
                                                 signingScheme: scheme + '-' + alg,
                                                 environment: env
                                             });
@@ -389,7 +392,7 @@ describe("NodeRSA", function(){
 
                             describe("Bad cases" + (envs.length > 1 ? " in " + env + " environment" : ""), function () {
                                 it("incorrect data for verifying", function () {
-                                    var key = new NodeRSA(generatedKeys[0].getPrivatePEM(), {
+                                    var key = new NodeRSA(generatedKeys[0].exportPrivate(), {
                                         signingScheme: scheme + '-sha256',
                                         environment: env
                                     });
@@ -398,7 +401,7 @@ describe("NodeRSA", function(){
                                 });
 
                                 it("incorrect key for signing", function () {
-                                    var key = new NodeRSA(generatedKeys[0].getPublicPEM(), {
+                                    var key = new NodeRSA(generatedKeys[0].exportPublic(), {
                                         signingScheme: scheme + '-sha256',
                                         environment: env
                                     });
@@ -408,11 +411,11 @@ describe("NodeRSA", function(){
                                 });
 
                                 it("incorrect key for verifying", function () {
-                                    var key1 = new NodeRSA(generatedKeys[0].getPrivatePEM(), {
+                                    var key1 = new NodeRSA(generatedKeys[0].exportPrivate(), {
                                         signingScheme: scheme + '-sha256',
                                         environment: env
                                     });
-                                    var key2 = new NodeRSA(generatedKeys[1].getPublicPEM(), {
+                                    var key2 = new NodeRSA(generatedKeys[1].exportPublic(), {
                                         signingScheme: scheme + '-sha256',
                                         environment: env
                                     });
@@ -429,11 +432,11 @@ describe("NodeRSA", function(){
                                 });
 
                                 it("different algorithms", function () {
-                                    var singKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {
+                                    var singKey = new NodeRSA(generatedKeys[0].exportPrivate(), {
                                         signingScheme: scheme + '-md5',
                                         environment: env
                                     });
-                                    var verifyKey = new NodeRSA(generatedKeys[0].getPrivatePEM(), {
+                                    var verifyKey = new NodeRSA(generatedKeys[0].exportPrivate(), {
                                         signingScheme: scheme + '-sha1',
                                         environment: env
                                     });
@@ -452,11 +455,11 @@ describe("NodeRSA", function(){
                         for (var alg in signHashAlgorithms['browser']) {
                             (function (alg) {
                                 it("signing with custom algorithm (" + alg + ") (equal test)", function () {
-                                    var nodeKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {
+                                    var nodeKey = new NodeRSA(generatedKeys[5].exportPrivate(), {
                                         signingScheme: scheme + '-' + alg,
                                         environment: 'node'
                                     });
-                                    var browserKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {
+                                    var browserKey = new NodeRSA(generatedKeys[5].exportPrivate(), {
                                         signingScheme: scheme + '-' + alg,
                                         environment: 'browser'
                                     });
@@ -465,11 +468,11 @@ describe("NodeRSA", function(){
                                 });
 
                                 it("sign in node & verify in browser (" + alg + ")", function () {
-                                    var nodeKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {
+                                    var nodeKey = new NodeRSA(generatedKeys[5].exportPrivate(), {
                                         signingScheme: scheme + '-' + alg,
                                         environment: 'node'
                                     });
-                                    var browserKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {
+                                    var browserKey = new NodeRSA(generatedKeys[5].exportPrivate(), {
                                         signingScheme: scheme + '-' + alg,
                                         environment: 'browser'
                                     });
@@ -478,11 +481,11 @@ describe("NodeRSA", function(){
                                 });
 
                                 it("sign in browser & verify in node (" + alg + ")", function () {
-                                    var nodeKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {
+                                    var nodeKey = new NodeRSA(generatedKeys[5].exportPrivate(), {
                                         signingScheme: scheme + '-' + alg,
                                         environment: 'node'
                                     });
-                                    var browserKey = new NodeRSA(generatedKeys[5].getPrivatePEM(), {
+                                    var browserKey = new NodeRSA(generatedKeys[5].exportPrivate(), {
                                         signingScheme: scheme + '-' + alg,
                                         environment: 'browser'
                                     });

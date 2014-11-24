@@ -53,7 +53,7 @@ module.exports = (function () {
         this.$cache = {};
 
         if (Buffer.isBuffer(key) || _.isString(key)) {
-            this.loadFromPEM(key);
+            this.importKey(key);
         } else if (_.isObject(key)) {
             this.generateKeyPair(key.b, key.e);
         }
@@ -150,7 +150,7 @@ module.exports = (function () {
      * Load key from PEM string
      * @param pem {string}
      */
-    NodeRSA.prototype.loadFromPEM = function (pem) {
+    NodeRSA.prototype.importKey = function (pem) {
         if (Buffer.isBuffer(pem)) {
             pem = pem.toString('utf8');
         }
@@ -320,14 +320,14 @@ module.exports = (function () {
         return this.keyPair.verify(this.$getDataForEcrypt(buffer, source_encoding), signature, signature_encoding);
     };
 
-    NodeRSA.prototype.getPrivatePEM = function () {
+    NodeRSA.prototype.exportPrivate = function () {
         if (!this.isPrivate()) {
             throw Error("It is not private key");
         }
         return this.$cache.privatePEM;
     };
 
-    NodeRSA.prototype.getPublicPEM = function () {
+    NodeRSA.prototype.exportPublic = function () {
         if (!this.isPublic()) {
             throw Error("It is not public key");
         }

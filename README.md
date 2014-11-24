@@ -107,15 +107,15 @@ Also you can use next methods:
 
 ```javascript
 key.generateKeyPair([bits], [exp]);
-key.loadFromPEM(pem_string|buffer_contains_pem);
+key.importKey(pem_string|buffer_contains_pem);
 ```
 **bits** - key size in bits. 2048 by default.  
 **exp** - public exponent. 65537 by default.
 
 ### Export keys
 ```javascript
-key.getPrivatePEM();
-key.getPublicPEM();
+key.exportPrivate();
+key.exportPublic();
 ```
 
 ### Properties
@@ -182,14 +182,18 @@ Questions, comments, bug reports, and pull requests are all welcome.
 ## Changelog
 
 ### 0.2.0
+ * **`.getPublicPEM()` method was renamed to `.exportPublic()`**
+ * **`.getPrivatePEM()` method was renamed to `.exportPrivate()`**
+ * **`.loadFromPEM()` method was renamed to `.importKey()`**
  * Added PKCS1_OAEP encrypting/decrypting support
      * **PKCS1_OAEP now default scheme, you need to specify 'encryptingScheme' option to 'pkcs1' for compatibility with 0.1.x version of NodeRSA**
  * Added PSS signing/verifying support
  * Signing now supports `'md5'`, `'ripemd160'`, `'sha1'`, `'sha256'`, `'sha512'` hash algorithms in both environments
  and additional `'md4'`, `'sha'`, `'sha224'`, `'sha384'` for nodejs env.
- * `options.signingAlgorithm` rename to `options.signingScheme`
+ * **`options.signingAlgorithm` was renamed to `options.signingScheme`**
  * Added `encryptingScheme` option
  * Property `key.options` now mark as private. Added `key.setOptions(options)` method.
+
 
 ### 0.1.54
  * Added support for loading PEM key from Buffer (`fs.readFileSync()` output)
