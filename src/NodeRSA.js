@@ -12,33 +12,119 @@ var crypt = require('crypto');
 var ber = require('asn1').Ber;
 var _ = require('lodash');
 var utils = require('./utils');
+var schemes = require('./schemes/schemes.js');
 
 var PUBLIC_RSA_OID = '1.2.840.113549.1.1.1';
 
-module.exports = (function() {
+module.exports = (function () {
+    var SUPPORTED_HASH_ALGORITHMS = {
+        node: ['md4', 'md5', 'ripemd160', 'sha', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'],
+        browser: ['md5', 'ripemd160', 'sha1', 'sha256', 'sha512']
+    };
+
+    var DEFAULT_ENCRYPTION_SCHEME = 'pkcs1_oaep';
+    var DEFAULT_SIGNING_SCHEME = 'pkcs1';
+
     /**
      * @param key {string|buffer|object} Key in PEM format, or data for generate key {b: bits, e: exponent}
      * @constructor
      */
     function NodeRSA(key, options) {
-        if (! this instanceof NodeRSA) {
+        if (!this instanceof NodeRSA) {
             return new NodeRSA(key, options);
         }
 
+        this.$options = {
+            signingScheme: DEFAULT_SIGNING_SCHEME,
+            signingSchemeOptions: {
+                hash: 'sha256',
+                saltLength: null
+            },
+            encryptionScheme: DEFAULT_ENCRYPTION_SCHEME,
+            encryptionSchemeOptions: {
+                hash: 'sha1',
+                label: null
+            },
+            environment: utils.detectEnvironment(),
+            rsaUtils: this
+        };
         this.keyPair = new rsa.Key();
+        this.setOptions(options);
         this.$cache = {};
 
-        this.options = _.merge({
-            signingAlgorithm: 'sha256',
-            environment: utils.detectEnvironment()
-        }, options  || {});
-
         if (Buffer.isBuffer(key) || _.isString(key)) {
-            this.loadFromPEM(key);
+            this.importKey(key);
         } else if (_.isObject(key)) {
             this.generateKeyPair(key.b, key.e);
         }
     }
+
+    /**
+     * Set and validate options for key instance
+     * @param options
+     */
+    NodeRSA.prototype.setOptions = function (options) {
+        options = options || {};
+        if (options.environment) {
+            this.$options.environment = options.environment;
+        }
+
+        if (options.signingScheme) {
+            if (_.isString(options.signingScheme)) {
+                var signingScheme = options.signingScheme.toLowerCase().split('-');
+                if (signingScheme.length == 1) {
+                    if (_.indexOf(SUPPORTED_HASH_ALGORITHMS.node, signingScheme[0]) > -1) {
+                        this.$options.signingSchemeOptions = {
+                            hash: signingScheme[0]
+                        };
+                        this.$options.signingScheme = DEFAULT_SIGNING_SCHEME;
+                    } else {
+                        this.$options.signingScheme = signingScheme[0];
+                        this.$options.signingSchemeOptions = {
+                            hash: null
+                        };
+                    }
+                } else {
+                    this.$options.signingSchemeOptions = {
+                        hash: signingScheme[1]
+                    };
+                    this.$options.signingScheme = signingScheme[0];
+                }
+            } else if (_.isObject(options.signingScheme)) {
+                this.$options.signingScheme = options.signingScheme.scheme || DEFAULT_SIGNING_SCHEME;
+                this.$options.signingSchemeOptions = _.omit(options.signingScheme, 'scheme');
+            }
+
+            if (!schemes.isSignature(this.$options.signingScheme)) {
+                throw Error('Unsupported signing scheme');
+            }
+            if (this.$options.signingSchemeOptions.hash &&
+                _.indexOf(SUPPORTED_HASH_ALGORITHMS[this.$options.environment], this.$options.signingSchemeOptions.hash) == -1) {
+                throw Error('Unsupported hashing algorithm for ' + this.$options.environment + ' environment');
+            }
+        }
+
+        if (options.encryptionScheme) {
+            if (_.isString(options.encryptionScheme)) {
+                this.$options.encryptionScheme = options.encryptionScheme.toLowerCase();
+                this.$options.encryptionSchemeOptions = {};
+            } else if (_.isObject(options.encryptionScheme)) {
+                this.$options.encryptionScheme = options.encryptionScheme.scheme || DEFAULT_ENCRYPTION_SCHEME;
+                this.$options.encryptionSchemeOptions = _.omit(options.encryptionScheme, 'scheme');
+            }
+
+            if (!schemes.isEncryption(this.$options.encryptionScheme)) {
+                throw Error('Unsupported encryption scheme');
+            }
+
+            if (this.$options.encryptionSchemeOptions.hash &&
+                _.indexOf(SUPPORTED_HASH_ALGORITHMS[this.$options.environment], this.$options.encryptionSchemeOptions.hash) == -1) {
+                throw Error('Unsupported hashing algorithm for ' + this.$options.environment + ' environment');
+            }
+        }
+
+        this.keyPair.setOptions(this.$options);
+    };
 
     /**
      * Generate private/public keys pair
@@ -47,7 +133,7 @@ module.exports = (function() {
      * @param exp {int} public exponent. Default 65537.
      * @returns {NodeRSA}
      */
-    NodeRSA.prototype.generateKeyPair = function(bits, exp) {
+    NodeRSA.prototype.generateKeyPair = function (bits, exp) {
         bits = bits || 2048;
         exp = exp || 65537;
 
@@ -64,7 +150,7 @@ module.exports = (function() {
      * Load key from PEM string
      * @param pem {string}
      */
-    NodeRSA.prototype.loadFromPEM = function(pem) {
+    NodeRSA.prototype.importKey = function (pem) {
         if (Buffer.isBuffer(pem)) {
             pem = pem.toString('utf8');
         }
@@ -84,10 +170,10 @@ module.exports = (function() {
      *
      * @param privatePEM {string}
      */
-    NodeRSA.prototype.$loadFromPrivatePEM = function(privatePEM, encoding) {
+    NodeRSA.prototype.$loadFromPrivatePEM = function (privatePEM, encoding) {
         var pem = privatePEM
-            .replace('-----BEGIN RSA PRIVATE KEY-----','')
-            .replace('-----END RSA PRIVATE KEY-----','')
+            .replace('-----BEGIN RSA PRIVATE KEY-----', '')
+            .replace('-----END RSA PRIVATE KEY-----', '')
             .replace(/\s+|\n\r|\n|\r$/gm, '');
         var reader = new ber.Reader(new Buffer(pem, 'base64'));
 
@@ -111,10 +197,10 @@ module.exports = (function() {
      *
      * @param publicPEM {string}
      */
-    NodeRSA.prototype.$loadFromPublicPEM = function(publicPEM, encoding) {
+    NodeRSA.prototype.$loadFromPublicPEM = function (publicPEM, encoding) {
         var pem = publicPEM
-            .replace('-----BEGIN PUBLIC KEY-----','')
-            .replace('-----END PUBLIC KEY-----','')
+            .replace('-----BEGIN PUBLIC KEY-----', '')
+            .replace('-----END PUBLIC KEY-----', '')
             .replace(/\s+|\n\r|\n|\r$/gm, '');
         var reader = new ber.Reader(new Buffer(pem, 'base64'));
 
@@ -136,7 +222,7 @@ module.exports = (function() {
     /**
      * Check if key pair contains private key
      */
-    NodeRSA.prototype.isPrivate = function() {
+    NodeRSA.prototype.isPrivate = function () {
         return this.keyPair.n && this.keyPair.e && this.keyPair.d || false;
     };
 
@@ -144,14 +230,14 @@ module.exports = (function() {
      * Check if key pair contains public key
      * @param strict {boolean} - public key only, return false if have private exponent
      */
-    NodeRSA.prototype.isPublic = function(strict) {
+    NodeRSA.prototype.isPublic = function (strict) {
         return this.keyPair.n && this.keyPair.e && !(strict && this.keyPair.d) || false;
     };
 
     /**
      * Check if key pair doesn't contains any data
      */
-    NodeRSA.prototype.isEmpty = function(strict) {
+    NodeRSA.prototype.isEmpty = function (strict) {
         return !(this.keyPair.n || this.keyPair.e || this.keyPair.d);
     };
 
@@ -163,13 +249,17 @@ module.exports = (function() {
      * @param source_encoding {string} - optional. Encoding for given string. Default utf8.
      * @returns {string|Buffer}
      */
-    NodeRSA.prototype.encrypt = function(buffer, encoding, source_encoding) {
-        var res = this.keyPair.encrypt(this.$getDataForEcrypt(buffer, source_encoding));
+    NodeRSA.prototype.encrypt = function (buffer, encoding, source_encoding) {
+        try {
+            var res = this.keyPair.encrypt(this.$getDataForEcrypt(buffer, source_encoding));
 
-        if (encoding == 'buffer' || !encoding) {
-            return res;
-        } else {
-            return res.toString(encoding);
+            if (encoding == 'buffer' || !encoding) {
+                return res;
+            } else {
+                return res.toString(encoding);
+            }
+        } catch (e) {
+            throw Error('Error during encryption. Original error: ' + e);
         }
     };
 
@@ -180,9 +270,17 @@ module.exports = (function() {
      * @param encoding - encoding for result string, can also take 'json' or 'buffer' for the automatic conversion of this type
      * @returns {Buffer|object|string}
      */
-    NodeRSA.prototype.decrypt = function(buffer, encoding) {
-        buffer = _.isString(buffer) ? new Buffer(buffer, 'base64') : buffer;
-        return this.$getDecryptedData(this.keyPair.decrypt(buffer), encoding);
+    NodeRSA.prototype.decrypt = function (buffer, encoding) {
+        try {
+            buffer = _.isString(buffer) ? new Buffer(buffer, 'base64') : buffer;
+            var res = this.keyPair.decrypt(buffer);
+            if (res === null) {
+                throw Error('Key decrypt method returns null.');
+            }
+            return this.$getDecryptedData(res, encoding);
+        } catch (e) {
+            throw Error('Error during decryption (probably incorrect key). Original error: ' + e);
+        }
     };
 
     /**
@@ -193,24 +291,16 @@ module.exports = (function() {
      * @param source_encoding {string} - optional. Encoding for given string. Default utf8.
      * @returns {string|Buffer}
      */
-    NodeRSA.prototype.sign = function(buffer, encoding, source_encoding) {
+    NodeRSA.prototype.sign = function (buffer, encoding, source_encoding) {
         if (!this.isPrivate()) {
             throw Error("It is not private key");
         }
+        var res = this.keyPair.sign(this.$getDataForEcrypt(buffer, source_encoding));
 
-        if (this.options.environment == 'browser') {
-            var res = this.keyPair.sign(this.$getDataForEcrypt(buffer, source_encoding), this.options.signingAlgorithm.toLowerCase());
-            if (encoding && encoding != 'buffer') {
-                return res.toString(encoding);
-            } else {
-                return res;
-            }
-        } else {
-            encoding = (!encoding || encoding == 'buffer' ? null : encoding);
-            var signer = crypt.createSign('RSA-' + this.options.signingAlgorithm.toUpperCase());
-            signer.update(this.$getDataForEcrypt(buffer, source_encoding));
-            return signer.sign(this.getPrivatePEM(), encoding);
+        if (encoding && encoding != 'buffer') {
+            res = res.toString(encoding);
         }
+        return res;
     };
 
     /**
@@ -222,35 +312,25 @@ module.exports = (function() {
      * @param signature_encoding - optional. Encoding of given signature. May be 'buffer', 'binary', 'hex' or 'base64'. Default 'buffer'.
      * @returns {*}
      */
-    NodeRSA.prototype.verify = function(buffer, signature, source_encoding, signature_encoding) {
+    NodeRSA.prototype.verify = function (buffer, signature, source_encoding, signature_encoding) {
         if (!this.isPublic()) {
             throw Error("It is not public key");
         }
-
         signature_encoding = (!signature_encoding || signature_encoding == 'buffer' ? null : signature_encoding);
-
-        if (this.options.environment == 'browser') {
-            return this.keyPair.verify(this.$getDataForEcrypt(buffer, source_encoding), signature, signature_encoding, this.options.signingAlgorithm.toLowerCase());
-        } else {
-            var verifier = crypt.createVerify('RSA-' + this.options.signingAlgorithm.toUpperCase());
-            verifier.update(this.$getDataForEcrypt(buffer, source_encoding));
-            return verifier.verify(this.getPublicPEM(), signature, signature_encoding);
-        }
+        return this.keyPair.verify(this.$getDataForEcrypt(buffer, source_encoding), signature, signature_encoding);
     };
 
-    NodeRSA.prototype.getPrivatePEM = function () {
+    NodeRSA.prototype.exportPrivate = function () {
         if (!this.isPrivate()) {
             throw Error("It is not private key");
         }
-
         return this.$cache.privatePEM;
     };
 
-    NodeRSA.prototype.getPublicPEM = function () {
+    NodeRSA.prototype.exportPublic = function () {
         if (!this.isPublic()) {
             throw Error("It is not public key");
         }
-
         return this.$cache.publicPEM;
     };
 
@@ -269,7 +349,7 @@ module.exports = (function() {
      * @param encoding {string} - optional. Encoding for given string. Default utf8.
      * @returns {Buffer}
      */
-    NodeRSA.prototype.$getDataForEcrypt = function(buffer, encoding) {
+    NodeRSA.prototype.$getDataForEcrypt = function (buffer, encoding) {
         if (_.isString(buffer) || _.isNumber(buffer)) {
             return new Buffer('' + buffer, encoding || 'utf8');
         } else if (Buffer.isBuffer(buffer)) {
@@ -287,7 +367,7 @@ module.exports = (function() {
      * @param encoding - optional. Encoding for result output. May be 'buffer', 'json' or any of Node.js Buffer supported encoding.
      * @returns {*}
      */
-    NodeRSA.prototype.$getDecryptedData = function(buffer, encoding) {
+    NodeRSA.prototype.$getDecryptedData = function (buffer, encoding) {
         encoding = encoding || 'buffer';
 
         if (encoding == 'buffer') {
@@ -303,7 +383,7 @@ module.exports = (function() {
      * private
      * Recalculating properties
      */
-    NodeRSA.prototype.$recalculateCache = function() {
+    NodeRSA.prototype.$recalculateCache = function () {
         this.$cache.privatePEM = this.$makePrivatePEM();
         this.$cache.publicPEM = this.$makePublicPEM();
     };
@@ -312,7 +392,7 @@ module.exports = (function() {
      * private
      * @returns {string} private PEM string
      */
-    NodeRSA.prototype.$makePrivatePEM = function() {
+    NodeRSA.prototype.$makePrivatePEM = function () {
         if (!this.isPrivate()) {
             return null;
         }
@@ -349,7 +429,7 @@ module.exports = (function() {
      * private
      * @returns {string} public PEM string
      */
-    NodeRSA.prototype.$makePublicPEM = function() {
+    NodeRSA.prototype.$makePublicPEM = function () {
         if (!this.isPublic()) {
             return null;
         }

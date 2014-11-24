@@ -1,11 +1,10 @@
-module.exports = function(grunt) {
+module.exports = function (grunt) {
     grunt.initConfig({
         jshint: {
-            options: {
-            },
+            options: {},
             default: {
                 files: {
-                    src: ['src/**/*.js', '!src/libs/**/*']
+                    src: ['gruntfile.js', 'src/**/*.js', '!src/libs/jsbn.js']
                 }
             },
             libs: {
@@ -19,7 +18,7 @@ module.exports = function(grunt) {
             options: {
                 reporter: 'List'
             },
-            all: { src: ['test/**/*.js'] }
+            all: {src: ['test/**/*.js']}
         }
     });
 
@@ -27,9 +26,8 @@ module.exports = function(grunt) {
         'simplemocha': 'grunt-simple-mocha'
     });
 
-
     grunt.registerTask('lint', ['jshint:default']);
     grunt.registerTask('test', ['simplemocha']);
 
     grunt.registerTask('default', ['lint', 'test']);
-}
+};
