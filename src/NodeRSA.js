@@ -13,6 +13,7 @@ var ber = require('asn1').Ber;
 var _ = require('lodash');
 var utils = require('./utils');
 var schemes = require('./schemes/schemes.js');
+var formats = require('./formats/formats.js');
 
 var PUBLIC_RSA_OID = '1.2.840.113549.1.1.1';
 
@@ -24,6 +25,9 @@ module.exports = (function () {
 
     var DEFAULT_ENCRYPTION_SCHEME = 'pkcs1_oaep';
     var DEFAULT_SIGNING_SCHEME = 'pkcs1';
+
+    var DEFAULT_EXPORT_PRIVATE_FORMAT = 'pkcs1';
+    var DEFAULT_EXPORT_PUBLIC_FORMAT = 'pkcs8';
 
     /**
      * @param key {string|buffer|object} Key in PEM format, or data for generate key {b: bits, e: exponent}
@@ -142,7 +146,7 @@ module.exports = (function () {
         }
 
         this.keyPair.generate(bits, exp.toString(16));
-        this.$recalculateCache();
+        this.$cache = {};
         return this;
     };
 
@@ -162,7 +166,7 @@ module.exports = (function () {
         } else
             throw Error('Invalid PEM format');
 
-        this.$recalculateCache();
+        this.$cache = {};
     };
 
     /**
@@ -251,7 +255,7 @@ module.exports = (function () {
      */
     NodeRSA.prototype.encrypt = function (buffer, encoding, source_encoding) {
         try {
-            var res = this.keyPair.encrypt(this.$getDataForEcrypt(buffer, source_encoding));
+            var res = this.keyPair.encrypt(this.$getDataForEncrypt(buffer, source_encoding));
 
             if (encoding == 'buffer' || !encoding) {
                 return res;
@@ -295,7 +299,7 @@ module.exports = (function () {
         if (!this.isPrivate()) {
             throw Error("It is not private key");
         }
-        var res = this.keyPair.sign(this.$getDataForEcrypt(buffer, source_encoding));
+        var res = this.keyPair.sign(this.$getDataForEncrypt(buffer, source_encoding));
 
         if (encoding && encoding != 'buffer') {
             res = res.toString(encoding);
@@ -317,21 +321,45 @@ module.exports = (function () {
             throw Error("It is not public key");
         }
         signature_encoding = (!signature_encoding || signature_encoding == 'buffer' ? null : signature_encoding);
-        return this.keyPair.verify(this.$getDataForEcrypt(buffer, source_encoding), signature, signature_encoding);
+        return this.keyPair.verify(this.$getDataForEncrypt(buffer, source_encoding), signature, signature_encoding);
     };
 
-    NodeRSA.prototype.exportPrivate = function () {
+    NodeRSA.prototype.exportPrivate = function (format) {
         if (!this.isPrivate()) {
             throw Error("It is not private key");
         }
-        return this.$cache.privatePEM;
+
+        format = format || DEFAULT_EXPORT_PRIVATE_FORMAT;
+        if (this.$cache.privateKey && this.$cache.privateKey[format]) {
+            return this.$cache.privateKey[format];
+        } else {
+            var fmt = format.split('-');
+            if (!formats.isPrivateExport(fmt[0])) {
+                throw Error('Unsupported private key export format');
+            }
+
+            this.$cache.privateKey = this.$cache.privateKey || {};
+            return this.$cache.privateKey[format] = formats[fmt[0]].privateExport(this.keyPair, fmt[1]);
+        }
     };
 
-    NodeRSA.prototype.exportPublic = function () {
+    NodeRSA.prototype.exportPublic = function (format) {
         if (!this.isPublic()) {
             throw Error("It is not public key");
         }
-        return this.$cache.publicPEM;
+
+        format = format || DEFAULT_EXPORT_PUBLIC_FORMAT;
+        if (this.$cache.publicKey && this.$cache.publicKey[format]) {
+            return this.$cache.publicKey[format];
+        } else {
+            var fmt = format.split('-');
+            if (!formats.isPublicExport(fmt[0])) {
+                throw Error('Unsupported public key export format');
+            }
+
+            this.$cache.publicKey = this.$cache.publicKey || {};
+            return this.$cache.publicKey[format] = formats[fmt[0]].publicExport(this.keyPair, fmt[1]);
+        }
     };
 
     NodeRSA.prototype.getKeySize = function () {
@@ -349,7 +377,7 @@ module.exports = (function () {
      * @param encoding {string} - optional. Encoding for given string. Default utf8.
      * @returns {Buffer}
      */
-    NodeRSA.prototype.$getDataForEcrypt = function (buffer, encoding) {
+    NodeRSA.prototype.$getDataForEncrypt = function (buffer, encoding) {
         if (_.isString(buffer) || _.isNumber(buffer)) {
             return new Buffer('' + buffer, encoding || 'utf8');
         } else if (Buffer.isBuffer(buffer)) {
@@ -383,16 +411,15 @@ module.exports = (function () {
      * private
      * Recalculating properties
      */
-    NodeRSA.prototype.$recalculateCache = function () {
+    /*NodeRSA.prototype.$recalculateCache = function () {
         this.$cache.privatePEM = this.$makePrivatePEM();
-        this.$cache.publicPEM = this.$makePublicPEM();
-    };
+    };*/
 
     /**
      * private
      * @returns {string} private PEM string
      */
-    NodeRSA.prototype.$makePrivatePEM = function () {
+    /*NodeRSA.prototype.$makePrivatePEM = function () {
         if (!this.isPrivate()) {
             return null;
         }
@@ -424,40 +451,7 @@ module.exports = (function () {
             utils.linebrk(writer.buffer.toString('base64'), 64) +
             '\n-----END RSA PRIVATE KEY-----';
     };
-
-    /**
-     * private
-     * @returns {string} public PEM string
-     */
-    NodeRSA.prototype.$makePublicPEM = function () {
-        if (!this.isPublic()) {
-            return null;
-        }
-
-        var n = this.keyPair.n.toBuffer();
-        var length = n.length + 512; // magic
-
-        var bodyWriter = new ber.Writer({size: length});
-        bodyWriter.writeByte(0);
-        bodyWriter.startSequence();
-        bodyWriter.writeBuffer(n, 2);
-        bodyWriter.writeInt(this.keyPair.e);
-        bodyWriter.endSequence();
-        var body = bodyWriter.buffer;
-
-        var writer = new ber.Writer({size: length});
-        writer.startSequence();
-        writer.startSequence();
-        writer.writeOID(PUBLIC_RSA_OID);
-        writer.writeNull();
-        writer.endSequence();
-        writer.writeBuffer(body, 3);
-        writer.endSequence();
-
-        return '-----BEGIN PUBLIC KEY-----\n' +
-            utils.linebrk(writer.buffer.toString('base64'), 64) +
-            '\n-----END PUBLIC KEY-----';
-    };
+*/
 
     return NodeRSA;
 })();
