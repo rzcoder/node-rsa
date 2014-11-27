@@ -151,21 +151,13 @@ module.exports = (function () {
     };
 
     /**
-     * Load key from PEM string
-     * @param pem {string}
+     * Importing key
+     * @param keyData {string|buffer}
      */
-    NodeRSA.prototype.importKey = function (pem) {
-        if (Buffer.isBuffer(pem)) {
-            pem = pem.toString('utf8');
+    NodeRSA.prototype.importKey = function (keyData, format) {
+        if(format === undefined && !formats.detectAndImport(this.keyPair, keyData, format)) {
+            throw Error("Key format must be specified");
         }
-
-        if (/^\s*-----BEGIN RSA PRIVATE KEY-----\s*([A-Za-z0-9+/=]+\s*)+-----END RSA PRIVATE KEY-----\s*$/g.test(pem)) {
-            this.$loadFromPrivatePEM(pem, 'base64');
-        } else if (/^\s*-----BEGIN PUBLIC KEY-----\s*([A-Za-z0-9+/=]+\s*)+-----END PUBLIC KEY-----\s*$/g.test(pem)) {
-            this.$loadFromPublicPEM(pem, 'base64');
-        } else
-            throw Error('Invalid PEM format');
-
         this.$cache = {};
     };
 
@@ -174,7 +166,7 @@ module.exports = (function () {
      *
      * @param privatePEM {string}
      */
-    NodeRSA.prototype.$loadFromPrivatePEM = function (privatePEM, encoding) {
+    /*NodeRSA.prototype.$loadFromPrivatePEM = function (privatePEM, encoding) {
         var pem = privatePEM
             .replace('-----BEGIN RSA PRIVATE KEY-----', '')
             .replace('-----END RSA PRIVATE KEY-----', '')
@@ -194,14 +186,14 @@ module.exports = (function () {
             reader.readString(2, true)   // coefficient -- (inverse of q) mod p
         );
 
-    };
+    };*/
 
     /**
      * Make key form public PEM string
      *
      * @param publicPEM {string}
      */
-    NodeRSA.prototype.$loadFromPublicPEM = function (publicPEM, encoding) {
+    /*NodeRSA.prototype.$loadFromPublicPEM = function (publicPEM, encoding) {
         var pem = publicPEM
             .replace('-----BEGIN PUBLIC KEY-----', '')
             .replace('-----END PUBLIC KEY-----', '')
@@ -221,7 +213,7 @@ module.exports = (function () {
             body.readString(0x02, true), // modulus
             body.readString(0x02, true)  // publicExponent
         );
-    };
+    };*/
 
     /**
      * Check if key pair contains private key
@@ -324,6 +316,12 @@ module.exports = (function () {
         return this.keyPair.verify(this.$getDataForEncrypt(buffer, source_encoding), signature, signature_encoding);
     };
 
+    /**
+     * Exporting private key
+     *
+     * @param format
+     * @returns {*}
+     */
     NodeRSA.prototype.exportPrivate = function (format) {
         if (!this.isPrivate()) {
             throw Error("It is not private key");
@@ -343,6 +341,12 @@ module.exports = (function () {
         }
     };
 
+    /**
+     * Exporting public key
+     *
+     * @param format
+     * @returns {*}
+     */
     NodeRSA.prototype.exportPublic = function (format) {
         if (!this.isPublic()) {
             throw Error("It is not public key");
@@ -362,10 +366,18 @@ module.exports = (function () {
         }
     };
 
+    /**
+     * Returns key size in bits
+     * @returns {int}
+     */
     NodeRSA.prototype.getKeySize = function () {
         return this.keyPair.keySize;
     };
 
+    /**
+     * Returns max message length in bytes (for 1 chunk) depending on current encryption scheme
+     * @returns {int}
+     */
     NodeRSA.prototype.getMaxMessageSize = function () {
         return this.keyPair.maxMessageLength;
     };

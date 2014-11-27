@@ -1,30 +1,11 @@
 var ber = require('asn1').Ber;
+var _ = require('lodash');
 var utils = require('../utils');
 
 module.exports = {
-    privateExport: function(key, options) {
+    privateExport: function (key, options) {
         options = options || {};
 
-        var der = module.exports.privateDerEncode(key);
-        if (options.binary) {
-            return der;
-        } else {
-            return '-----BEGIN RSA PRIVATE KEY-----\n' + utils.linebrk(der.toString('base64'), 64) + '\n-----END RSA PRIVATE KEY-----';
-        }
-    },
-
-    publicExport: function(key, options) {
-        options = options || {};
-
-        var der = module.exports.publicDerEncode(key);
-        if (options.binary) {
-            return der;
-        } else {
-            return '-----BEGIN RSA PUBLIC KEY-----\n' + utils.linebrk(der.toString('base64'), 64) + '\n-----END RSA PUBLIC KEY-----';
-        }
-    },
-
-    privateDerEncode: function(key) {
         var n = key.n.toBuffer();
         var d = key.d.toBuffer();
         var p = key.p.toBuffer();
@@ -48,10 +29,45 @@ module.exports = {
         writer.writeBuffer(coeff, 2);
         writer.endSequence();
 
-        return writer.buffer;
+        if (options.binary) {
+            return writer.buffer;
+        } else {
+            return '-----BEGIN RSA PRIVATE KEY-----\n' + utils.linebrk(writer.buffer.toString('base64'), 64) + '\n-----END RSA PRIVATE KEY-----';
+        }
     },
 
-    publicDerEncode: function (key) {
+    privateImport: function (key, data) {
+        var buffer;
+
+        if (_.isString(data)) {
+            var pem = data.replace('-----BEGIN RSA PRIVATE KEY-----', '')
+                .replace('-----END RSA PRIVATE KEY-----', '')
+                .replace(/\s+|\n\r|\n|\r$/gm, '');
+            buffer = new Buffer(pem, 'base64');
+        } else if (Buffer.isBuffer(data)) {
+            buffer = data;
+        } else {
+            throw Error('Unsupported key format');
+        }
+
+        var reader = new ber.Reader(buffer);
+        reader.readSequence();
+        reader.readString(2, true); // just zero
+        key.setPrivate(
+            reader.readString(2, true),  // modulus
+            reader.readString(2, true),  // publicExponent
+            reader.readString(2, true),  // privateExponent
+            reader.readString(2, true),  // prime1
+            reader.readString(2, true),  // prime2
+            reader.readString(2, true),  // exponent1 -- d mod (p1)
+            reader.readString(2, true),  // exponent2 -- d mod (q-1)
+            reader.readString(2, true)   // coefficient -- (inverse of q) mod p
+        );
+    },
+
+    publicExport: function (key, options) {
+        options = options || {};
+
         var n = key.n.toBuffer();
         var length = n.length + 512; // magic
 
@@ -60,6 +76,30 @@ module.exports = {
         bodyWriter.writeBuffer(n, 2);
         bodyWriter.writeInt(key.e);
         bodyWriter.endSequence();
-        return bodyWriter.buffer;
+
+        if (options.binary) {
+            return bodyWriter.buffer;
+        } else {
+            return '-----BEGIN RSA PUBLIC KEY-----\n' + utils.linebrk(bodyWriter.buffer.toString('base64'), 64) + '\n-----END RSA PUBLIC KEY-----';
+        }
+    },
+
+    /**
+     * Trying autodetect and import key
+     * @param key
+     * @param data
+     */
+    autoImport: function (key, data) {
+        if (/^\s*-----BEGIN RSA PRIVATE KEY-----\s*([A-Za-z0-9+/=]+\s*)+-----END RSA PRIVATE KEY-----\s*$/g.test(data)) {
+            module.exports.privateImport(key, data);
+            return true;
+        }
+
+        if (/^\s*-----BEGIN RSA PUBLIC KEY-----\s*([A-Za-z0-9+/=]+\s*)+-----END RSA PUBLIC KEY-----\s*$/g.test(data)) {
+            module.exports.publicImport(key, data);
+            return true;
+        }
+
+        return false;
     }
 };

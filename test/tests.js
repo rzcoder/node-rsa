@@ -254,19 +254,11 @@ describe("NodeRSA", function(){
                     assert.equal(privateNodeRSA.exportPublic(), publicKeyPEM);
                 });
 
-                it("should create key from buffer/fs.readFileSync output", function(){
+                it("should create and load key from buffer/fs.readFileSync output", function(){
                     var key = new NodeRSA(fs.readFileSync(fileKey));
                     assert.equal(key.exportPrivate(), fileKeyPEM);
                     key = new NodeRSA();
                     key.importKey(fs.readFileSync(fileKey));
-                    assert.equal(key.exportPrivate(), fileKeyPEM);
-                });
-
-                it("should load PEM from buffer/fs.readFileSync output", function(){
-                    var key = new NodeRSA();
-                    assert.equal(key.isEmpty(), true);
-                    key.importKey(fs.readFileSync(fileKey));
-                    assert.equal(key.isEmpty(), false);
                     assert.equal(key.exportPrivate(), fileKeyPEM);
                 });
             });
