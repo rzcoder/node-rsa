@@ -29,21 +29,30 @@ module.exports = {
         writer.writeBuffer(coeff, 2);
         writer.endSequence();
 
-        if (options.binary) {
+        if (options.type === 'der') {
             return writer.buffer;
         } else {
             return '-----BEGIN RSA PRIVATE KEY-----\n' + utils.linebrk(writer.buffer.toString('base64'), 64) + '\n-----END RSA PRIVATE KEY-----';
         }
     },
 
-    privateImport: function (key, data) {
+    privateImport: function (key, data, options) {
+        options = options || {};
         var buffer;
 
-        if (_.isString(data)) {
-            var pem = data.replace('-----BEGIN RSA PRIVATE KEY-----', '')
-                .replace('-----END RSA PRIVATE KEY-----', '')
-                .replace(/\s+|\n\r|\n|\r$/gm, '');
-            buffer = new Buffer(pem, 'base64');
+        if (options.type !== 'der') {
+            if (Buffer.isBuffer(data)) {
+                data = data.toString('utf8');
+            }
+
+            if (_.isString(data)) {
+                var pem = data.replace('-----BEGIN RSA PRIVATE KEY-----', '')
+                    .replace('-----END RSA PRIVATE KEY-----', '')
+                    .replace(/\s+|\n\r|\n|\r$/gm, '');
+                buffer = new Buffer(pem, 'base64');
+            } else {
+                throw Error('Unsupported key format');
+            }
         } else if (Buffer.isBuffer(data)) {
             buffer = data;
         } else {
