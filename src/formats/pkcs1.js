@@ -86,11 +86,40 @@ module.exports = {
         bodyWriter.writeInt(key.e);
         bodyWriter.endSequence();
 
-        if (options.binary) {
+        if (options.type === 'der') {
             return bodyWriter.buffer;
         } else {
             return '-----BEGIN RSA PUBLIC KEY-----\n' + utils.linebrk(bodyWriter.buffer.toString('base64'), 64) + '\n-----END RSA PUBLIC KEY-----';
         }
+    },
+
+    publicImport: function(key, data, options) {
+        options = options || {};
+        var buffer;
+
+        if (options.type !== 'der') {
+            if (Buffer.isBuffer(data)) {
+                data = data.toString('utf8');
+            }
+
+            if (_.isString(data)) {
+                var pem = data.replace('-----BEGIN RSA PUBLIC KEY-----', '')
+                    .replace('-----END RSA PUBLIC KEY-----', '')
+                    .replace(/\s+|\n\r|\n|\r$/gm, '');
+                buffer = new Buffer(pem, 'base64');
+            }
+        } else if (Buffer.isBuffer(data)) {
+            buffer = data;
+        } else {
+            throw Error('Unsupported key format');
+        }
+
+        var body = new ber.Reader(buffer);
+        body.readSequence();
+        key.setPublic(
+            body.readString(0x02, true), // modulus
+            body.readString(0x02, true)  // publicExponent
+        );
     },
 
     /**
