@@ -232,7 +232,10 @@ describe("NodeRSA", function(){
                 'pkcs1-public-der': {public: true, der: true, file: 'public_pkcs1.der'},
                 'pkcs1-public-pem': {public: true, der: false, file: 'public_pkcs1.pem'},
                 'pkcs8-public-der': {public: true, der: true, file: 'public_pkcs8.der'},
-                'pkcs8-public-pem': {public: true, der: false, file: 'public_pkcs8.pem'}
+                'pkcs8-public-pem': {public: true, der: false, file: 'public_pkcs8.pem'},
+
+                'private': {public: false, der: false, file: 'private_pkcs1.pem'},
+                'public': {public: true, der: false, file: 'public_pkcs8.pem'}
             };
 
             describe("Good cases", function () {
@@ -291,7 +294,7 @@ describe("NodeRSA", function(){
                                 }
                             });
 
-                            it("should export to " + format + " format", function () {
+                            it("should export to \"" + format + "\" format", function () {
                                 var keyData = fs.readFileSync(keysFolder + options.file);
                                 var exported = sampleKey.exportKey(format);
 

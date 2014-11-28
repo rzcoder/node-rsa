@@ -168,6 +168,10 @@ module.exports = (function () {
             throw Error("Empty key given");
         }
 
+        if (format) {
+            format = EXPORT_FORMAT_ALIASES[format] || format;
+        }
+
         if(!formats.detectAndImport(this.keyPair, keyData, format) && format === undefined) {
             throw Error("Key format must be specified");
         }
