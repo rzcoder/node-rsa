@@ -31,7 +31,7 @@ module.exports = {
             var keyType = 'private';
             var keyOpt = {type: 'default'};
 
-            for(var i = 1; i < fmt.length; i++) {
+            for (var i = 1; i < fmt.length; i++) {
                 if (fmt[i]) {
                     switch (fmt[i]) {
                         case 'public':
@@ -64,13 +64,13 @@ module.exports = {
         return false;
     },
 
-    detectAndExport: function(key, format) {
+    detectAndExport: function (key, format) {
         if (format) {
             var fmt = format.split('-');
             var keyType = 'private';
             var keyOpt = {type: 'default'};
 
-            for(var i = 1; i < fmt.length; i++) {
+            for (var i = 1; i < fmt.length; i++) {
                 if (fmt[i]) {
                     switch (fmt[i]) {
                         case 'public':

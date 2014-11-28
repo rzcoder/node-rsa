@@ -74,6 +74,7 @@ module.exports = {
         reader.readSequence();
         reader.readInt(0);
         var header = new ber.Reader(reader.readString(0x30, true));
+
         if (header.readOID(0x06, true) !== PUBLIC_RSA_OID) {
             throw Error('Invalid Public key format');
         }
@@ -93,7 +94,7 @@ module.exports = {
         );
     },
 
-    publicExport: function(key, options) {
+    publicExport: function (key, options) {
         options = options || {};
 
         var n = key.n.toBuffer();
@@ -122,7 +123,7 @@ module.exports = {
         }
     },
 
-    publicImport: function(key, data, options) {
+    publicImport: function (key, data, options) {
         options = options || {};
         var buffer;
 
@@ -146,6 +147,7 @@ module.exports = {
         var reader = new ber.Reader(buffer);
         reader.readSequence();
         var header = new ber.Reader(reader.readString(0x30, true));
+
         if (header.readOID(0x06, true) !== PUBLIC_RSA_OID) {
             throw Error('Invalid Public key format');
         }

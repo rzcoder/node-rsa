@@ -15,8 +15,6 @@ var utils = require('./utils');
 var schemes = require('./schemes/schemes.js');
 var formats = require('./formats/formats.js');
 
-var PUBLIC_RSA_OID = '1.2.840.113549.1.1.1';
-
 module.exports = (function () {
     var SUPPORTED_HASH_ALGORITHMS = {
         node: ['md4', 'md5', 'ripemd160', 'sha', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'],
@@ -68,6 +66,7 @@ module.exports = (function () {
         } else if (_.isObject(key)) {
             this.generateKeyPair(key.b, key.e);
         }
+
         this.setOptions(options);
     }
 
@@ -110,6 +109,7 @@ module.exports = (function () {
             if (!schemes.isSignature(this.$options.signingScheme)) {
                 throw Error('Unsupported signing scheme');
             }
+
             if (this.$options.signingSchemeOptions.hash &&
                 _.indexOf(SUPPORTED_HASH_ALGORITHMS[this.$options.environment], this.$options.signingSchemeOptions.hash) == -1) {
                 throw Error('Unsupported hashing algorithm for ' + this.$options.environment + ' environment');
@@ -172,9 +172,10 @@ module.exports = (function () {
             format = EXPORT_FORMAT_ALIASES[format] || format;
         }
 
-        if(!formats.detectAndImport(this.keyPair, keyData, format) && format === undefined) {
+        if (!formats.detectAndImport(this.keyPair, keyData, format) && format === undefined) {
             throw Error("Key format must be specified");
         }
+
         this.$cache = {};
     };
 
@@ -189,6 +190,7 @@ module.exports = (function () {
         if (!this.$cache[format]) {
             this.$cache[format] = formats.detectAndExport(this.keyPair, format);
         }
+
         return this.$cache[format];
     };
 
@@ -247,9 +249,11 @@ module.exports = (function () {
         try {
             buffer = _.isString(buffer) ? new Buffer(buffer, 'base64') : buffer;
             var res = this.keyPair.decrypt(buffer);
+
             if (res === null) {
                 throw Error('Key decrypt method returns null.');
             }
+
             return this.$getDecryptedData(res, encoding);
         } catch (e) {
             throw Error('Error during decryption (probably incorrect key). Original error: ' + e);
@@ -268,11 +272,13 @@ module.exports = (function () {
         if (!this.isPrivate()) {
             throw Error("It is not private key");
         }
+
         var res = this.keyPair.sign(this.$getDataForEncrypt(buffer, source_encoding));
 
         if (encoding && encoding != 'buffer') {
             res = res.toString(encoding);
         }
+
         return res;
     };
 

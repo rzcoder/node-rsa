@@ -93,7 +93,7 @@ module.exports = {
         }
     },
 
-    publicImport: function(key, data, options) {
+    publicImport: function (key, data, options) {
         options = options || {};
         var buffer;
 
