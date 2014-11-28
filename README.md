@@ -46,18 +46,19 @@ This library developed and tested primary for Node.js, but it still can work in 
 ```javascript
 var NodeRSA = require('node-rsa');
 
-var key = new NodeRSA([key], [options]);
+var key = new NodeRSA([keyData], [format], [options]);
 ```
 
-**key** - parameters of a generated key or the key in PEM format.<br/>
-**options** - additional settings
+**keyData** — `{string|buffer|object}` — parameters of a generated key or the key in one of supported formats.<br/>
+**format** — `{string}` — format for importing key. See more details about formats in **Export/Import** section<br/>
+**options** — `{object}` — additional settings
 
 #### Options
 You can specify some options by second constructor argument, or over `key.setOptions()` method.
 
-* **environment** - working environment, `'browser'` or `'node'`. Default autodetect.
-* **encryptionScheme** - padding scheme for encrypt/decrypt. Can be `'pkcs1_oaep'` or `'pkcs1'`. Default `'pkcs1_oaep'`.
-* **signingScheme** - scheme used for signing and verifying. Can be `'pkcs1'` or `'pss'` or 'scheme-hash' format string (eg `'pss-sha1'`). Default `'pkcs1-sha256'`, or, if chosen pss: `'pss-sha1'`.
+* **environment** — working environment, `'browser'` or `'node'`. Default autodetect.
+* **encryptionScheme** — padding scheme for encrypt/decrypt. Can be `'pkcs1_oaep'` or `'pkcs1'`. Default `'pkcs1_oaep'`.
+* **signingScheme** — scheme used for signing and verifying. Can be `'pkcs1'` or `'pss'` or 'scheme-hash' format string (eg `'pss-sha1'`). Default `'pkcs1-sha256'`, or, if chosen pss: `'pss-sha1'`.
 
 **Advanced options:**<br/>
 You also can specify advanced options for some schemes like this:
@@ -77,7 +78,6 @@ options = {
 ```
 
 This lib supporting next hash algorithms: `'md5'`, `'ripemd160'`, `'sha1'`, `'sha256'`, `'sha512'` in browser and node environment and additional `'md4'`, `'sha'`, `'sha224'`, `'sha384'` in node only.
-
 
 #### Creating "empty" key
 ```javascript
@@ -107,16 +107,48 @@ Also you can use next methods:
 
 ```javascript
 key.generateKeyPair([bits], [exp]);
-key.importKey(pem_string|buffer_contains_pem);
 ```
-**bits** - key size in bits. 2048 by default.  
-**exp** - public exponent. 65537 by default.
+**bits** — `{int}` — key size in bits. 2048 by default.
+**exp** — `{int}` — public exponent. 65537 by default.
 
-### Export keys
+### Import/Export keys
 ```javascript
-key.exportPrivate();
-key.exportPublic();
+key.importKey(keyData, [format]);
+key.exportKey([format]);
 ```
+**keyData** — `{string|buffer}` — key in PEM string **or** Buffer contains PEM string **or** Buffer contains DER encoded data.
+**format**  — `{string}` — format id for export/import.
+
+#### Format string syntax
+Format string composed of several parts: `scheme-[key_type]-[output_type]`
+
+ * **Scheme** — NodeRSA supports multiple format schemes for import/export keys:
+     * `'pkcs1'` — public key starts from `'-----BEGIN RSA PUBLIC KEY-----'` header and private key starts from `'-----BEGIN RSA PRIVATE KEY-----' header`
+     * `'pkcs8'` — public key starts from `'-----BEGIN PUBLIC KEY-----'` header and private key starts from `'-----BEGIN PRIVATE KEY-----' header`
+ * **Key type** — can be `'private'` or `'public'`. Default `'private'`
+ * **Output type** — can be:
+    * `'pem'` — Base64 encoded string with header and footer. Used by default.
+    * `'der'` — Binary encoded key data.
+
+Notice: If you provide **keyData** as DER you must specify it in format string.
+
+
+**Shortcuts and examples**
+ * `'private'` or `'pkcs1'` or `'pkcs1-private'` — `'pkcs1-private-pem'` — private key encoded in pcks1 scheme as pem string.
+ * `'public'` or `'pkcs8-public'` — `'pkcs8-public-pem'` — public key encoded in pcks8 scheme as pem string.
+ * `'pkcs8'` or `'pkcs8-private'` — `'pkcs8-private-pem'` — private key encoded in pcks8 scheme as pem string.
+ * `'pkcs1-der'` — `'pkcs1-private-der'` — private key encoded in pcks1 scheme as binary buffer.
+ * `'pkcs8-public-der'` — public key encoded in pcks8 scheme as binary buffer.
+
+**Code example**
+
+```
+var keyData = '-----BEGIN PUBLIC KEY-----' + .... + '-----BEGIN PRIVATE KEY-----';
+key.importKey(keyData, 'pkcs8');
+var publicDer = key.exportKey('pkcs8-public-der');
+var privateDer = key.exportKey('pkcs1-der');
+```
+
 
 ### Properties
 
@@ -125,7 +157,7 @@ key.exportPublic();
 key.isPrivate();
 key.isPublic([strict]);
 ```
-**strict** - if true method will return false if key pair have private exponent. Default `false`.
+**strict** — `{boolean}` if true method will return false if key pair have private exponent. Default `false`.
 
 ```javascript
 key.isEmpty();
@@ -180,6 +212,10 @@ Return result of check, `true` or `false`.<br/>
 Questions, comments, bug reports, and pull requests are all welcome.
 
 ## Changelog
+
+### 0.2.10
+ * **Methods `.exportPrivate()` and `.exportPublic()` was replaced by `.exportKey([format])`. By default `.exportKey()` returns private key as `.exportPrivate()`, if you need public key from `.exportPublic()` you must specify format as `'public'` or `'pkcs8-public-pem'`.**
+ * Method `.importKey(key, [format])` now has second argument.
 
 ### 0.2.0
  * **`.getPublicPEM()` method was renamed to `.exportPublic()`**
