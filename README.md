@@ -50,7 +50,7 @@ var key = new NodeRSA([keyData], [format], [options]);
 ```
 
 **keyData** — `{string|buffer|object}` — parameters of a generated key or the key in one of supported formats.<br/>
-**format** — `{string}` — format for importing key. See more details about formats in **Export/Import** section<br/>
+**format** — `{string}` — format for importing key. See more details about formats in [Export/Import](#importexport-keys) section<br/>
 **options** — `{object}` — additional settings
 
 #### Options
@@ -121,23 +121,21 @@ key.exportKey([format]);
 
 #### Format string syntax
 Format string composed of several parts: `scheme-[key_type]-[output_type]`
+**Scheme** — NodeRSA supports multiple format schemes for import/export keys:
+  * `'pkcs1'` — public key starts from `'-----BEGIN RSA PUBLIC KEY-----'` header and private key starts from `'-----BEGIN RSA PRIVATE KEY-----' header`
+  * `'pkcs8'` — public key starts from `'-----BEGIN PUBLIC KEY-----'` header and private key starts from `'-----BEGIN PRIVATE KEY-----' header`
+**Key type** — can be `'private'` or `'public'`. Default `'private'`
+**Output type** — can be:
+ * `'pem'` — Base64 encoded string with header and footer. Used by default.
+ * `'der'` — Binary encoded key data.
 
- * **Scheme** — NodeRSA supports multiple format schemes for import/export keys:
-     * `'pkcs1'` — public key starts from `'-----BEGIN RSA PUBLIC KEY-----'` header and private key starts from `'-----BEGIN RSA PRIVATE KEY-----' header`
-     * `'pkcs8'` — public key starts from `'-----BEGIN PUBLIC KEY-----'` header and private key starts from `'-----BEGIN PRIVATE KEY-----' header`
- * **Key type** — can be `'private'` or `'public'`. Default `'private'`
- * **Output type** — can be:
-    * `'pem'` — Base64 encoded string with header and footer. Used by default.
-    * `'der'` — Binary encoded key data.
-
-Notice: If you provide **keyData** as DER you must specify it in format string.
-
+**Notice:** For import, if *keyData* is pem string or buffer containing string, you can do not specify format, but if you provide *keyData* as DER you must specify it in format string.
 
 **Shortcuts and examples**
- * `'private'` or `'pkcs1'` or `'pkcs1-private'` — `'pkcs1-private-pem'` — private key encoded in pcks1 scheme as pem string.
- * `'public'` or `'pkcs8-public'` — `'pkcs8-public-pem'` — public key encoded in pcks8 scheme as pem string.
- * `'pkcs8'` or `'pkcs8-private'` — `'pkcs8-private-pem'` — private key encoded in pcks8 scheme as pem string.
- * `'pkcs1-der'` — `'pkcs1-private-der'` — private key encoded in pcks1 scheme as binary buffer.
+ * `'private'` or `'pkcs1'` or `'pkcs1-private'` == `'pkcs1-private-pem'` — private key encoded in pcks1 scheme as pem string.
+ * `'public'` or `'pkcs8-public'` == `'pkcs8-public-pem'` — public key encoded in pcks8 scheme as pem string.
+ * `'pkcs8'` or `'pkcs8-private'` == `'pkcs8-private-pem'` — private key encoded in pcks8 scheme as pem string.
+ * `'pkcs1-der'` == `'pkcs1-private-der'` — private key encoded in pcks1 scheme as binary buffer.
  * `'pkcs8-public-der'` — public key encoded in pcks8 scheme as binary buffer.
 
 **Code example**
