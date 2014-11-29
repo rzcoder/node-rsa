@@ -27,7 +27,9 @@ module.exports = (function () {
     var DEFAULT_EXPORT_FORMAT = 'private';
     var EXPORT_FORMAT_ALIASES = {
         'private': 'pkcs1-private-pem',
-        'public': 'pkcs8-public-pem'
+        'private-der': 'pkcs1-private-der',
+        'public': 'pkcs8-public-pem',
+        'public-der': 'pkcs8-public-der'
     };
 
     /**

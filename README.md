@@ -94,8 +94,8 @@ Also you can use next method:
 ```javascript
 key.generateKeyPair([bits], [exp]);
 ```
-**bits** — `{int}` — key size in bits. 2048 by default.
-**exp** — `{int}` — public exponent. 65537 by default.
+* **bits** — `{int}` — key size in bits. 2048 by default.
+* **exp** — `{int}` — public exponent. 65537 by default.
 
 #### Load key from PEM string
 
@@ -116,8 +116,8 @@ var key = new NodeRSA('-----BEGIN RSA PRIVATE KEY-----\n'+
 key.importKey(keyData, [format]);
 key.exportKey([format]);
 ```
-**keyData** — `{string|buffer}` — key in PEM string **or** Buffer contains PEM string **or** Buffer contains DER encoded data.
-**format**  — `{string}` — format id for export/import.
+* **keyData** — `{string|buffer}` — key in PEM string **or** Buffer contains PEM string **or** Buffer contains DER encoded data.
+* **format**  — `{string}` — format id for export/import.
 
 #### Format string syntax
 Format string composed of several parts: `scheme-[key_type]-[output_type]`
@@ -129,7 +129,7 @@ Format string composed of several parts: `scheme-[key_type]-[output_type]`
  * `'pem'` — Base64 encoded string with header and footer. Used by default.
  * `'der'` — Binary encoded key data.
 
-**Notice:** For import, if *keyData* is pem string or buffer containing string, you can do not specify format, but if you provide *keyData* as DER you must specify it in format string.
+**Notice:** For import, if *keyData* is PEM string or buffer containing string, you can do not specify format, but if you provide *keyData* as DER you must specify it in format string.
 
 **Shortcuts and examples**
  * `'private'` or `'pkcs1'` or `'pkcs1-private'` == `'pkcs1-private-pem'` — private key encoded in pcks1 scheme as pem string.
@@ -146,7 +146,6 @@ key.importKey(keyData, 'pkcs8');
 var publicDer = key.exportKey('pkcs8-public-der');
 var privateDer = key.exportKey('pkcs1-der');
 ```
-
 
 ### Properties
 
