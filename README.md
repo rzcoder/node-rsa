@@ -46,22 +46,23 @@ This library developed and tested primary for Node.js, but it still can work in 
 ```javascript
 var NodeRSA = require('node-rsa');
 
-var key = new NodeRSA([key], [options]);
+var key = new NodeRSA([keyData, [format]], [options]);
 ```
 
-**key** - parameters of a generated key or the key in PEM format.<br/>
-**options** - additional settings
+* keyData — `{string|buffer|object}` — parameters for generating key or the key in one of supported formats.<br/>
+* format — `{string}` — format for importing key. See more details about formats in [Export/Import](#importexport-keys) section.<br/>
+* options — `{object}` — additional settings.
 
 #### Options
-You can specify some options by second constructor argument, or over `key.setOptions()` method.
+You can specify some options by second/third constructor argument, or over `key.setOptions()` method.
 
-* **environment** - working environment, `'browser'` or `'node'`. Default autodetect.
-* **encryptionScheme** - padding scheme for encrypt/decrypt. Can be `'pkcs1_oaep'` or `'pkcs1'`. Default `'pkcs1_oaep'`.
-* **signingScheme** - scheme used for signing and verifying. Can be `'pkcs1'` or `'pss'` or 'scheme-hash' format string (eg `'pss-sha1'`). Default `'pkcs1-sha256'`, or, if chosen pss: `'pss-sha1'`.
+* environment — working environment, `'browser'` or `'node'`. Default autodetect.
+* encryptionScheme — padding scheme for encrypt/decrypt. Can be `'pkcs1_oaep'` or `'pkcs1'`. Default `'pkcs1_oaep'`.
+* signingScheme — scheme used for signing and verifying. Can be `'pkcs1'` or `'pss'` or 'scheme-hash' format string (eg `'pss-sha1'`). Default `'pkcs1-sha256'`, or, if chosen pss: `'pss-sha1'`.
 
 **Advanced options:**<br/>
 You also can specify advanced options for some schemes like this:
-```
+```javascript
 options = {
   encryptionScheme: {
     scheme: 'pkcs1_oaep', //scheme
@@ -78,7 +79,6 @@ options = {
 
 This lib supporting next hash algorithms: `'md5'`, `'ripemd160'`, `'sha1'`, `'sha256'`, `'sha512'` in browser and node environment and additional `'md4'`, `'sha'`, `'sha224'`, `'sha384'` in node only.
 
-
 #### Creating "empty" key
 ```javascript
 var key = new NodeRSA();
@@ -88,6 +88,15 @@ var key = new NodeRSA();
 ```javascript
 var key = new NodeRSA({b: 512});
 ```
+
+Also you can use next method:
+
+```javascript
+key.generateKeyPair([bits], [exp]);
+```
+
+* bits — `{int}` — key size in bits. 2048 by default.
+* exp — `{int}` — public exponent. 65537 by default.
 
 #### Load key from PEM string
 
@@ -103,19 +112,45 @@ var key = new NodeRSA('-----BEGIN RSA PRIVATE KEY-----\n'+
                       '-----END RSA PRIVATE KEY-----');
 ```
 
-Also you can use next methods:
-
+### Import/Export keys
 ```javascript
-key.generateKeyPair([bits], [exp]);
-key.importKey(pem_string|buffer_contains_pem);
+key.importKey(keyData, [format]);
+key.exportKey([format]);
 ```
-**bits** - key size in bits. 2048 by default.  
-**exp** - public exponent. 65537 by default.
 
-### Export keys
+* keyData — `{string|buffer}` — key in PEM string **or** Buffer contains PEM string **or** Buffer contains DER encoded data.
+* format  — `{string}` — format id for export/import.
+
+#### Format string syntax
+Format string composed of several parts: `scheme-[key_type]-[output_type]`<br/>
+
+Scheme — NodeRSA supports multiple format schemes for import/export keys:
+
+  * `'pkcs1'` — public key starts from `'-----BEGIN RSA PUBLIC KEY-----'` header and private key starts from `'-----BEGIN RSA PRIVATE KEY-----' header`
+  * `'pkcs8'` — public key starts from `'-----BEGIN PUBLIC KEY-----'` header and private key starts from `'-----BEGIN PRIVATE KEY-----' header`
+
+Key type — can be `'private'` or `'public'`. Default `'private'`<br/>
+Output type — can be:
+
+ * `'pem'` — Base64 encoded string with header and footer. Used by default.
+ * `'der'` — Binary encoded key data.
+
+**Notice:** For import, if *keyData* is PEM string or buffer containing string, you can do not specify format, but if you provide *keyData* as DER you must specify it in format string.
+
+**Shortcuts and examples**
+ * `'private'` or `'pkcs1'` or `'pkcs1-private'` == `'pkcs1-private-pem'` — private key encoded in pcks1 scheme as pem string.
+ * `'public'` or `'pkcs8-public'` == `'pkcs8-public-pem'` — public key encoded in pcks8 scheme as pem string.
+ * `'pkcs8'` or `'pkcs8-private'` == `'pkcs8-private-pem'` — private key encoded in pcks8 scheme as pem string.
+ * `'pkcs1-der'` == `'pkcs1-private-der'` — private key encoded in pcks1 scheme as binary buffer.
+ * `'pkcs8-public-der'` — public key encoded in pcks8 scheme as binary buffer.
+
+**Code example**
+
 ```javascript
-key.exportPrivate();
-key.exportPublic();
+var keyData = '-----BEGIN PUBLIC KEY----- ... -----BEGIN PRIVATE KEY-----';
+key.importKey(keyData, 'pkcs8');
+var publicDer = key.exportKey('pkcs8-public-der');
+var privateDer = key.exportKey('pkcs1-der');
 ```
 
 ### Properties
@@ -125,7 +160,7 @@ key.exportPublic();
 key.isPrivate();
 key.isPublic([strict]);
 ```
-**strict** - if true method will return false if key pair have private exponent. Default `false`.
+strict — `{boolean}` — if true method will return false if key pair have private exponent. Default `false`.
 
 ```javascript
 key.isEmpty();
@@ -149,16 +184,18 @@ Return max data size for encrypt in bytes.
 key.encrypt(buffer, [encoding], [source_encoding]);
 ```
 Return encrypted data.<br/>
-**buffer** - data for encrypting, may be string, Buffer, or any object/array. Arrays and objects will encoded to JSON string first.<br/>
-**encoding** - encoding for output result, may be `'buffer'`, `'binary'`, `'hex'` or `'base64'`. Default `'buffer'`.<br/>
-**source_encoding** - source encoding, works only with string buffer. Can take standard Node.js Buffer encodings (hex, utf8, base64, etc). `'utf8'` by default.<br/>
+
+* buffer — `{buffer}` —  data for encrypting, may be string, Buffer, or any object/array. Arrays and objects will encoded to JSON string first.<br/>
+* encoding — `{string}` — encoding for output result, may be `'buffer'`, `'binary'`, `'hex'` or `'base64'`. Default `'buffer'`.<br/>
+* source_encoding — `{string}` —  source encoding, works only with string buffer. Can take standard Node.js Buffer encodings (hex, utf8, base64, etc). `'utf8'` by default.<br/>
 
 ```javascript
 key.decrypt(buffer, [encoding]);
 ```
 Return decrypted data.<br/>
-**buffer** - data for decrypting. Takes Buffer object or base64 encoded string.<br/>
-**encoding** - encoding for result string. Can also take `'buffer'` for raw Buffer object, or `'json'` for automatic JSON.parse result. Default `'buffer'`.
+
+* buffer — `{buffer}` — data for decrypting. Takes Buffer object or base64 encoded string.<br/>
+* encoding — `{string}` — encoding for result string. Can also take `'buffer'` for raw Buffer object, or `'json'` for automatic JSON.parse result. Default `'buffer'`.
 
 ### Signing/Verifying
 ```javascript
@@ -170,16 +207,22 @@ Return signature for buffer. All the arguments are the same as for `encrypt` met
 key.verify(buffer, signature, [source_encoding], [signature_encoding])
 ```
 Return result of check, `true` or `false`.<br/>
-**buffer** - data for check, same as `encrypt` method.<br/>
-**signature** - signature for check, result of `sign` method.<br/>
-**source_encoding** - same as for `encrypt` method.<br/>
-**signature_encoding** - encoding of given signature. May be `'buffer'`, `'binary'`, `'hex'` or `'base64'`. Default `'buffer'`.
+
+* buffer — `{buffer}` — data for check, same as `encrypt` method.<br/>
+* signature — `{string}` — signature for check, result of `sign` method.<br/>
+* source_encoding — `{string}` — same as for `encrypt` method.<br/>
+* signature_encoding — `{string}` — encoding of given signature. May be `'buffer'`, `'binary'`, `'hex'` or `'base64'`. Default `'buffer'`.
 
 ## Contributing
 
 Questions, comments, bug reports, and pull requests are all welcome.
 
 ## Changelog
+
+### 0.2.10
+ * **Methods `.exportPrivate()` and `.exportPublic()` was replaced by `.exportKey([format])`.**
+    * By default `.exportKey()` returns private key as `.exportPrivate()`, if you need public key from `.exportPublic()` you must specify format as `'public'` or `'pkcs8-public-pem'`.
+ * Method `.importKey(key, [format])` now has second argument.
 
 ### 0.2.0
  * **`.getPublicPEM()` method was renamed to `.exportPublic()`**

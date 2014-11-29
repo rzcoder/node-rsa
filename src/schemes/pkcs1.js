@@ -115,7 +115,7 @@ module.exports.makeScheme = function (key, options) {
         } else {
             var signer = crypt.createSign('RSA-' + hashAlgorithm.toUpperCase());
             signer.update(buffer);
-            return signer.sign(this.options.rsaUtils.exportPrivate());
+            return signer.sign(this.options.rsaUtils.exportKey('private'));
         }
     };
 
@@ -137,7 +137,7 @@ module.exports.makeScheme = function (key, options) {
         } else {
             var verifier = crypt.createVerify('RSA-' + hashAlgorithm.toUpperCase());
             verifier.update(buffer);
-            return verifier.verify(this.options.rsaUtils.exportPublic(), signature, signature_encoding);
+            return verifier.verify(this.options.rsaUtils.exportKey('public'), signature, signature_encoding);
         }
     };
 

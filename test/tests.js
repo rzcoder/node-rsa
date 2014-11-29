@@ -159,8 +159,8 @@ describe("NodeRSA", function(){
             }
         });
 
-        describe("PEM", function(){
-            var privateKeyPEM = "-----BEGIN RSA PRIVATE KEY-----\n"+
+        describe("Imprt/Export keys", function(){
+            var privateKeyPKCS1 = "-----BEGIN RSA PRIVATE KEY-----\n"+
                 "MIIFwgIBAAKCAUEAsE1edyfToZRv6cFOkB0tAJ5qJor4YF5CccJAL0fS/o1Yk10V\n"+
                 "SXH4Xx4peSJgYQKkO0HqO1hAz6k9dFQB4U1CnWtRjtNEcIfycqrZrhu6you5syb6\n"+
                 "ScV3Zu/9bm7/DyaLlx/gJhUPR1OxOzaqsEvlu7hbDhNLIYo1zKFb/aUBbD6+UcaG\n"+
@@ -194,7 +194,7 @@ describe("NodeRSA", function(){
                 "RywhDUAjW8U0RBnzlmXhQQ6B9bjqooS2MsRrJrS5CU682fb3hBo=\n"+
                 "-----END RSA PRIVATE KEY-----";
 
-            var publicKeyPEM = "-----BEGIN PUBLIC KEY-----\n"+
+            var publicKeyPKCS8 = "-----BEGIN PUBLIC KEY-----\n"+
                 "MIIBYjANBgkqhkiG9w0BAQEFAAOCAU8AMIIBSgKCAUEAsE1edyfToZRv6cFOkB0t\n"+
                 "AJ5qJor4YF5CccJAL0fS/o1Yk10VSXH4Xx4peSJgYQKkO0HqO1hAz6k9dFQB4U1C\n"+
                 "nWtRjtNEcIfycqrZrhu6you5syb6ScV3Zu/9bm7/DyaLlx/gJhUPR1OxOzaqsEvl\n"+
@@ -205,11 +205,10 @@ describe("NodeRSA", function(){
                 "KY4kQIIx8JEBsAYzgyP2iy0CAwEAAQ==\n"+
                 "-----END PUBLIC KEY-----";
 
-            var privateKeyPEMNotTrimmed = '     \n\n    \n\n ' + privateKeyPEM + '\n \n  \n\n  ';
-            var publicKeyPEMNotTrimmed = '\n\n\n\n ' + publicKeyPEM + '\n \n\n\n  ';
+            var privateKeyPEMNotTrimmed = '     \n\n    \n\n ' + privateKeyPKCS1 + '\n \n  \n\n  ';
+            var publicKeyPEMNotTrimmed = '\n\n\n\n ' + publicKeyPKCS8 + '\n \n\n\n  ';
 
-            var fileKey = __dirname + "/private.key";
-            var fileKeyPEM = "-----BEGIN RSA PRIVATE KEY-----\n"+
+            var fileKeyPKCS1 = "-----BEGIN RSA PRIVATE KEY-----\n"+
                 "MIICXAIBAAKBgQCCdY+EpDC/vPa335l751SBM8d5Lf4z4QZX4bc+DqTY9zVY/rmP\n"+
                 "GbTkCueKnIKApuOGMXJOaCwNH9wUftNt7T0foEwjl16uIC8m4hwSjjNL5TKqMVey\n"+
                 "Syv04oBuidv76u5yNiLC4J85lbmW3WAyYkTCbm/VJZAXNJuqCm7AVWmQMQIDAQAB\n"+
@@ -224,64 +223,116 @@ describe("NodeRSA", function(){
                 "q3V0cqHb6c8rI4TizRsCQANIyhoJ33ughNzbCIknkMPKtgvLOUARnbya/bkfRexL\n"+
                 "icyYzXPNuqZDY8JZQHlshN8cCcZcYjGPYYscd2LKB6o=\n"+
                 "-----END RSA PRIVATE KEY-----";
+            var keysFolder = __dirname + '/keys/';
+            var keys_formats = {
+                'pkcs1-private-der': {public: false, der: true, file: 'private_pkcs1.der'},
+                'pkcs1-private-pem': {public: false, der: false, file: 'private_pkcs1.pem'},
+                'pkcs8-private-der': {public: false, der: true, file: 'private_pkcs8.der'},
+                'pkcs8-private-pem': {public: false, der: false, file: 'private_pkcs8.pem'},
+                'pkcs1-public-der': {public: true, der: true, file: 'public_pkcs1.der'},
+                'pkcs1-public-pem': {public: true, der: false, file: 'public_pkcs1.pem'},
+                'pkcs8-public-der': {public: true, der: true, file: 'public_pkcs8.der'},
+                'pkcs8-public-pem': {public: true, der: false, file: 'public_pkcs8.pem'},
+
+                'private': {public: false, der: false, file: 'private_pkcs1.pem'},
+                'public': {public: true, der: false, file: 'public_pkcs8.pem'},
+                'private-der': {public: false, der: true, file: 'private_pkcs1.der'},
+                'public-der': {public: true, der: true, file: 'public_pkcs8.der'},
+
+                'pkcs1': {public: false, der: false, file: 'private_pkcs1.pem'},
+                'pkcs1-private': {public: false, der: false, file: 'private_pkcs1.pem'},
+                'pkcs1-der': {public: false, der: true, file: 'private_pkcs1.der'},
+                'pkcs8': {public: false, der: false, file: 'private_pkcs8.pem'},
+                'pkcs8-private': {public: false, der: false, file: 'private_pkcs8.pem'},
+                'pkcs8-der': {public: false, der: true, file: 'private_pkcs8.der'},
+                'pkcs1-public': {public: true, der: false, file: 'public_pkcs1.pem'},
+                'pkcs8-public': {public: true, der: false, file: 'public_pkcs8.pem'}
+            };
 
             describe("Good cases", function () {
-                it(".loadFromPrivatePEM() should load private key from (not trimmed) PEM string", function(){
-                    privateNodeRSA = new NodeRSA(privateKeyPEMNotTrimmed);
-                    assert.instanceOf(privateNodeRSA.keyPair, Object);
-                    assert(privateNodeRSA.isPrivate());
-                    assert(privateNodeRSA.isPublic());
-                    assert(!privateNodeRSA.isPublic(true));
+                describe("Common cases", function () {
+                    it("should load private key from (not trimmed) PKCS1-PEM string", function () {
+                        privateNodeRSA = new NodeRSA(privateKeyPEMNotTrimmed);
+                        assert.instanceOf(privateNodeRSA.keyPair, Object);
+                        assert(privateNodeRSA.isPrivate());
+                        assert(privateNodeRSA.isPublic());
+                        assert(!privateNodeRSA.isPublic(true));
+                    });
+
+                    it("should load public key from (not trimmed) PKCS8-PEM string", function () {
+                        publicNodeRSA = new NodeRSA(publicKeyPEMNotTrimmed);
+                        assert.instanceOf(privateNodeRSA.keyPair, Object);
+                        assert(publicNodeRSA.isPublic());
+                        assert(publicNodeRSA.isPublic(true));
+                        assert(!publicNodeRSA.isPrivate());
+                    });
+
+                    it(".exportKey() should return private PEM string", function () {
+                        assert.equal(privateNodeRSA.exportKey('private'), privateKeyPKCS1);
+                        assert.equal(privateNodeRSA.exportKey(), privateKeyPKCS1);
+                    });
+
+                    it(".exportKey() from public key should return pkcs8 public PEM string", function () {
+                        assert.equal(publicNodeRSA.exportKey('public'), publicKeyPKCS8);
+                    });
+
+                    it(".exportKey() from private key should return pkcs8 public PEM string", function () {
+                        assert.equal(privateNodeRSA.exportKey('public'), publicKeyPKCS8);
+                    });
+
+                    it("should create and load key from buffer/fs.readFileSync output", function () {
+                        var key = new NodeRSA(fs.readFileSync(keysFolder + 'private_pkcs1.pem'));
+                        assert.equal(key.exportKey(), fileKeyPKCS1);
+                        key = new NodeRSA();
+                        key.importKey(fs.readFileSync(keysFolder + 'private_pkcs1.pem'));
+                        assert.equal(key.exportKey(), fileKeyPKCS1);
+                    });
                 });
 
-                it(".loadFromPublicPEM() should load public key from (not trimmed) PEM string", function(){
-                    publicNodeRSA = new NodeRSA(publicKeyPEMNotTrimmed);
-                    assert.instanceOf(privateNodeRSA.keyPair, Object);
-                    assert(publicNodeRSA.isPublic());
-                    assert(publicNodeRSA.isPublic(true));
-                    assert(!publicNodeRSA.isPrivate());
-                });
+                describe("Different key formats", function () {
+                    var sampleKey = new NodeRSA(fileKeyPKCS1);
 
-                it(".exportPrivate() should return private PEM string", function(){
-                    assert.equal(privateNodeRSA.exportPrivate(), privateKeyPEM);
-                });
+                    for(var format in keys_formats) {
+                        (function(format) {
+                            var options = keys_formats[format];
 
-                it(".exportPublic() from public key should return public PEM string", function(){
-                    assert.equal(publicNodeRSA.exportPublic(), publicKeyPEM);
-                });
+                            it("should load from " + options.file + " (" + format + ")", function () {
+                                var key = new NodeRSA(fs.readFileSync(keysFolder + options.file), format);
+                                if (options.public) {
+                                    assert.equal(key.exportKey('public'), sampleKey.exportKey('public'));
+                                } else {
+                                    assert.equal(key.exportKey(), sampleKey.exportKey());
+                                }
+                            });
 
-                it(".exportPublic() from private key should return public PEM string", function(){
-                    assert.equal(privateNodeRSA.exportPublic(), publicKeyPEM);
-                });
+                            it("should export to \"" + format + "\" format", function () {
+                                var keyData = fs.readFileSync(keysFolder + options.file);
+                                var exported = sampleKey.exportKey(format);
 
-                it("should create key from buffer/fs.readFileSync output", function(){
-                    var key = new NodeRSA(fs.readFileSync(fileKey));
-                    assert.equal(key.exportPrivate(), fileKeyPEM);
-                    key = new NodeRSA();
-                    key.importKey(fs.readFileSync(fileKey));
-                    assert.equal(key.exportPrivate(), fileKeyPEM);
-                });
-
-                it("should load PEM from buffer/fs.readFileSync output", function(){
-                    var key = new NodeRSA();
-                    assert.equal(key.isEmpty(), true);
-                    key.importKey(fs.readFileSync(fileKey));
-                    assert.equal(key.isEmpty(), false);
-                    assert.equal(key.exportPrivate(), fileKeyPEM);
+                                if (options.der) {
+                                    assert(Buffer.isBuffer(exported));
+                                    assert.equal(exported.toString('hex'), keyData.toString('hex'));
+                                } else {
+                                    assert(_.isString(exported));
+                                    assert.equal(exported.replace(/\s+|\n\r|\n|\r$/gm, ''), keyData.toString('utf8').replace(/\s+|\n\r|\n|\r$/gm, ''));
+                                }
+                            });
+                        })(format);
+                    }
                 });
             });
 
             describe("Bad cases", function () {
                 it("not public key", function(){
                     var key = new NodeRSA();
-                    assert.throw(function(){ key.exportPrivate(); }, Error, "It is not private key");
-                    assert.throw(function(){ key.exportPublic(); }, Error, "It is not public key");
+                    assert.throw(function(){ key.exportKey(); }, Error, "It is not private key");
+                    assert.throw(function(){ key.exportKey('public'); }, Error, "It is not public key");
                 });
 
                 it("not private key", function(){
-                    var key = new NodeRSA(publicKeyPEM);
-                    assert.throw(function(){ key.exportPrivate(); }, Error, "It is not private key");
-                    assert.doesNotThrow(function(){ key.exportPublic(); }, Error, "It is not public key");
+                    var key = new NodeRSA(publicKeyPKCS8);
+                    assert.throw(function(){ key.exportKey(); }, Error, "It is not private key");
+                    assert.doesNotThrow(function(){ key.exportKey('public'); }, Error, "It is not public key");
                 });
             });
         });
@@ -355,7 +406,7 @@ describe("NodeRSA", function(){
                                     (function (i) {
                                         var suit = dataBundle[i];
                                         it("should sign " + i, function () {
-                                            key = new NodeRSA(generatedKeys[generatedKeys.length - 1].exportPrivate(), {
+                                            key = new NodeRSA(generatedKeys[generatedKeys.length - 1].exportKey(), {
                                                 signingScheme: scheme + '-sha256',
                                                 environment: env
                                             });
@@ -376,7 +427,7 @@ describe("NodeRSA", function(){
                                 for (var alg in signHashAlgorithms[env]) {
                                     (function (alg) {
                                         it("signing with custom algorithm (" + alg + ")", function () {
-                                            var key = new NodeRSA(generatedKeys[generatedKeys.length - 1].exportPrivate(), {
+                                            var key = new NodeRSA(generatedKeys[generatedKeys.length - 1].exportKey(), {
                                                 signingScheme: scheme + '-' + alg,
                                                 environment: env
                                             });
@@ -392,7 +443,7 @@ describe("NodeRSA", function(){
 
                             describe("Bad cases" + (envs.length > 1 ? " in " + env + " environment" : ""), function () {
                                 it("incorrect data for verifying", function () {
-                                    var key = new NodeRSA(generatedKeys[0].exportPrivate(), {
+                                    var key = new NodeRSA(generatedKeys[0].exportKey(), {
                                         signingScheme: scheme + '-sha256',
                                         environment: env
                                     });
@@ -401,7 +452,7 @@ describe("NodeRSA", function(){
                                 });
 
                                 it("incorrect key for signing", function () {
-                                    var key = new NodeRSA(generatedKeys[0].exportPublic(), {
+                                    var key = new NodeRSA(generatedKeys[0].exportKey('pkcs8-public'), {
                                         signingScheme: scheme + '-sha256',
                                         environment: env
                                     });
@@ -411,11 +462,11 @@ describe("NodeRSA", function(){
                                 });
 
                                 it("incorrect key for verifying", function () {
-                                    var key1 = new NodeRSA(generatedKeys[0].exportPrivate(), {
+                                    var key1 = new NodeRSA(generatedKeys[0].exportKey(), {
                                         signingScheme: scheme + '-sha256',
                                         environment: env
                                     });
-                                    var key2 = new NodeRSA(generatedKeys[1].exportPublic(), {
+                                    var key2 = new NodeRSA(generatedKeys[1].exportKey('pkcs8-public'), {
                                         signingScheme: scheme + '-sha256',
                                         environment: env
                                     });
@@ -432,11 +483,11 @@ describe("NodeRSA", function(){
                                 });
 
                                 it("different algorithms", function () {
-                                    var singKey = new NodeRSA(generatedKeys[0].exportPrivate(), {
+                                    var singKey = new NodeRSA(generatedKeys[0].exportKey(), {
                                         signingScheme: scheme + '-md5',
                                         environment: env
                                     });
-                                    var verifyKey = new NodeRSA(generatedKeys[0].exportPrivate(), {
+                                    var verifyKey = new NodeRSA(generatedKeys[0].exportKey(), {
                                         signingScheme: scheme + '-sha1',
                                         environment: env
                                     });
@@ -455,11 +506,11 @@ describe("NodeRSA", function(){
                         for (var alg in signHashAlgorithms['browser']) {
                             (function (alg) {
                                 it("signing with custom algorithm (" + alg + ") (equal test)", function () {
-                                    var nodeKey = new NodeRSA(generatedKeys[5].exportPrivate(), {
+                                    var nodeKey = new NodeRSA(generatedKeys[5].exportKey(), {
                                         signingScheme: scheme + '-' + alg,
                                         environment: 'node'
                                     });
-                                    var browserKey = new NodeRSA(generatedKeys[5].exportPrivate(), {
+                                    var browserKey = new NodeRSA(generatedKeys[5].exportKey(), {
                                         signingScheme: scheme + '-' + alg,
                                         environment: 'browser'
                                     });
@@ -468,11 +519,11 @@ describe("NodeRSA", function(){
                                 });
 
                                 it("sign in node & verify in browser (" + alg + ")", function () {
-                                    var nodeKey = new NodeRSA(generatedKeys[5].exportPrivate(), {
+                                    var nodeKey = new NodeRSA(generatedKeys[5].exportKey(), {
                                         signingScheme: scheme + '-' + alg,
                                         environment: 'node'
                                     });
-                                    var browserKey = new NodeRSA(generatedKeys[5].exportPrivate(), {
+                                    var browserKey = new NodeRSA(generatedKeys[5].exportKey(), {
                                         signingScheme: scheme + '-' + alg,
                                         environment: 'browser'
                                     });
@@ -481,11 +532,11 @@ describe("NodeRSA", function(){
                                 });
 
                                 it("sign in browser & verify in node (" + alg + ")", function () {
-                                    var nodeKey = new NodeRSA(generatedKeys[5].exportPrivate(), {
+                                    var nodeKey = new NodeRSA(generatedKeys[5].exportKey(), {
                                         signingScheme: scheme + '-' + alg,
                                         environment: 'node'
                                     });
-                                    var browserKey = new NodeRSA(generatedKeys[5].exportPrivate(), {
+                                    var browserKey = new NodeRSA(generatedKeys[5].exportKey(), {
                                         signingScheme: scheme + '-' + alg,
                                         environment: 'browser'
                                     });

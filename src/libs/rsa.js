@@ -278,6 +278,21 @@ module.exports.Key = (function() {
         return this.signingScheme.verify.apply(this.signingScheme, arguments);
     };
 
+    /**
+     * Check if key pair contains private key
+     */
+    RSAKey.prototype.isPrivate = function () {
+        return this.n && this.e && this.d || false;
+    };
+
+    /**
+     * Check if key pair contains public key
+     * @param strict {boolean} - public key only, return false if have private exponent
+     */
+    RSAKey.prototype.isPublic = function (strict) {
+        return this.n && this.e && !(strict && this.d) || false;
+    };
+
     Object.defineProperty(RSAKey.prototype, 'keySize', {
         get: function() { return this.cache.keyBitLength; }
     });
