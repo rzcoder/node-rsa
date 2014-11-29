@@ -46,15 +46,15 @@ This library developed and tested primary for Node.js, but it still can work in 
 ```javascript
 var NodeRSA = require('node-rsa');
 
-var key = new NodeRSA([keyData], [format], [options]);
+var key = new NodeRSA([keyData, [format]], [options]);
 ```
 
-**keyData** — `{string|buffer|object}` — parameters of a generated key or the key in one of supported formats.<br/>
-**format** — `{string}` — format for importing key. See more details about formats in [Export/Import](#importexport-keys) section<br/>
-**options** — `{object}` — additional settings
+* **keyData** — `{string|buffer|object}` — parameters for generating key or the key in one of supported formats.<br/>
+* **format** — `{string}` — format for importing key. See more details about formats in [Export/Import](#importexport-keys) section.<br/>
+* **options** — `{object}` — additional settings.
 
 #### Options
-You can specify some options by second constructor argument, or over `key.setOptions()` method.
+You can specify some options by second/third constructor argument, or over `key.setOptions()` method.
 
 * **environment** — working environment, `'browser'` or `'node'`. Default autodetect.
 * **encryptionScheme** — padding scheme for encrypt/decrypt. Can be `'pkcs1_oaep'` or `'pkcs1'`. Default `'pkcs1_oaep'`.
@@ -89,6 +89,14 @@ var key = new NodeRSA();
 var key = new NodeRSA({b: 512});
 ```
 
+Also you can use next method:
+
+```javascript
+key.generateKeyPair([bits], [exp]);
+```
+**bits** — `{int}` — key size in bits. 2048 by default.
+**exp** — `{int}` — public exponent. 65537 by default.
+
 #### Load key from PEM string
 
 ```javascript
@@ -102,14 +110,6 @@ var key = new NodeRSA('-----BEGIN RSA PRIVATE KEY-----\n'+
                       'Es+KCn25OKXR/FJ5fu6A6A+MptABL3r8SEjlpLc=\n'+
                       '-----END RSA PRIVATE KEY-----');
 ```
-
-Also you can use next methods:
-
-```javascript
-key.generateKeyPair([bits], [exp]);
-```
-**bits** — `{int}` — key size in bits. 2048 by default.
-**exp** — `{int}` — public exponent. 65537 by default.
 
 ### Import/Export keys
 ```javascript
