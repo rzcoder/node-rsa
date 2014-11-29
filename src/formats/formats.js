@@ -1,4 +1,32 @@
 var _ = require('lodash');
+
+function formatParse(format) {
+    format = format.split('-');
+    var keyType = 'private';
+    var keyOpt = {type: 'default'};
+
+    for (var i = 1; i < format.length; i++) {
+        if (format[i]) {
+            switch (format[i]) {
+                case 'public':
+                    keyType = format[i];
+                    break;
+                case 'private':
+                    keyType = format[i];
+                    break;
+                case 'pem':
+                    keyOpt.type = format[i];
+                    break;
+                case 'der':
+                    keyOpt.type = format[i];
+                    break;
+            }
+        }
+    }
+
+    return {scheme: format[0], keyType: keyType, keyOpt: keyOpt};
+}
+
 module.exports = {
     pkcs1: require('./pkcs1'),
     pkcs8: require('./pkcs8'),
@@ -21,40 +49,18 @@ module.exports = {
 
     detectAndImport: function (key, data, format) {
         if (format === undefined) {
-            for (var format in module.exports) {
-                if (typeof module.exports[format].autoImport === 'function' && module.exports[format].autoImport(key, data)) {
+            for (var scheme in module.exports) {
+                if (typeof module.exports[scheme].autoImport === 'function' && module.exports[scheme].autoImport(key, data)) {
                     return true;
                 }
             }
         } else if (format) {
-            var fmt = format.split('-');
-            var keyType = 'private';
-            var keyOpt = {type: 'default'};
-
-            for (var i = 1; i < fmt.length; i++) {
-                if (fmt[i]) {
-                    switch (fmt[i]) {
-                        case 'public':
-                            keyType = fmt[i];
-                            break;
-                        case 'private':
-                            keyType = fmt[i];
-                            break;
-                        case 'pem':
-                            keyOpt.type = fmt[i];
-                            break;
-                        case 'der':
-                            keyOpt.type = fmt[i];
-                            break;
-                    }
-                }
-            }
-
-            if (module.exports[fmt[0]]) {
-                if (keyType === 'private') {
-                    module.exports[fmt[0]].privateImport(key, data, keyOpt);
+            var fmt = formatParse(format);
+            if (module.exports[fmt.scheme]) {
+                if (fmt.keyType === 'private') {
+                    module.exports[fmt.scheme].privateImport(key, data, fmt.keyOpt);
                 } else {
-                    module.exports[fmt[0]].publicImport(key, data, keyOpt);
+                    module.exports[fmt.scheme].publicImport(key, data, fmt.keyOpt);
                 }
             } else {
                 throw Error('Unsupported key format');
@@ -66,40 +72,19 @@ module.exports = {
 
     detectAndExport: function (key, format) {
         if (format) {
-            var fmt = format.split('-');
-            var keyType = 'private';
-            var keyOpt = {type: 'default'};
+            var fmt = formatParse(format);
 
-            for (var i = 1; i < fmt.length; i++) {
-                if (fmt[i]) {
-                    switch (fmt[i]) {
-                        case 'public':
-                            keyType = fmt[i];
-                            break;
-                        case 'private':
-                            keyType = fmt[i];
-                            break;
-                        case 'pem':
-                            keyOpt.type = fmt[i];
-                            break;
-                        case 'der':
-                            keyOpt.type = fmt[i];
-                            break;
-                    }
-                }
-            }
-
-            if (module.exports[fmt[0]]) {
-                if (keyType === 'private') {
+            if (module.exports[fmt.scheme]) {
+                if (fmt.keyType === 'private') {
                     if (!key.isPrivate()) {
                         throw Error("It is not private key");
                     }
-                    return module.exports[fmt[0]].privateExport(key, keyOpt);
+                    return module.exports[fmt.scheme].privateExport(key, fmt.keyOpt);
                 } else {
                     if (!key.isPublic()) {
                         throw Error("It is not public key");
                     }
-                    return module.exports[fmt[0]].publicExport(key, keyOpt);
+                    return module.exports[fmt.scheme].publicExport(key, fmt.keyOpt);
                 }
             } else {
                 throw Error('Unsupported key format');

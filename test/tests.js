@@ -235,7 +235,18 @@ describe("NodeRSA", function(){
                 'pkcs8-public-pem': {public: true, der: false, file: 'public_pkcs8.pem'},
 
                 'private': {public: false, der: false, file: 'private_pkcs1.pem'},
-                'public': {public: true, der: false, file: 'public_pkcs8.pem'}
+                'public': {public: true, der: false, file: 'public_pkcs8.pem'},
+                'private-der': {public: false, der: true, file: 'private_pkcs1.der'},
+                'public-der': {public: true, der: true, file: 'public_pkcs8.der'},
+
+                'pkcs1': {public: false, der: false, file: 'private_pkcs1.pem'},
+                'pkcs1-private': {public: false, der: false, file: 'private_pkcs1.pem'},
+                'pkcs1-der': {public: false, der: true, file: 'private_pkcs1.der'},
+                'pkcs8': {public: false, der: false, file: 'private_pkcs8.pem'},
+                'pkcs8-private': {public: false, der: false, file: 'private_pkcs8.pem'},
+                'pkcs8-der': {public: false, der: true, file: 'private_pkcs8.der'},
+                'pkcs1-public': {public: true, der: false, file: 'public_pkcs1.pem'},
+                'pkcs8-public': {public: true, der: false, file: 'public_pkcs8.pem'}
             };
 
             describe("Good cases", function () {
