@@ -56,6 +56,7 @@ module.exports = {
             }
         } else if (format) {
             var fmt = formatParse(format);
+
             if (module.exports[fmt.scheme]) {
                 if (fmt.keyType === 'private') {
                     module.exports[fmt.scheme].privateImport(key, data, fmt.keyOpt);
