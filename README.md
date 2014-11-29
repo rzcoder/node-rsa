@@ -118,7 +118,7 @@ key.importKey(keyData, [format]);
 key.exportKey([format]);
 ```
 
-* keyData — `{string|buffer}` — key in PEM string **or** Buffer contains PEM string **or** Buffer contains DER encoded data.
+* keyData — `{string|buffer}` — key in PEM string **or** Buffer containing PEM string **or** Buffer contains DER encoded data.
 * format  — `{string}` — format id for export/import.
 
 #### Format string syntax
@@ -258,7 +258,7 @@ Questions, comments, bug reports, and pull requests are all welcome.
  * Added long message support
 
 
-## License for NodeRSA.js
+## License
 
 Copyright (c) 2014  rzcoder<br/>
 All Rights Reserved.
