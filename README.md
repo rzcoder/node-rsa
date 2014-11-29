@@ -147,7 +147,7 @@ Output type — can be:
 **Code example**
 
 ```javascript
-var keyData = '-----BEGIN PUBLIC KEY-----' + .... + '-----BEGIN PRIVATE KEY-----';
+var keyData = '-----BEGIN PUBLIC KEY----- ... -----BEGIN PRIVATE KEY-----';
 key.importKey(keyData, 'pkcs8');
 var publicDer = key.exportKey('pkcs8-public-der');
 var privateDer = key.exportKey('pkcs1-der');
