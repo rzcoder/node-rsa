@@ -62,7 +62,7 @@ You can specify some options by second/third constructor argument, or over `key.
 
 **Advanced options:**<br/>
 You also can specify advanced options for some schemes like this:
-```
+```javascript
 options = {
   encryptionScheme: {
     scheme: 'pkcs1_oaep', //scheme
@@ -146,7 +146,7 @@ Output type — can be:
 
 **Code example**
 
-```
+```javascript
 var keyData = '-----BEGIN PUBLIC KEY-----' + .... + '-----BEGIN PRIVATE KEY-----';
 key.importKey(keyData, 'pkcs8');
 var publicDer = key.exportKey('pkcs8-public-der');
