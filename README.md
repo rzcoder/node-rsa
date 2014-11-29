@@ -122,7 +122,8 @@ key.exportKey([format]);
 * **format**  — `{string}` — format id for export/import.
 
 #### Format string syntax
-Format string composed of several parts: `scheme-[key_type]-[output_type]`
+Format string composed of several parts: `scheme-[key_type]-[output_type]`<br/>
+
 **Scheme** — NodeRSA supports multiple format schemes for import/export keys:
 
   * `'pkcs1'` — public key starts from `'-----BEGIN RSA PUBLIC KEY-----'` header and private key starts from `'-----BEGIN RSA PRIVATE KEY-----' header`
