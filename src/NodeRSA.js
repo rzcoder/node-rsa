@@ -37,7 +37,7 @@ module.exports = (function () {
      * @constructor
      */
     function NodeRSA(key, format, options) {
-        if (!this instanceof NodeRSA) {
+        if (!(this instanceof NodeRSA)) {
             return new NodeRSA(key, options);
         }
 
