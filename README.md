@@ -128,7 +128,7 @@ Format string composed of several parts: `scheme-[key_type]-[output_type]`
   * `'pkcs1'` — public key starts from `'-----BEGIN RSA PUBLIC KEY-----'` header and private key starts from `'-----BEGIN RSA PRIVATE KEY-----' header`
   * `'pkcs8'` — public key starts from `'-----BEGIN PUBLIC KEY-----'` header and private key starts from `'-----BEGIN PRIVATE KEY-----' header`
 
-**Key type** — can be `'private'` or `'public'`. Default `'private'`
+**Key type** — can be `'private'` or `'public'`. Default `'private'`<br/>
 **Output type** — can be:
 
  * `'pem'` — Base64 encoded string with header and footer. Used by default.
