@@ -118,7 +118,7 @@ key.importKey(keyData, [format]);
 key.exportKey([format]);
 ```
 
-* keyData — `{string|buffer}` — key in PEM string **or** Buffer containing PEM string **or** Buffer contains DER encoded data.
+* keyData — `{string|buffer}` — key in PEM string **or** Buffer containing PEM string **or** Buffer containing DER encoded data.
 * format  — `{string}` — format id for export/import.
 
 #### Format string syntax
