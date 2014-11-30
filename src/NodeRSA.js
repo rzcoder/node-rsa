@@ -38,7 +38,7 @@ module.exports = (function () {
      */
     function NodeRSA(key, format, options) {
         if (!(this instanceof NodeRSA)) {
-            return new NodeRSA(key, options);
+            return new NodeRSA(key, format, options);
         }
 
         if (_.isObject(format)) {
