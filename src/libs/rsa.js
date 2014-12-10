@@ -221,7 +221,7 @@ module.exports.Key = (function() {
             }
         }
 
-        for(var i in buffers) {
+        for(var i = 0; i < buffers.length; i++) {
             var buf = buffers[i];
 
             var m = new BigInteger(this.encryptionScheme.encPad(buf));
@@ -232,11 +232,6 @@ module.exports.Key = (function() {
             }
 
             var encryptedBuffer = c.toBuffer(this.encryptedDataLength);
-            /*var encryptedBuffer = c.toBuffer(true);
-            while (encryptedBuffer.length < this.encryptedDataLength) {
-                encryptedBuffer = Buffer.concat([new Buffer([0]), encryptedBuffer]);
-            }*/
-
             results.push(encryptedBuffer);
         }
 
