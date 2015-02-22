@@ -57,7 +57,11 @@ var key = new NodeRSA([keyData, [format]], [options]);
 #### Options
 You can specify some options by second/third constructor argument, or over `key.setOptions()` method.
 
-* environment — working environment, `'browser'`, `'node'` for `nodejs 0.10.x`, `'node12'` for `nodejs 0.12.x` or `'io'` for `io.js 1.x`. `nodejs12` and `io` provide native encryption/decryption methods   Default autodetect.
+* environment — working environment (default autodetect):
+    * `'browser'`,
+    * `'node'` for `nodejs 0.10.x` — provide native sign/verify methods.
+    * `'node12'` for `nodejs 0.12.x` — provide also native publicEncrypt/privateDecrypt methods.
+    * `'io'` for `io.js 1.x` — provide also native publicDecrypt/privateEncrypt methods.
 * encryptionScheme — padding scheme for encrypt/decrypt. Can be `'pkcs1_oaep'` or `'pkcs1'`. Default `'pkcs1_oaep'`.
 * signingScheme — scheme used for signing and verifying. Can be `'pkcs1'` or `'pss'` or 'scheme-hash' format string (eg `'pss-sha1'`). Default `'pkcs1-sha256'`, or, if chosen pss: `'pss-sha1'`.
 
