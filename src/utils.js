@@ -3,6 +3,8 @@
  *
  */
 
+var crypt = require('crypto');
+
 /**
  * Break string str each maxLen symbols
  * @param str
@@ -21,6 +23,12 @@ module.exports.linebrk = function (str, maxLen) {
 
 module.exports.detectEnvironment = function () {
     if (process && process.title != 'browser') {
+        if (typeof crypt.publicEncrypt === 'function' && typeof crypt.privateDecrypt === 'function') {
+            if (typeof crypt.publicDecrypt === 'function' && typeof crypt.privateEncrypt === 'function') {
+                return 'io';
+            }
+            return 'node12';
+        }
         return 'node';
     } else if (window) {
         return 'browser';

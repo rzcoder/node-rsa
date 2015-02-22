@@ -18,6 +18,8 @@ var formats = require('./formats/formats.js');
 module.exports = (function () {
     var SUPPORTED_HASH_ALGORITHMS = {
         node: ['md4', 'md5', 'ripemd160', 'sha', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'],
+        node12: ['md4', 'md5', 'ripemd160', 'sha', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'],
+        io: ['md4', 'md5', 'ripemd160', 'sha', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'],
         browser: ['md5', 'ripemd160', 'sha1', 'sha256', 'sha512']
     };
 
