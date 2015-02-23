@@ -25,15 +25,14 @@ module.exports.detectEnvironment = function () {
     if (process && process.title != 'browser') {
         if (typeof crypt.publicEncrypt === 'function' && typeof crypt.privateDecrypt === 'function') {
             if (typeof crypt.publicDecrypt === 'function' && typeof crypt.privateEncrypt === 'function') {
-                return 'io';
+                return 'iojs';
             }
-            return 'node12';
+            return 'node';
         }
-        return 'node';
+        return 'node10';
     } else if (window) {
         return 'browser';
     }
-
     return 'node';
 };
 

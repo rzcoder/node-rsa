@@ -17,11 +17,13 @@ describe("NodeRSA", function(){
         {b: 1024} // 'e' should be 65537
     ];
 
-    var environments = ['browser', 'node'];
+    var environments = ['browser', 'node10', 'node', 'iojs'];
     var encryptSchemes = ['pkcs1', 'pkcs1_oaep'];
     var signingSchemes = ['pkcs1', 'pss'];
     var signHashAlgorithms = {
         'node': ['MD4', 'MD5', 'RIPEMD160', 'SHA', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512'],
+        'node10': ['MD4', 'MD5', 'RIPEMD160', 'SHA', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512'],
+        'iojs': ['MD4', 'MD5', 'RIPEMD160', 'SHA', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512'],
         'browser': ['MD5', 'RIPEMD160', 'SHA1', 'SHA256', 'SHA512']
     };
 
@@ -61,6 +63,14 @@ describe("NodeRSA", function(){
     var publicNodeRSA = null;
 
     describe("Setup options", function(){
+        it("should use browser environment", function () {
+            assert.equal((new NodeRSA(null, {environment: 'browser'})).$options.environment, 'browser');
+        });
+
+        it("should use io.js environment", function () {
+            assert.equal((new NodeRSA(null, {environment: 'iojs'})).$options.environment, 'iojs');
+        });
+
         it("should make empty key pair with default options", function () {
             var key = new NodeRSA(null);
             assert.equal(key.isEmpty(), true);
@@ -103,7 +113,6 @@ describe("NodeRSA", function(){
             assert.equal(key.$options.signingScheme, 'pkcs1');
             assert.equal(key.$options.signingSchemeOptions.hash, 'sha256');
         });
-
 
         it("advanced options change", function () {
             var key = new NodeRSA(null);
@@ -339,51 +348,63 @@ describe("NodeRSA", function(){
     });
 
     describe("Encrypting & decrypting", function () {
-        for (var scheme_i in encryptSchemes) {
-            (function (scheme) {
-                describe("Encryption scheme: " + scheme, function () {
-                    describe("Good cases", function () {
-                        var encrypted = {};
-                        var decrypted = {};
-                        for (var i in dataBundle) {
-                            (function (i) {
-                                var key = null;
-                                var suit = dataBundle[i];
+        for (var env in environments) {
+            (function (env) {
+                for (var scheme_i in encryptSchemes) {
+                    (function (scheme) {
+                        describe("Environment: " + env + ". Encryption scheme: " + scheme, function () {
+                            describe("Good cases", function () {
+                                var encrypted = {};
+                                var decrypted = {};
+                                for (var i in dataBundle) {
+                                    (function (i) {
+                                        var key = null;
+                                        var suit = dataBundle[i];
 
-                                it("should encrypt " + i, function () {
-                                    key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length];
-                                    key.setOptions({encryptionScheme: scheme});
-                                    encrypted[i] = key.encrypt(suit.data);
-                                    assert(Buffer.isBuffer(encrypted[i]));
-                                    assert(encrypted[i].length > 0);
+                                        it("should encrypt " + i, function () {
+                                            key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length];
+                                            key.setOptions({encryptionScheme: scheme});
+                                            encrypted[i] = key.encrypt(suit.data);
+                                            assert(Buffer.isBuffer(encrypted[i]));
+                                            assert(encrypted[i].length > 0);
+                                        });
+
+                                        it("should decrypt " + i, function () {
+                                            decrypted[i] = key.decrypt(encrypted[i], _.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding);
+                                            if (Buffer.isBuffer(decrypted[i])) {
+                                                assert.equal(suit.data.toString('hex'), decrypted[i].toString('hex'));
+                                            } else {
+                                                assert(_.isEqual(suit.data, decrypted[i]));
+                                            }
+                                        });
+                                    })(i);
+                                }
+                            });
+
+                            describe("Bad cases", function () {
+                                it("unsupported data types", function () {
+                                    assert.throw(function () {
+                                        generatedKeys[0].encrypt(null);
+                                    }, Error, "Unexpected data type");
+                                    assert.throw(function () {
+                                        generatedKeys[0].encrypt(undefined);
+                                    }, Error, "Unexpected data type");
+                                    assert.throw(function () {
+                                        generatedKeys[0].encrypt(true);
+                                    }, Error, "Unexpected data type");
                                 });
 
-                                it("should decrypt " + i, function () {
-                                    decrypted[i] = key.decrypt(encrypted[i], _.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding);
-                                    if (Buffer.isBuffer(decrypted[i])) {
-                                        assert.equal(suit.data.toString('hex'), decrypted[i].toString('hex'));
-                                    } else {
-                                        assert(_.isEqual(suit.data, decrypted[i]));
-                                    }
+                                it("incorrect key for decrypting", function () {
+                                    var encrypted = generatedKeys[0].encrypt('data');
+                                    assert.throw(function () {
+                                        generatedKeys[1].decrypt(encrypted);
+                                    }, Error, "Error during decryption");
                                 });
-                            })(i);
-                        }
-                    });
-
-                    describe("Bad cases", function () {
-                        it("unsupported data types", function(){
-                            assert.throw(function(){ generatedKeys[0].encrypt(null); }, Error, "Unexpected data type");
-                            assert.throw(function(){ generatedKeys[0].encrypt(undefined); }, Error, "Unexpected data type");
-                            assert.throw(function(){ generatedKeys[0].encrypt(true); }, Error, "Unexpected data type");
+                            });
                         });
-
-                        it("incorrect key for decrypting", function(){
-                            var encrypted = generatedKeys[0].encrypt('data');
-                            assert.throw(function(){ generatedKeys[1].decrypt(encrypted); }, Error, "Error during decryption");
-                        });
-                    });
-                });
-            })(encryptSchemes[scheme_i]);
+                    })(encryptSchemes[scheme_i]);
+                }
+            })(environments[env]);
         }
     });
 
