@@ -206,7 +206,7 @@ module.exports.Key = (function() {
      * @param buffer {Buffer}
      * @returns {Buffer}
      */
-    RSAKey.prototype.encrypt = function (buffer) {
+    RSAKey.prototype.encrypt = function (buffer, usePrivate) {
         var buffers = [];
         var results = [];
         var bufferSize = buffer.length;
@@ -225,7 +225,7 @@ module.exports.Key = (function() {
             var buf = buffers[i];
 
             var m = new BigInteger(this.encryptionScheme.encPad(buf));
-            var c = this.$doPublic(m);
+            var c = usePrivate ? this.$doPrivate(m) : this.$doPublic(m);
 
             if (c === null) {
                 return null;
@@ -243,7 +243,7 @@ module.exports.Key = (function() {
      * @param buffer {Buffer}
      * @returns {Buffer}
      */
-    RSAKey.prototype.decrypt = function (buffer) {
+    RSAKey.prototype.decrypt = function (buffer, usePublic) {
         if (buffer.length % this.encryptedDataLength > 0) {
             throw Error('Incorrect data or key');
         }
@@ -258,7 +258,8 @@ module.exports.Key = (function() {
             length = offset + this.encryptedDataLength;
 
             var c = new BigInteger(buffer.slice(offset, Math.min(length, buffer.length)));
-            var m = this.$doPrivate(c);
+            var m = usePublic ? this.$doPublic(c) : this.$doPrivate(c);
+
             result.push(this.encryptionScheme.encUnPad(m.toBuffer(this.encryptedDataLength)));
         }
 

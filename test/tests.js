@@ -361,7 +361,7 @@ describe("NodeRSA", function(){
                                         var key = null;
                                         var suit = dataBundle[i];
 
-                                        it("should encrypt " + i, function () {
+                                        it("`encrypt()` should encrypt " + i, function () {
                                             key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length];
                                             key.setOptions({encryptionScheme: scheme});
                                             encrypted[i] = key.encrypt(suit.data);
@@ -369,8 +369,32 @@ describe("NodeRSA", function(){
                                             assert(encrypted[i].length > 0);
                                         });
 
-                                        it("should decrypt " + i, function () {
+                                        it("`decrypt()` should decrypt " + i, function () {
                                             decrypted[i] = key.decrypt(encrypted[i], _.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding);
+                                            if (Buffer.isBuffer(decrypted[i])) {
+                                                assert.equal(suit.data.toString('hex'), decrypted[i].toString('hex'));
+                                            } else {
+                                                assert(_.isEqual(suit.data, decrypted[i]));
+                                            }
+                                        });
+                                    })(i);
+                                }
+
+                                for (var i in dataBundle) {
+                                    (function (i) {
+                                        var key = null;
+                                        var suit = dataBundle[i];
+
+                                        it("`encryptPrivate()` should encrypt " + i, function () {
+                                            key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length];
+                                            key.setOptions({encryptionScheme: scheme});
+                                            encrypted[i] = key.encryptPrivate(suit.data);
+                                            assert(Buffer.isBuffer(encrypted[i]));
+                                            assert(encrypted[i].length > 0);
+                                        });
+
+                                        it("`decryptPublic()` should decrypt " + i, function () {
+                                            decrypted[i] = key.decryptPublic(encrypted[i], _.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding);
                                             if (Buffer.isBuffer(decrypted[i])) {
                                                 assert.equal(suit.data.toString('hex'), decrypted[i].toString('hex'));
                                             } else {

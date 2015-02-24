@@ -221,7 +221,7 @@ module.exports = (function () {
     };
 
     /**
-     * Encrypting data method
+     * Encrypting data method with public key
      *
      * @param buffer {string|number|object|array|Buffer} - data for encrypting. Object and array will convert to JSON string.
      * @param encoding {string} - optional. Encoding for output result, may be 'buffer', 'binary', 'hex' or 'base64'. Default 'buffer'.
@@ -229,8 +229,44 @@ module.exports = (function () {
      * @returns {string|Buffer}
      */
     NodeRSA.prototype.encrypt = function (buffer, encoding, source_encoding) {
+        return this.$$encryptKey(false, buffer, encoding, source_encoding);
+    };
+
+    /**
+     * Decrypting data method with private key
+     *
+     * @param buffer {Buffer} - buffer for decrypting
+     * @param encoding - encoding for result string, can also take 'json' or 'buffer' for the automatic conversion of this type
+     * @returns {Buffer|object|string}
+     */
+    NodeRSA.prototype.decrypt = function (buffer, encoding) {
+        return this.$$decryptKey(false, buffer, encoding);
+    };
+
+    /**
+     * Encrypting data method with private key
+     *
+     * Parameters same as `encrypt` method
+     */
+    NodeRSA.prototype.encryptPrivate = function (buffer, encoding, source_encoding) {
+        return this.$$encryptKey(true, buffer, encoding, source_encoding);
+    };
+
+    /**
+     * Decrypting data method with public key
+     *
+     * Parameters same as `decrypt` method
+     */
+    NodeRSA.prototype.decryptPublic = function (buffer, encoding) {
+        return this.$$decryptKey(true, buffer, encoding);
+    };
+
+    /**
+     * Encrypting data method with custom key
+     */
+    NodeRSA.prototype.$$encryptKey = function (usePrivate, buffer, encoding, source_encoding) {
         try {
-            var res = this.keyPair.encrypt(this.$getDataForEncrypt(buffer, source_encoding));
+            var res = this.keyPair.encrypt(this.$getDataForEncrypt(buffer, source_encoding), usePrivate);
 
             if (encoding == 'buffer' || !encoding) {
                 return res;
@@ -243,16 +279,12 @@ module.exports = (function () {
     };
 
     /**
-     * Decrypting data method
-     *
-     * @param buffer {Buffer} - buffer for decrypting
-     * @param encoding - encoding for result string, can also take 'json' or 'buffer' for the automatic conversion of this type
-     * @returns {Buffer|object|string}
+     * Decrypting data method with custom key
      */
-    NodeRSA.prototype.decrypt = function (buffer, encoding) {
+    NodeRSA.prototype.$$decryptKey = function (usePublic, buffer, encoding) {
         try {
             buffer = _.isString(buffer) ? new Buffer(buffer, 'base64') : buffer;
-            var res = this.keyPair.decrypt(buffer);
+            var res = this.keyPair.decrypt(buffer, usePublic);
 
             if (res === null) {
                 throw Error('Key decrypt method returns null.');
