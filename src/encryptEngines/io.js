@@ -10,13 +10,11 @@ module.exports = function (keyPair, options) {
             if (options.encryptionScheme === 'pkcs1') {
                 padding = constants.RSA_PKCS1_PADDING;
             }
-
-            /* opennssl can't make it */
-            if (padding === constants.RSA_PKCS1_OAEP_PADDING) {
-                return jsEngine.encrypt(buffer, usePrivate);
-            }
-
             if (usePrivate) {
+                /* opennssl can't make it */
+                if (padding === constants.RSA_PKCS1_OAEP_PADDING) {
+                    return jsEngine.encrypt(buffer, usePrivate);
+                }
                 return crypto.privateEncrypt({
                     key: options.rsaUtils.exportKey('private'),
                     padding: padding
@@ -35,12 +33,11 @@ module.exports = function (keyPair, options) {
                 padding = constants.RSA_PKCS1_PADDING;
             }
 
-            /* opennssl can't make it */
-            if (padding === constants.RSA_PKCS1_OAEP_PADDING) {
-                return jsEngine.decrypt(buffer, usePublic);
-            }
-
             if (usePublic) {
+                /* opennssl can't make it */
+                if (padding === constants.RSA_PKCS1_OAEP_PADDING) {
+                    return jsEngine.decrypt(buffer, usePublic);
+                }
                 return crypto.publicDecrypt({
                     key: options.rsaUtils.exportKey('public'),
                     padding: padding
