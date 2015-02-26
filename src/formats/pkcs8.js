@@ -167,12 +167,12 @@ module.exports = {
      * @param data
      */
     autoImport: function (key, data) {
-        if (/^\s*-----BEGIN PRIVATE KEY-----\s*([A-Za-z0-9+/=]+\s*)+-----END PRIVATE KEY-----\s*$/g.test(data)) {
+        if (/^\s*-----BEGIN PRIVATE KEY-----\s*(?=(([A-Za-z0-9+/=]+\s*)+))\1-----END PRIVATE KEY-----\s*$/g.test(data)) {
             module.exports.privateImport(key, data);
             return true;
         }
 
-        if (/^\s*-----BEGIN PUBLIC KEY-----\s*([A-Za-z0-9+/=]+\s*)+-----END PUBLIC KEY-----\s*$/g.test(data)) {
+        if (/^\s*-----BEGIN PUBLIC KEY-----\s*(?=(([A-Za-z0-9+/=]+\s*)+))\1-----END PUBLIC KEY-----\s*$/g.test(data)) {
             module.exports.publicImport(key, data);
             return true;
         }
