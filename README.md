@@ -170,7 +170,7 @@ Return max data size for encrypt in bytes.
 
 ```javascript
 key.encrypt(buffer, [encoding], [source_encoding]);
-key.encryptPrivate(buffer, [encoding], [source_encoding]); // using private key for encryption
+key.encryptPrivate(buffer, [encoding], [source_encoding]); // use private key for encryption
 ```
 Return encrypted data.<br/>
 
@@ -180,7 +180,7 @@ Return encrypted data.<br/>
 
 ```javascript
 key.decrypt(buffer, [encoding]);
-key.decryptPublic(buffer, [encoding]); // using public key for decryption
+key.decryptPublic(buffer, [encoding]); // use public key for decryption
 ```
 Return decrypted data.<br/>
 
