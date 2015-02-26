@@ -63,7 +63,7 @@ You can specify some options by second/third constructor argument, or over `key.
 * encryptionScheme — padding scheme for encrypt/decrypt. Can be `'pkcs1_oaep'` or `'pkcs1'`. Default `'pkcs1_oaep'`.
 * signingScheme — scheme used for signing and verifying. Can be `'pkcs1'` or `'pss'` or 'scheme-hash' format string (eg `'pss-sha1'`). Default `'pkcs1-sha256'`, or, if chosen pss: `'pss-sha1'`.
 
-This lib supporting next hash algorithms: `'md5'`, `'ripemd160'`, `'sha1'`, `'sha256'`, `'sha512'` in browser and node environment and additional `'md4'`, `'sha'`, `'sha224'`, `'sha384'` in node only.
+> *NOTICE:* This lib supporting next hash algorithms: `'md5'`, `'ripemd160'`, `'sha1'`, `'sha256'`, `'sha512'` in browser and node environment and additional `'md4'`, `'sha'`, `'sha224'`, `'sha384'` in node only.
 
 <sub>Some [advanced options info](https://github.com/rzcoder/node-rsa/wiki/Advanced-options)</sub>
 
@@ -123,7 +123,7 @@ Output type — can be:
  * `'pem'` — Base64 encoded string with header and footer. Used by default.
  * `'der'` — Binary encoded key data.
 
-**Notice:** For import, if *keyData* is PEM string or buffer containing string, you can do not specify format, but if you provide *keyData* as DER you must specify it in format string.
+> *Notice:* For import, if *keyData* is PEM string or buffer containing string, you can do not specify format, but if you provide *keyData* as DER you must specify it in format string.
 
 **Shortcuts and examples**
  * `'private'` or `'pkcs1'` or `'pkcs1-private'` == `'pkcs1-private-pem'` — private key encoded in pcks1 scheme as pem string.
@@ -211,9 +211,10 @@ Questions, comments, bug reports, and pull requests are all welcome.
 
 ### 0.2.20
  * Added `.encryptPrivate()` and `.decryptPublic()` methods
- * Encrypt/decrypt methods in nodejs 0.12.x and io.js using native implementation (40x speed boost)
- * **KNOWN ISSUES**:
-    * `encryptPrivate` and `decryptPublic` don't have native implementation in nodejs and can't be use in native implementation with pkcs1_oaep padding in io.js
+ * Encrypt/decrypt methods in nodejs 0.12.x and io.js using native implementation (> 40x speed boost)
+
+**KNOWN ISSUES**:
+   * `encryptPrivate` and `decryptPublic` don't have native implementation in nodejs and can't be use in native implementation with pkcs1_oaep padding in io.js
 
 ### 0.2.10
  * **Methods `.exportPrivate()` and `.exportPublic()` was replaced by `.exportKey([format])`.**
