@@ -23,13 +23,7 @@ module.exports.linebrk = function (str, maxLen) {
 
 module.exports.detectEnvironment = function () {
     if (process && process.title != 'browser') {
-        if (typeof crypt.publicEncrypt === 'function' && typeof crypt.privateDecrypt === 'function') {
-            if (typeof crypt.publicDecrypt === 'function' && typeof crypt.privateEncrypt === 'function') {
-                return 'iojs';
-            }
-            return 'node';
-        }
-        return 'node10';
+        return 'node';
     } else if (window) {
         return 'browser';
     }

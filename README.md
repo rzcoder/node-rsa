@@ -29,7 +29,7 @@ console.log('decrypted: ', decrypted);
 ```shell
 npm install node-rsa
 ```
-*Requires nodejs >= 0.10.x*
+*Requires nodejs >= 0.10.x or io.js >= 1.x*
 
 ### Testing
 
@@ -58,10 +58,8 @@ var key = new NodeRSA([keyData, [format]], [options]);
 You can specify some options by second/third constructor argument, or over `key.setOptions()` method.
 
 * environment — working environment (default autodetect):
-    * `'browser'`,
-    * `'node10'` for `nodejs 0.10.x` — provide native sign/verify methods.
-    * `'node'` for `nodejs 0.12.x` — provide also native publicEncrypt/privateDecrypt methods.
-    * `'iojs'` for `io.js 1.x` — provide also native publicDecrypt/privateEncrypt methods.
+    * `'browser'` — will run pure js implementation of RSA algorithms.
+    * `'node'` for `nodejs >= 0.10.x or io.js >= 1.x` — provide some native methods like sign/verify and encrypt/decrypt.
 * encryptionScheme — padding scheme for encrypt/decrypt. Can be `'pkcs1_oaep'` or `'pkcs1'`. Default `'pkcs1_oaep'`.
 * signingScheme — scheme used for signing and verifying. Can be `'pkcs1'` or `'pss'` or 'scheme-hash' format string (eg `'pss-sha1'`). Default `'pkcs1-sha256'`, or, if chosen pss: `'pss-sha1'`.
 
@@ -187,6 +185,7 @@ Return max data size for encrypt in bytes.
 
 ```javascript
 key.encrypt(buffer, [encoding], [source_encoding]);
+key.encryptPrivate(buffer, [encoding], [source_encoding]); // using private key for encryption
 ```
 Return encrypted data.<br/>
 
@@ -196,6 +195,7 @@ Return encrypted data.<br/>
 
 ```javascript
 key.decrypt(buffer, [encoding]);
+key.decryptPublic(buffer, [encoding]); // using public key for decryption
 ```
 Return decrypted data.<br/>
 
@@ -223,6 +223,13 @@ Return result of check, `true` or `false`.<br/>
 Questions, comments, bug reports, and pull requests are all welcome.
 
 ## Changelog
+
+### 0.2.20
+ * Added `.encryptPrivate()` and `.decryptPublic()` methods
+ * Encrypt/decrypt methods in nodejs 0.12.x and io.js using native implementation (40x speed boost)
+ * **KNOWN ISSUES**:
+    * `encryptPrivate` and `decryptPublic` don't have native implementation in nodejs
+    * `encryptPrivate` and `decryptPublic` with pkcs1_oaep padding scheme don't work in io.js and using js implementation
 
 ### 0.2.10
  * **Methods `.exportPrivate()` and `.exportPublic()` was replaced by `.exportKey([format])`.**
