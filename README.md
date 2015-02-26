@@ -187,6 +187,8 @@ Return decrypted data.<br/>
 * buffer — `{buffer}` — data for decrypting. Takes Buffer object or base64 encoded string.<br/>
 * encoding — `{string}` — encoding for result string. Can also take `'buffer'` for raw Buffer object, or `'json'` for automatic JSON.parse result. Default `'buffer'`.
 
+> *Notice:* usage encryptPrivate and decryptPublic with `pkcs1_oaep` padding not described in the RSA [specification](http://www.emc.com/collateral/white-papers/h11300-pkcs-1v2-2-rsa-cryptography-standard-wp.pdf)
+
 ### Signing/Verifying
 ```javascript
 key.sign(buffer, [encoding], [source_encoding]);
@@ -212,9 +214,7 @@ Questions, comments, bug reports, and pull requests are all welcome.
 ### 0.2.20
  * Added `.encryptPrivate()` and `.decryptPublic()` methods
  * Encrypt/decrypt methods in nodejs 0.12.x and io.js using native implementation (> 40x speed boost)
-
-**KNOWN ISSUES**:
-   * `encryptPrivate` and `decryptPublic` don't have native implementation in nodejs and can't be use in native implementation with pkcs1_oaep padding in io.js
+ * *KNOWN ISSUE*:`encryptPrivate` and `decryptPublic` don't have native implementation in nodejs and can't be use in native implementation with pkcs1_oaep padding in io.js
 
 ### 0.2.10
  * **Methods `.exportPrivate()` and `.exportPublic()` was replaced by `.exportKey([format])`.**
