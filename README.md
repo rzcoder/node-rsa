@@ -63,31 +63,16 @@ You can specify some options by second/third constructor argument, or over `key.
 * encryptionScheme — padding scheme for encrypt/decrypt. Can be `'pkcs1_oaep'` or `'pkcs1'`. Default `'pkcs1_oaep'`.
 * signingScheme — scheme used for signing and verifying. Can be `'pkcs1'` or `'pss'` or 'scheme-hash' format string (eg `'pss-sha1'`). Default `'pkcs1-sha256'`, or, if chosen pss: `'pss-sha1'`.
 
-**Advanced options:**<br/>
-You also can specify advanced options for some schemes like this:
-```javascript
-options = {
-  encryptionScheme: {
-    scheme: 'pkcs1_oaep', //scheme
-    hash: 'md5', //hash using for scheme
-    mgf: function(...) {...} //mask generation function
-  },
-  signingScheme: {
-    scheme: 'pss', //scheme
-    hash: 'sha1', //hash using for scheme
-    saltLength: 20 //salt length for pss sign
-  }
-}
-```
-
 This lib supporting next hash algorithms: `'md5'`, `'ripemd160'`, `'sha1'`, `'sha256'`, `'sha512'` in browser and node environment and additional `'md4'`, `'sha'`, `'sha224'`, `'sha384'` in node only.
+
+<sub>Some [advanced options info](https://github.com/rzcoder/node-rsa/wiki/Advanced-options)</sub>
 
 #### Creating "empty" key
 ```javascript
 var key = new NodeRSA();
 ```
 
-#### Generate new key 512bit-length and with public exponent 65537
+#### Generate new 512bit-length key
 ```javascript
 var key = new NodeRSA({b: 512});
 ```
@@ -228,8 +213,7 @@ Questions, comments, bug reports, and pull requests are all welcome.
  * Added `.encryptPrivate()` and `.decryptPublic()` methods
  * Encrypt/decrypt methods in nodejs 0.12.x and io.js using native implementation (40x speed boost)
  * **KNOWN ISSUES**:
-    * `encryptPrivate` and `decryptPublic` don't have native implementation in nodejs
-    * `encryptPrivate` and `decryptPublic` with pkcs1_oaep padding scheme don't work in io.js and using js implementation
+    * `encryptPrivate` and `decryptPublic` don't have native implementation in nodejs and can't be use in native implementation with pkcs1_oaep padding in io.js
 
 ### 0.2.10
  * **Methods `.exportPrivate()` and `.exportPublic()` was replaced by `.exportKey([format])`.**

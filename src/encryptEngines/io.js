@@ -11,7 +11,7 @@ module.exports = function (keyPair, options) {
                 padding = constants.RSA_PKCS1_PADDING;
             }
 
-            /* io.js 1.3.x bug */
+            /* opennssl can't make it */
             if (padding === constants.RSA_PKCS1_OAEP_PADDING) {
                 return jsEngine.encrypt(buffer, usePrivate);
             }
@@ -35,7 +35,7 @@ module.exports = function (keyPair, options) {
                 padding = constants.RSA_PKCS1_PADDING;
             }
 
-            /* io.js 1.3.x bug */
+            /* opennssl can't make it */
             if (padding === constants.RSA_PKCS1_OAEP_PADDING) {
                 return jsEngine.decrypt(buffer, usePrivate);
             }
