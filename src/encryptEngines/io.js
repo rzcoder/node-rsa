@@ -37,7 +37,7 @@ module.exports = function (keyPair, options) {
 
             /* opennssl can't make it */
             if (padding === constants.RSA_PKCS1_OAEP_PADDING) {
-                return jsEngine.decrypt(buffer, usePrivate);
+                return jsEngine.decrypt(buffer, usePublic);
             }
 
             if (usePublic) {
