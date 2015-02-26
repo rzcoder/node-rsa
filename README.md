@@ -212,10 +212,10 @@ Questions, comments, bug reports, and pull requests are all welcome.
 ## Changelog
 
 ### 0.2.20
- * Added `.encryptPrivate()` and `.decryptPublic()` methods
- * Encrypt/decrypt methods in nodejs 0.12.x and io.js using native implementation (> 40x speed boost)
+ * Added `.encryptPrivate()` and `.decryptPublic()` methods.
+ * Encrypt/decrypt methods in nodejs 0.12.x and io.js using native implementation (> 40x speed boost).
  * Fixed some regex issue causing catastrophic backtracking.
- * *KNOWN ISSUE*:`encryptPrivate` and `decryptPublic` don't have native implementation in nodejs and can't be use in native implementation with pkcs1_oaep padding in io.js
+ * *KNOWN ISSUE*:`encryptPrivate` and `decryptPublic` don't have native implementation in nodejs and can't be use in native implementation with pkcs1_oaep padding in io.js.
 
 ### 0.2.10
  * **Methods `.exportPrivate()` and `.exportPublic()` was replaced by `.exportKey([format])`.**
@@ -226,34 +226,34 @@ Questions, comments, bug reports, and pull requests are all welcome.
  * **`.getPublicPEM()` method was renamed to `.exportPublic()`**
  * **`.getPrivatePEM()` method was renamed to `.exportPrivate()`**
  * **`.loadFromPEM()` method was renamed to `.importKey()`**
- * Added PKCS1_OAEP encrypting/decrypting support
-     * **PKCS1_OAEP now default scheme, you need to specify 'encryptingScheme' option to 'pkcs1' for compatibility with 0.1.x version of NodeRSA**
- * Added PSS signing/verifying support
+ * Added PKCS1_OAEP encrypting/decrypting support.
+     * **PKCS1_OAEP now default scheme, you need to specify 'encryptingScheme' option to 'pkcs1' for compatibility with 0.1.x version of NodeRSA.**
+ * Added PSS signing/verifying support.
  * Signing now supports `'md5'`, `'ripemd160'`, `'sha1'`, `'sha256'`, `'sha512'` hash algorithms in both environments
  and additional `'md4'`, `'sha'`, `'sha224'`, `'sha384'` for nodejs env.
  * **`options.signingAlgorithm` was renamed to `options.signingScheme`**
- * Added `encryptingScheme` option
+ * Added `encryptingScheme` option.
  * Property `key.options` now mark as private. Added `key.setOptions(options)` method.
 
 
 ### 0.1.54
- * Added support for loading PEM key from Buffer (`fs.readFileSync()` output)
- * Added `isEmpty()` method
+ * Added support for loading PEM key from Buffer (`fs.readFileSync()` output).
+ * Added `isEmpty()` method.
 
 ### 0.1.52
- * Improve work with not properly trimming PEM strings
+ * Improve work with not properly trimming PEM strings.
 
 ### 0.1.50
- * Implemented native js signing and verifying for browsers
- * `options.signingAlgorithm` now takes only hash-algorithm name
- * Added `.getKeySize()` and `.getMaxMessageSize()` methods
- * `.loadFromPublicPEM` and `.loadFromPrivatePEM` methods marked as private
+ * Implemented native js signing and verifying for browsers.
+ * `options.signingAlgorithm` now takes only hash-algorithm name.
+ * Added `.getKeySize()` and `.getMaxMessageSize()` methods.
+ * `.loadFromPublicPEM` and `.loadFromPrivatePEM` methods marked as private.
 
 ### 0.1.40
- * Added signing/verifying
+ * Added signing/verifying.
 
 ### 0.1.30
- * Added long message support
+ * Added long message support.
 
 
 ## License
