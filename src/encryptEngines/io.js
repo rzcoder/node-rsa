@@ -32,7 +32,6 @@ module.exports = function (keyPair, options) {
             if (options.encryptionScheme === 'pkcs1') {
                 padding = constants.RSA_PKCS1_PADDING;
             }
-
             if (usePublic) {
                 // openssl don't support oaep padding for public decrypt
                 if (padding === constants.RSA_PKCS1_OAEP_PADDING) {
