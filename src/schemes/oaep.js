@@ -76,7 +76,7 @@ module.exports.makeScheme = function (key, options) {
         var hash = this.options.encryptionSchemeOptions.hash || DEFAULT_HASH_FUNCTION;
         var mgf = this.options.encryptionSchemeOptions.mgf || module.exports.eme_oaep_mgf1;
         var label = this.options.encryptionSchemeOptions.label || new Buffer(0);
-        var emLen  = this.key.encryptedDataLength;
+        var emLen = this.key.encryptedDataLength;
 
         var hLen = module.exports.digestLength[hash];
 

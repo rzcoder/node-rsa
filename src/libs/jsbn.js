@@ -182,13 +182,25 @@ function nbv(i) {
 // (protected) set from string and radix
 function bnpFromString(data, radix, unsigned) {
     var k;
-    switch(radix) {
-        case 2: k=1; break;
-        case 4: k=2; break;
-        case 8: k=3; break;
-        case 16: k=4; break;
-        case 32: k=5; break;
-        case 256: k=8; break;
+    switch (radix) {
+        case 2:
+            k = 1;
+            break;
+        case 4:
+            k = 2;
+            break;
+        case 8:
+            k = 3;
+            break;
+        case 16:
+            k = 4;
+            break;
+        case 32:
+            k = 5;
+            break;
+        case 256:
+            k = 8;
+            break;
         default:
             this.fromRadix(data, radix);
             return;
@@ -839,13 +851,13 @@ function bnToBuffer(trimOrSize) {
 }
 
 function bnEquals(a) {
-    return(this.compareTo(a) == 0);
+    return (this.compareTo(a) == 0);
 }
 function bnMin(a) {
-    return(this.compareTo(a) < 0) ? this : a;
+    return (this.compareTo(a) < 0) ? this : a;
 }
 function bnMax(a) {
-    return(this.compareTo(a) > 0) ? this : a;
+    return (this.compareTo(a) > 0) ? this : a;
 }
 
 //(protected) r = this op a (bitwise)
@@ -981,8 +993,8 @@ function bnBitCount() {
 //(public) true iff nth bit is set
 function bnTestBit(n) {
     var j = Math.floor(n / this.DB);
-    if (j >= this.t) return(this.s != 0);
-    return((this[j] & (1 << (n % this.DB))) != 0);
+    if (j >= this.t) return (this.s != 0);
+    return ((this[j] & (1 << (n % this.DB))) != 0);
 }
 
 //(protected) this op (1<<n)
