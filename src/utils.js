@@ -3,6 +3,8 @@
  *
  */
 
+var crypt = require('crypto');
+
 /**
  * Break string str each maxLen symbols
  * @param str
@@ -25,7 +27,6 @@ module.exports.detectEnvironment = function () {
     } else if (window) {
         return 'browser';
     }
-
     return 'node';
 };
 

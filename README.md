@@ -29,7 +29,7 @@ console.log('decrypted: ', decrypted);
 ```shell
 npm install node-rsa
 ```
-*Requires nodejs >= 0.10.x*
+*Requires nodejs >= 0.10.x or io.js >= 1.x*
 
 ### Testing
 
@@ -57,35 +57,22 @@ var key = new NodeRSA([keyData, [format]], [options]);
 #### Options
 You can specify some options by second/third constructor argument, or over `key.setOptions()` method.
 
-* environment — working environment, `'browser'` or `'node'`. Default autodetect.
+* environment — working environment (default autodetect):
+    * `'browser'` — will run pure js implementation of RSA algorithms.
+    * `'node'` for `nodejs >= 0.10.x or io.js >= 1.x` — provide some native methods like sign/verify and encrypt/decrypt.
 * encryptionScheme — padding scheme for encrypt/decrypt. Can be `'pkcs1_oaep'` or `'pkcs1'`. Default `'pkcs1_oaep'`.
 * signingScheme — scheme used for signing and verifying. Can be `'pkcs1'` or `'pss'` or 'scheme-hash' format string (eg `'pss-sha1'`). Default `'pkcs1-sha256'`, or, if chosen pss: `'pss-sha1'`.
 
-**Advanced options:**<br/>
-You also can specify advanced options for some schemes like this:
-```javascript
-options = {
-  encryptionScheme: {
-    scheme: 'pkcs1_oaep', //scheme
-    hash: 'md5', //hash using for scheme
-    mgf: function(...) {...} //mask generation function
-  },
-  signingScheme: {
-    scheme: 'pss', //scheme
-    hash: 'sha1', //hash using for scheme
-    saltLength: 20 //salt length for pss sign
-  }
-}
-```
+> *Notice:* This lib supporting next hash algorithms: `'md5'`, `'ripemd160'`, `'sha1'`, `'sha256'`, `'sha512'` in browser and node environment and additional `'md4'`, `'sha'`, `'sha224'`, `'sha384'` in node only.
 
-This lib supporting next hash algorithms: `'md5'`, `'ripemd160'`, `'sha1'`, `'sha256'`, `'sha512'` in browser and node environment and additional `'md4'`, `'sha'`, `'sha224'`, `'sha384'` in node only.
+<sub>Some [advanced options info](https://github.com/rzcoder/node-rsa/wiki/Advanced-options)</sub>
 
 #### Creating "empty" key
 ```javascript
 var key = new NodeRSA();
 ```
 
-#### Generate new key 512bit-length and with public exponent 65537
+#### Generate new 512bit-length key
 ```javascript
 var key = new NodeRSA({b: 512});
 ```
@@ -136,7 +123,7 @@ Output type — can be:
  * `'pem'` — Base64 encoded string with header and footer. Used by default.
  * `'der'` — Binary encoded key data.
 
-**Notice:** For import, if *keyData* is PEM string or buffer containing string, you can do not specify format, but if you provide *keyData* as DER you must specify it in format string.
+> *Notice:* For import, if *keyData* is PEM string or buffer containing string, you can do not specify format, but if you provide *keyData* as DER you must specify it in format string.
 
 **Shortcuts and examples**
  * `'private'` or `'pkcs1'` or `'pkcs1-private'` == `'pkcs1-private-pem'` — private key encoded in pcks1 scheme as pem string.
@@ -183,6 +170,7 @@ Return max data size for encrypt in bytes.
 
 ```javascript
 key.encrypt(buffer, [encoding], [source_encoding]);
+key.encryptPrivate(buffer, [encoding], [source_encoding]); // use private key for encryption
 ```
 Return encrypted data.<br/>
 
@@ -192,11 +180,14 @@ Return encrypted data.<br/>
 
 ```javascript
 key.decrypt(buffer, [encoding]);
+key.decryptPublic(buffer, [encoding]); // use public key for decryption
 ```
 Return decrypted data.<br/>
 
 * buffer — `{buffer}` — data for decrypting. Takes Buffer object or base64 encoded string.<br/>
 * encoding — `{string}` — encoding for result string. Can also take `'buffer'` for raw Buffer object, or `'json'` for automatic JSON.parse result. Default `'buffer'`.
+
+> *Notice:* usage `encryptPrivate` and `decryptPublic` with `pkcs1_oaep` padding not described in the RSA [specification](http://www.emc.com/collateral/white-papers/h11300-pkcs-1v2-2-rsa-cryptography-standard-wp.pdf)
 
 ### Signing/Verifying
 ```javascript
@@ -220,6 +211,12 @@ Questions, comments, bug reports, and pull requests are all welcome.
 
 ## Changelog
 
+### 0.2.20
+ * Added `.encryptPrivate()` and `.decryptPublic()` methods.
+ * Encrypt/decrypt methods in nodejs 0.12.x and io.js using native implementation (> 40x speed boost).
+ * Fixed some regex issue causing catastrophic backtracking.
+ * *KNOWN ISSUE*:`encryptPrivate` and `decryptPublic` don't have native implementation in nodejs and can't be use in native implementation with pkcs1_oaep padding in io.js.
+
 ### 0.2.10
  * **Methods `.exportPrivate()` and `.exportPublic()` was replaced by `.exportKey([format])`.**
     * By default `.exportKey()` returns private key as `.exportPrivate()`, if you need public key from `.exportPublic()` you must specify format as `'public'` or `'pkcs8-public-pem'`.
@@ -229,34 +226,34 @@ Questions, comments, bug reports, and pull requests are all welcome.
  * **`.getPublicPEM()` method was renamed to `.exportPublic()`**
  * **`.getPrivatePEM()` method was renamed to `.exportPrivate()`**
  * **`.loadFromPEM()` method was renamed to `.importKey()`**
- * Added PKCS1_OAEP encrypting/decrypting support
-     * **PKCS1_OAEP now default scheme, you need to specify 'encryptingScheme' option to 'pkcs1' for compatibility with 0.1.x version of NodeRSA**
- * Added PSS signing/verifying support
+ * Added PKCS1_OAEP encrypting/decrypting support.
+     * **PKCS1_OAEP now default scheme, you need to specify 'encryptingScheme' option to 'pkcs1' for compatibility with 0.1.x version of NodeRSA.**
+ * Added PSS signing/verifying support.
  * Signing now supports `'md5'`, `'ripemd160'`, `'sha1'`, `'sha256'`, `'sha512'` hash algorithms in both environments
  and additional `'md4'`, `'sha'`, `'sha224'`, `'sha384'` for nodejs env.
  * **`options.signingAlgorithm` was renamed to `options.signingScheme`**
- * Added `encryptingScheme` option
+ * Added `encryptingScheme` option.
  * Property `key.options` now mark as private. Added `key.setOptions(options)` method.
 
 
 ### 0.1.54
- * Added support for loading PEM key from Buffer (`fs.readFileSync()` output)
- * Added `isEmpty()` method
+ * Added support for loading PEM key from Buffer (`fs.readFileSync()` output).
+ * Added `isEmpty()` method.
 
 ### 0.1.52
- * Improve work with not properly trimming PEM strings
+ * Improve work with not properly trimming PEM strings.
 
 ### 0.1.50
- * Implemented native js signing and verifying for browsers
- * `options.signingAlgorithm` now takes only hash-algorithm name
- * Added `.getKeySize()` and `.getMaxMessageSize()` methods
- * `.loadFromPublicPEM` and `.loadFromPrivatePEM` methods marked as private
+ * Implemented native js signing and verifying for browsers.
+ * `options.signingAlgorithm` now takes only hash-algorithm name.
+ * Added `.getKeySize()` and `.getMaxMessageSize()` methods.
+ * `.loadFromPublicPEM` and `.loadFromPrivatePEM` methods marked as private.
 
 ### 0.1.40
- * Added signing/verifying
+ * Added signing/verifying.
 
 ### 0.1.30
- * Added long message support
+ * Added long message support.
 
 
 ## License

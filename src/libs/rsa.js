@@ -44,9 +44,10 @@ var crypt = require('crypto');
 var BigInteger = require('./jsbn.js');
 var utils = require('../utils.js');
 var schemes = require('../schemes/schemes.js');
+var encryptEngines = require('../encryptEngines/encryptEngines.js');
 
 exports.BigInteger = BigInteger;
-module.exports.Key = (function() {
+module.exports.Key = (function () {
     /**
      * RSA key constructor
      *
@@ -80,6 +81,8 @@ module.exports.Key = (function() {
             this.encryptionScheme = encryptionSchemeProvider.makeScheme(this, options);
             this.signingScheme = signingSchemeProvider.makeScheme(this, options);
         }
+
+        this.encryptEngine = encryptEngines.getEngine(this, options);
     };
 
     /**
@@ -91,13 +94,13 @@ module.exports.Key = (function() {
         var qs = B >> 1;
         this.e = parseInt(E, 16);
         var ee = new BigInteger(E, 16);
-        for (; ;) {
-            for (; ;) {
+        while (true) {
+            while (true) {
                 this.p = new BigInteger(B - qs, 1);
                 if (this.p.subtract(BigInteger.ONE).gcd(ee).compareTo(BigInteger.ONE) === 0 && this.p.isProbablePrime(10))
                     break;
             }
-            for (; ;) {
+            while (true) {
                 this.q = new BigInteger(qs, 1);
                 if (this.q.subtract(BigInteger.ONE).gcd(ee).compareTo(BigInteger.ONE) === 0 && this.q.isProbablePrime(10))
                     break;
@@ -206,33 +209,23 @@ module.exports.Key = (function() {
      * @param buffer {Buffer}
      * @returns {Buffer}
      */
-    RSAKey.prototype.encrypt = function (buffer) {
+    RSAKey.prototype.encrypt = function (buffer, usePrivate) {
         var buffers = [];
         var results = [];
         var bufferSize = buffer.length;
         var buffersCount = Math.ceil(bufferSize / this.maxMessageLength) || 1; // total buffers count for encrypt
         var dividedSize = Math.ceil(bufferSize / buffersCount || 1); // each buffer size
 
-        if ( buffersCount == 1) {
+        if (buffersCount == 1) {
             buffers.push(buffer);
         } else {
             for (var bufNum = 0; bufNum < buffersCount; bufNum++) {
-                buffers.push(buffer.slice(bufNum * dividedSize, (bufNum+1) * dividedSize));
+                buffers.push(buffer.slice(bufNum * dividedSize, (bufNum + 1) * dividedSize));
             }
         }
 
-        for(var i = 0; i < buffers.length; i++) {
-            var buf = buffers[i];
-
-            var m = new BigInteger(this.encryptionScheme.encPad(buf));
-            var c = this.$doPublic(m);
-
-            if (c === null) {
-                return null;
-            }
-
-            var encryptedBuffer = c.toBuffer(this.encryptedDataLength);
-            results.push(encryptedBuffer);
+        for (var i = 0; i < buffers.length; i++) {
+            results.push(this.encryptEngine.encrypt(buffers[i], usePrivate));
         }
 
         return Buffer.concat(results);
@@ -243,7 +236,7 @@ module.exports.Key = (function() {
      * @param buffer {Buffer}
      * @returns {Buffer}
      */
-    RSAKey.prototype.decrypt = function (buffer) {
+    RSAKey.prototype.decrypt = function (buffer, usePublic) {
         if (buffer.length % this.encryptedDataLength > 0) {
             throw Error('Incorrect data or key');
         }
@@ -256,10 +249,7 @@ module.exports.Key = (function() {
         for (var i = 0; i < buffersCount; i++) {
             offset = i * this.encryptedDataLength;
             length = offset + this.encryptedDataLength;
-
-            var c = new BigInteger(buffer.slice(offset, Math.min(length, buffer.length)));
-            var m = this.$doPrivate(c);
-            result.push(this.encryptionScheme.encUnPad(m.toBuffer(this.encryptedDataLength)));
+            result.push(this.encryptEngine.decrypt(buffer.slice(offset, Math.min(length, buffer.length)), usePublic));
         }
 
         return Buffer.concat(result);
@@ -289,15 +279,21 @@ module.exports.Key = (function() {
     };
 
     Object.defineProperty(RSAKey.prototype, 'keySize', {
-        get: function() { return this.cache.keyBitLength; }
+        get: function () {
+            return this.cache.keyBitLength;
+        }
     });
 
     Object.defineProperty(RSAKey.prototype, 'encryptedDataLength', {
-        get: function() { return this.cache.keyByteLength; }
+        get: function () {
+            return this.cache.keyByteLength;
+        }
     });
 
     Object.defineProperty(RSAKey.prototype, 'maxMessageLength', {
-        get: function() { return this.encryptionScheme.maxMessageLength(); }
+        get: function () {
+            return this.encryptionScheme.maxMessageLength();
+        }
     });
 
     /**

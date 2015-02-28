@@ -128,12 +128,12 @@ module.exports = {
      * @param data
      */
     autoImport: function (key, data) {
-        if (/^\s*-----BEGIN RSA PRIVATE KEY-----\s*([A-Za-z0-9+/=]+\s*)+-----END RSA PRIVATE KEY-----\s*$/g.test(data)) {
+        if (/^\s*-----BEGIN RSA PRIVATE KEY-----\s*(?=(([A-Za-z0-9+/=]+\s*)+))\1-----END RSA PRIVATE KEY-----\s*$/g.test(data)) {
             module.exports.privateImport(key, data);
             return true;
         }
 
-        if (/^\s*-----BEGIN RSA PUBLIC KEY-----\s*([A-Za-z0-9+/=]+\s*)+-----END RSA PUBLIC KEY-----\s*$/g.test(data)) {
+        if (/^\s*-----BEGIN RSA PUBLIC KEY-----\s*(?=(([A-Za-z0-9+/=]+\s*)+))\1-----END RSA PUBLIC KEY-----\s*$/g.test(data)) {
             module.exports.publicImport(key, data);
             return true;
         }

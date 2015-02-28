@@ -61,6 +61,14 @@ describe("NodeRSA", function(){
     var publicNodeRSA = null;
 
     describe("Setup options", function(){
+        it("should use browser environment", function () {
+            assert.equal((new NodeRSA(null, {environment: 'browser'})).$options.environment, 'browser');
+        });
+
+        it("should use io.js environment", function () {
+            assert.equal((new NodeRSA(null, {environment: 'iojs'})).$options.environment, 'iojs');
+        });
+
         it("should make empty key pair with default options", function () {
             var key = new NodeRSA(null);
             assert.equal(key.isEmpty(), true);
@@ -103,7 +111,6 @@ describe("NodeRSA", function(){
             assert.equal(key.$options.signingScheme, 'pkcs1');
             assert.equal(key.$options.signingSchemeOptions.hash, 'sha256');
         });
-
 
         it("advanced options change", function () {
             var key = new NodeRSA(null);
@@ -339,52 +346,214 @@ describe("NodeRSA", function(){
     });
 
     describe("Encrypting & decrypting", function () {
-        for (var scheme_i in encryptSchemes) {
-            (function (scheme) {
-                describe("Encryption scheme: " + scheme, function () {
-                    describe("Good cases", function () {
-                        var encrypted = {};
-                        var decrypted = {};
-                        for (var i in dataBundle) {
-                            (function (i) {
-                                var key = null;
-                                var suit = dataBundle[i];
+        for (var env in environments) {
+            (function (env) {
+                for (var scheme_i in encryptSchemes) {
+                    (function (scheme) {
+                        describe("Environment: " + env + ". Encryption scheme: " + scheme, function () {
+                            describe("Good cases", function () {
+                                var encrypted = {};
+                                var decrypted = {};
+                                for (var i in dataBundle) {
+                                    (function (i) {
+                                        var key = null;
+                                        var suit = dataBundle[i];
 
-                                it("should encrypt " + i, function () {
-                                    key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length];
-                                    key.setOptions({encryptionScheme: scheme});
-                                    encrypted[i] = key.encrypt(suit.data);
-                                    assert(Buffer.isBuffer(encrypted[i]));
-                                    assert(encrypted[i].length > 0);
+                                        it("`encrypt()` should encrypt " + i, function () {
+                                            key = new NodeRSA(generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length].exportKey(), {
+                                                environment: env,
+                                                encryptionScheme: scheme
+                                            });
+                                            encrypted[i] = key.encrypt(suit.data);
+                                            assert(Buffer.isBuffer(encrypted[i]));
+                                            assert(encrypted[i].length > 0);
+                                        });
+
+                                        it("`decrypt()` should decrypt " + i, function () {
+                                            decrypted[i] = key.decrypt(encrypted[i], _.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding);
+                                            if (Buffer.isBuffer(decrypted[i])) {
+                                                assert.equal(suit.data.toString('hex'), decrypted[i].toString('hex'));
+                                            } else {
+                                                assert(_.isEqual(suit.data, decrypted[i]));
+                                            }
+                                        });
+                                    })(i);
+                                }
+
+                                for (var i in dataBundle) {
+                                    (function (i) {
+                                        var key = null;
+                                        var suit = dataBundle[i];
+
+                                        it("`encryptPrivate()` should encrypt " + i, function () {
+                                            key = new NodeRSA(generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length].exportKey(), {
+                                                environment: env,
+                                                encryptionScheme: scheme
+                                            });
+                                            encrypted[i] = key.encryptPrivate(suit.data);
+                                            assert(Buffer.isBuffer(encrypted[i]));
+                                            assert(encrypted[i].length > 0);
+                                        });
+
+                                        it("`decryptPublic()` should decrypt " + i, function () {
+                                            decrypted[i] = key.decryptPublic(encrypted[i], _.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding);
+                                            if (Buffer.isBuffer(decrypted[i])) {
+                                                assert.equal(suit.data.toString('hex'), decrypted[i].toString('hex'));
+                                            } else {
+                                                assert(_.isEqual(suit.data, decrypted[i]));
+                                            }
+                                        });
+                                    })(i);
+                                }
+                            });
+
+                            describe("Bad cases", function () {
+                                it("unsupported data types", function () {
+                                    assert.throw(function () {
+                                        generatedKeys[0].encrypt(null);
+                                    }, Error, "Unexpected data type");
+                                    assert.throw(function () {
+                                        generatedKeys[0].encrypt(undefined);
+                                    }, Error, "Unexpected data type");
+                                    assert.throw(function () {
+                                        generatedKeys[0].encrypt(true);
+                                    }, Error, "Unexpected data type");
                                 });
 
-                                it("should decrypt " + i, function () {
-                                    decrypted[i] = key.decrypt(encrypted[i], _.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding);
-                                    if (Buffer.isBuffer(decrypted[i])) {
-                                        assert.equal(suit.data.toString('hex'), decrypted[i].toString('hex'));
-                                    } else {
-                                        assert(_.isEqual(suit.data, decrypted[i]));
-                                    }
+                                it("incorrect key for decrypting", function () {
+                                    var encrypted = generatedKeys[0].encrypt('data');
+                                    assert.throw(function () {
+                                        generatedKeys[1].decrypt(encrypted);
+                                    }, Error, "Error during decryption");
                                 });
-                            })(i);
+                            });
+                        });
+                    })(encryptSchemes[scheme_i]);
+                }
+            })(environments[env]);
+        }
+
+        describe("Compatibility of different environments", function () {
+            var encrypted = {};
+            var decrypted = {};
+            for (var i in dataBundle) {
+                (function (i) {
+                    var key1 = null;
+                    var key2 = null;
+                    var suit = dataBundle[i];
+
+                    it("`encrypt()` by browser" + i, function () {
+                        var key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length].exportKey();
+                        key1 = new NodeRSA(key, {environment: 'browser'});
+                        key2 = new NodeRSA(key, {environment: 'node'});
+                        encrypted[i] = key1.encrypt(suit.data);
+                        assert(Buffer.isBuffer(encrypted[i]));
+                        assert(encrypted[i].length > 0);
+                    });
+
+                    it("`decrypt()` by node" + i, function () {
+                        decrypted[i] = key2.decrypt(encrypted[i], _.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding);
+                        if (Buffer.isBuffer(decrypted[i])) {
+                            assert.equal(suit.data.toString('hex'), decrypted[i].toString('hex'));
+                        } else {
+                            assert(_.isEqual(suit.data, decrypted[i]));
                         }
                     });
+                })(i);
+            }
 
-                    describe("Bad cases", function () {
-                        it("unsupported data types", function(){
-                            assert.throw(function(){ generatedKeys[0].encrypt(null); }, Error, "Unexpected data type");
-                            assert.throw(function(){ generatedKeys[0].encrypt(undefined); }, Error, "Unexpected data type");
-                            assert.throw(function(){ generatedKeys[0].encrypt(true); }, Error, "Unexpected data type");
-                        });
+            for (var i in dataBundle) {
+                (function (i) {
+                    var key1 = null;
+                    var key2 = null;
+                    var suit = dataBundle[i];
 
-                        it("incorrect key for decrypting", function(){
-                            var encrypted = generatedKeys[0].encrypt('data');
-                            assert.throw(function(){ generatedKeys[1].decrypt(encrypted); }, Error, "Error during decryption");
+                    it("`encryptPrivate()` by browser " + i, function () {
+                        var key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length].exportKey();
+                        key1 = new NodeRSA(key, {
+                            environment: 'browser',
+                            encryptionScheme: 'pkcs1'
                         });
+                        key2 = new NodeRSA(key, {
+                            environment: 'node',
+                            encryptionScheme: 'pkcs1'
+                        });
+                        encrypted[i] = key1.encryptPrivate(suit.data);
+                        assert(Buffer.isBuffer(encrypted[i]));
+                        assert(encrypted[i].length > 0);
                     });
-                });
-            })(encryptSchemes[scheme_i]);
-        }
+
+                    it("`decryptPublic()` by node " + i, function () {
+                        decrypted[i] = key2.decryptPublic(encrypted[i], _.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding);
+                        if (Buffer.isBuffer(decrypted[i])) {
+                            assert.equal(suit.data.toString('hex'), decrypted[i].toString('hex'));
+                        } else {
+                            assert(_.isEqual(suit.data, decrypted[i]));
+                        }
+                    });
+                })(i);
+            }
+
+            var encrypted = {};
+            var decrypted = {};
+            for (var i in dataBundle) {
+                (function (i) {
+                    var key1 = null;
+                    var key2 = null;
+                    var suit = dataBundle[i];
+
+                    it("`encrypt()` by node" + i, function () {
+                        var key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length].exportKey();
+                        key1 = new NodeRSA(key, {environment: 'node'});
+                        key2 = new NodeRSA(key, {environment: 'browser'});
+                        encrypted[i] = key1.encrypt(suit.data);
+                        assert(Buffer.isBuffer(encrypted[i]));
+                        assert(encrypted[i].length > 0);
+                    });
+
+                    it("`decrypt()` by browser" + i, function () {
+                        decrypted[i] = key2.decrypt(encrypted[i], _.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding);
+                        if (Buffer.isBuffer(decrypted[i])) {
+                            assert.equal(suit.data.toString('hex'), decrypted[i].toString('hex'));
+                        } else {
+                            assert(_.isEqual(suit.data, decrypted[i]));
+                        }
+                    });
+                })(i);
+            }
+
+            for (var i in dataBundle) {
+                (function (i) {
+                    var key1 = null;
+                    var key2 = null;
+                    var suit = dataBundle[i];
+
+                    it("`encryptPrivate()` by node " + i, function () {
+                        var key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length].exportKey();
+                        key1 = new NodeRSA(key, {
+                            environment: 'browser',
+                            encryptionScheme: 'pkcs1'
+                        });
+                        key2 = new NodeRSA(key, {
+                            environment: 'node',
+                            encryptionScheme: 'pkcs1'
+                        });
+                        encrypted[i] = key1.encryptPrivate(suit.data);
+                        assert(Buffer.isBuffer(encrypted[i]));
+                        assert(encrypted[i].length > 0);
+                    });
+
+                    it("`decryptPublic()` by browser " + i, function () {
+                        decrypted[i] = key2.decryptPublic(encrypted[i], _.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding);
+                        if (Buffer.isBuffer(decrypted[i])) {
+                            assert.equal(suit.data.toString('hex'), decrypted[i].toString('hex'));
+                        } else {
+                            assert(_.isEqual(suit.data, decrypted[i]));
+                        }
+                    });
+                })(i);
+            }
+        });
     });
 
     describe("Signing & verifying", function () {
