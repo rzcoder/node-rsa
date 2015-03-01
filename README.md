@@ -215,7 +215,7 @@ Questions, comments, bug reports, and pull requests are all welcome.
  * Added `.encryptPrivate()` and `.decryptPublic()` methods.
  * Encrypt/decrypt methods in nodejs 0.12.x and io.js using native implementation (> 40x speed boost).
  * Fixed some regex issue causing catastrophic backtracking.
- * *KNOWN ISSUE*:`encryptPrivate` and `decryptPublic` don't have native implementation in nodejs and can't be use in native implementation with pkcs1_oaep padding in io.js.
+ * *KNOWN ISSUE*: `encryptPrivate` and `decryptPublic` don't have native implementation in nodejs and can't be use in native implementation with pkcs1_oaep padding in io.js.
 
 ### 0.2.10
  * **Methods `.exportPrivate()` and `.exportPublic()` was replaced by `.exportKey([format])`.**
