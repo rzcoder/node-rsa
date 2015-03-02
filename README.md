@@ -9,7 +9,6 @@ Based on jsbn library from Tom Wu http://www-cs-students.stanford.edu/~tjw/jsbn/
 * Supports long messages for encrypt/decrypt
 * Signing and verifying
 
-
 ## Example
 
 ```javascript
@@ -22,7 +21,6 @@ console.log('encrypted: ', encrypted);
 var decrypted = key.decrypt(encrypted, 'utf8');
 console.log('decrypted: ', decrypted);
 ```
-
 
 ## Installing
 
