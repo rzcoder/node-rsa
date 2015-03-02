@@ -16,7 +16,7 @@ module.exports = function (grunt) {
 
         simplemocha: {
             options: {
-                reporter: 'List'
+                reporter: 'list'
             },
             all: {src: ['test/**/*.js']}
         }
