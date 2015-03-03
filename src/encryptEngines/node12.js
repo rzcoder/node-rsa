@@ -2,7 +2,7 @@ var crypto = require('crypto');
 var constants = require('constants');
 
 module.exports = function (keyPair, options) {
-    var jsEngine = require('./js.js')(keyPair);
+    var jsEngine = require('./js.js')(keyPair, options);
 
     return {
         encrypt: function (buffer, usePrivate) {
