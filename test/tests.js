@@ -502,7 +502,7 @@ describe("NodeRSA", function(){
                     var key2 = null;
                     var suit = dataBundle[i];
 
-                    it("`encrypt()` by node" + i, function () {
+                    it("`encrypt()` by node " + i, function () {
                         var key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length].exportKey();
                         key1 = new NodeRSA(key, {environment: 'node'});
                         key2 = new NodeRSA(key, {environment: 'browser'});
@@ -511,7 +511,7 @@ describe("NodeRSA", function(){
                         assert(encrypted[i].length > 0);
                     });
 
-                    it("`decrypt()` by browser" + i, function () {
+                    it("`decrypt()` by browser " + i, function () {
                         decrypted[i] = key2.decrypt(encrypted[i], _.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding);
                         if (Buffer.isBuffer(decrypted[i])) {
                             assert.equal(suit.data.toString('hex'), decrypted[i].toString('hex'));
@@ -567,7 +567,7 @@ describe("NodeRSA", function(){
                     }
                     for (var env in envs) {
                         (function (env) {
-                            describe("Good cases" + (envs.length > 1 ? " in " + env + " environment" : ""), function () {
+                            describe("Good cases " + (envs.length > 1 ? " in " + env + " environment" : ""), function () {
                                 var signed = {};
                                 var key = null;
 
