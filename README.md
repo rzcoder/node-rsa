@@ -185,7 +185,7 @@ Return decrypted data.<br/>
 * buffer — `{buffer}` — data for decrypting. Takes Buffer object or base64 encoded string.<br/>
 * encoding — `{string}` — encoding for result string. Can also take `'buffer'` for raw Buffer object, or `'json'` for automatic JSON.parse result. Default `'buffer'`.
 
-> *Notice:* usage `encryptPrivate` and `decryptPublic` with `pkcs1_oaep` padding not described in the RSA [specification](http://www.emc.com/collateral/white-papers/h11300-pkcs-1v2-2-rsa-cryptography-standard-wp.pdf)
+> *Notice:*`encryptPrivate` and `decryptPublic` using only pkcs1 padding type 1 (not random)
 
 ### Signing/Verifying
 ```javascript
