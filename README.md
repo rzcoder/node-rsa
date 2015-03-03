@@ -209,6 +209,9 @@ Questions, comments, bug reports, and pull requests are all welcome.
 
 ## Changelog
 
+### 0.2.22
+ * Native support for `encryptPrivate` and `decryptPublic` in io.js caused error in linux and was removed.
+
 ### 0.2.20
  * Added `.encryptPrivate()` and `.decryptPublic()` methods.
  * Encrypt/decrypt methods in nodejs 0.12.x and io.js using native implementation (> 40x speed boost).
