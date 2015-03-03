@@ -442,7 +442,7 @@ describe("NodeRSA", function(){
                     var key2 = null;
                     var suit = dataBundle[i];
 
-                    it("`encrypt()` by browser" + i, function () {
+                    it("`encrypt()` by browser " + i, function () {
                         var key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length].exportKey();
                         key1 = new NodeRSA(key, {environment: 'browser'});
                         key2 = new NodeRSA(key, {environment: 'node'});
@@ -451,7 +451,7 @@ describe("NodeRSA", function(){
                         assert(encrypted[i].length > 0);
                     });
 
-                    it("`decrypt()` by node" + i, function () {
+                    it("`decrypt()` by node " + i, function () {
                         decrypted[i] = key2.decrypt(encrypted[i], _.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding);
                         if (Buffer.isBuffer(decrypted[i])) {
                             assert.equal(suit.data.toString('hex'), decrypted[i].toString('hex'));
