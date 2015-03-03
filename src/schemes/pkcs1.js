@@ -45,36 +45,20 @@ module.exports.makeScheme = function (key, options) {
      */
     Scheme.prototype.encPad = function (buffer, options) {
         options = options || {};
+        var filled;
         if (buffer.length > this.key.maxMessageLength) {
             throw new Error("Message too long for RSA (n=" + this.key.encryptedDataLength + ", l=" + buffer.length + ")");
         }
 
         if (options.type === 1) {
-            var filled = new Buffer(this.key.encryptedDataLength - buffer.length - 1);
+            filled = new Buffer(this.key.encryptedDataLength - buffer.length - 1);
             filled.fill(0xff, 0, filled.length - 1);
             filled[0] = 1;
             filled[filled.length - 1] = 0;
 
             return Buffer.concat([filled, buffer]);
         } else {
-            /*// random padding
-            // TODO: make n-length buffer
-            var ba = Array.prototype.slice.call(buffer, 0);
-            ba.unshift(0);
-            var rand = crypt.randomBytes(this.key.encryptedDataLength - ba.length - 2);
-            for (var i = 0; i < rand.length; i++) {
-                var r = rand[i];
-                while (r === 0) { // non-zero only
-                    r = crypt.randomBytes(1)[0];
-                }
-                ba.unshift(r);
-            }
-            ba.unshift(2);
-            ba.unshift(0);
-            // return ba;
-            */
-
-            var filled = new Buffer(this.key.encryptedDataLength - buffer.length);
+            filled = new Buffer(this.key.encryptedDataLength - buffer.length);
             filled[0] = 0;
             filled[1] = 2;
             var rand = crypt.randomBytes(filled.length - 3);
@@ -126,30 +110,6 @@ module.exports.makeScheme = function (key, options) {
             }
         }
         return buffer.slice(i + 1, buffer.length);
-        /*var i = 0;
-
-        while (i < buffer.length && buffer[i] === 0) {
-            ++i;
-        }
-
-        if (buffer.length - i != this.key.encryptedDataLength - 1 || buffer[i] != 2) {
-            return null;
-        }
-
-        ++i;
-        while (buffer[i] !== 0) {
-            if (++i >= buffer.length) {
-                return null;
-            }
-        }
-
-        var c = 0;
-        var res = new Buffer(buffer.length - i - 1);
-        while (++i < buffer.length) {
-            res[c++] = buffer[i] & 255;
-        }*/
-
-        return res;
     };
 
     Scheme.prototype.sign = function (buffer) {
