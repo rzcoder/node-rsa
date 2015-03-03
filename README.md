@@ -292,3 +292,5 @@ In addition, the following condition applies:
 
 All redistributions must retain an intact copy of this copyright notice
 and disclaimer.
+
+[![Build Status](https://travis-ci.org/rzcoder/node-rsa.svg?branch=master)](https://travis-ci.org/rzcoder/node-rsa)
