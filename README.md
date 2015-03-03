@@ -185,7 +185,7 @@ Return decrypted data.<br/>
 * buffer — `{buffer}` — data for decrypting. Takes Buffer object or base64 encoded string.<br/>
 * encoding — `{string}` — encoding for result string. Can also take `'buffer'` for raw Buffer object, or `'json'` for automatic JSON.parse result. Default `'buffer'`.
 
-> *Notice:*`encryptPrivate` and `decryptPublic` using only pkcs1 padding type 1 (not random)
+> *Notice:* `encryptPrivate` and `decryptPublic` using only pkcs1 padding type 1 (not random)
 
 ### Signing/Verifying
 ```javascript
