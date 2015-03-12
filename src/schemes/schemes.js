@@ -1,4 +1,4 @@
-module.exports = schemes = {
+var schemes = {
     pkcs1: require('./pkcs1'),
     pkcs1_oaep: require('./oaep'),
     pss: require('./pss'),
@@ -21,3 +21,5 @@ module.exports = schemes = {
         return schemes[scheme] && schemes[scheme].isSignature;
     }
 };
+
+module.exports = schemes;
