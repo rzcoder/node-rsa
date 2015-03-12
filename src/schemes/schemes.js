@@ -1,4 +1,4 @@
-var schemes = {
+module.exports = {
     pkcs1: require('./pkcs1'),
     pkcs1_oaep: require('./oaep'),
     pss: require('./pss'),
@@ -9,7 +9,7 @@ var schemes = {
      * @returns {Boolean}
      */
     isEncryption: function (scheme) {
-        return schemes[scheme] && schemes[scheme].isEncryption;
+        return module.exports[scheme] && module.exports[scheme].isEncryption;
     },
 
     /**
@@ -18,8 +18,6 @@ var schemes = {
      * @returns {Boolean}
      */
     isSignature: function (scheme) {
-        return schemes[scheme] && schemes[scheme].isSignature;
+        return module.exports[scheme] && module.exports[scheme].isSignature;
     }
 };
-
-module.exports = schemes;
