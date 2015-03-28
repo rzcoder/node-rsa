@@ -27,7 +27,7 @@ console.log('decrypted: ', decrypted);
 ```shell
 npm install node-rsa
 ```
-*Requires nodejs >= 0.10.x or io.js >= 1.x*
+> <sub>Requires nodejs >= 0.10.x or io.js >= 1.x</sub>
 
 ### Testing
 
