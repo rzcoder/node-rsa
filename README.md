@@ -210,7 +210,7 @@ Questions, comments, bug reports, and pull requests are all welcome.
 ## Changelog
 
 ### 0.2.24
- * Now used old hash APIs for webpack compatible
+ * Now used old hash APIs for webpack compatible.
 
 ### 0.2.22
  * `encryptPrivate` and `decryptPublic` now using only pkcs1 (type 1) padding.
