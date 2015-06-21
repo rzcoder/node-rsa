@@ -48,10 +48,10 @@ module.exports.eme_oaep_mgf1 = function (seed, maskLength, hashFunction) {
     var c = new Buffer(4);
     for (var i = 0; i < count; ++i) {
         var hash = crypt.createHash(hashFunction);
-        hash.write(seed);
+        hash.update(seed);
         c.writeUInt32BE(i, 0);
-        hash.end(c);
-        hash.read().copy(T, i * hLen);
+        hash.update(c);
+        hash.digest().copy(T, i * hLen);
     }
     return T.slice(0, maskLength);
 };
