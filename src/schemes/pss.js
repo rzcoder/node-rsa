@@ -168,8 +168,8 @@ module.exports.makeScheme = function (key, options) {
         var salt = DB.slice(DB.length - sLen);
 
         var mHash = crypt.createHash(hash);
-        mHash.end(M);
-        mHash = mHash.read();
+        mHash.update(M);
+        mHash = mHash.digest();
 
         var Mapostrophe = new Buffer(8 + hLen + sLen);
         Mapostrophe.fill(0, 0, 8);
@@ -177,8 +177,8 @@ module.exports.makeScheme = function (key, options) {
         salt.copy(Mapostrophe, 8 + mHash.length);
 
         var Hapostrophe = crypt.createHash(hash);
-        Hapostrophe.end(Mapostrophe);
-        Hapostrophe = Hapostrophe.read();
+        Hapostrophe.update(Mapostrophe);
+        Hapostrophe = Hapostrophe.digest();
 
         return H.toString("hex") === Hapostrophe.toString("hex");
     };
