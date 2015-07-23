@@ -112,8 +112,8 @@ Format string composed of several parts: `scheme-[key_type]-[output_type]`<br/>
 
 Scheme — NodeRSA supports multiple format schemes for import/export keys:
 
-  * `'pkcs1'` — public key starts from `'-----BEGIN RSA PUBLIC KEY-----'` header and private key starts from `'-----BEGIN RSA PRIVATE KEY-----' header`
-  * `'pkcs8'` — public key starts from `'-----BEGIN PUBLIC KEY-----'` header and private key starts from `'-----BEGIN PRIVATE KEY-----' header`
+  * `'pkcs1'` — public key starts from `'-----BEGIN RSA PUBLIC KEY-----'` header and private key starts from `'-----BEGIN RSA PRIVATE KEY-----'` header
+  * `'pkcs8'` — public key starts from `'-----BEGIN PUBLIC KEY-----'` header and private key starts from `'-----BEGIN PRIVATE KEY-----'` header
 
 Key type — can be `'private'` or `'public'`. Default `'private'`<br/>
 Output type — can be:
