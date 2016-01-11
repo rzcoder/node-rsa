@@ -115,6 +115,9 @@ module.exports.Key = (function () {
             var phi = p1.multiply(q1);
             if (phi.gcd(ee).compareTo(BigInteger.ONE) === 0) {
                 this.n = this.p.multiply(this.q);
+                if (this.n.bitLength() < B) {
+                    continue;
+                }
                 this.d = ee.modInverse(phi);
                 this.dmp1 = this.d.mod(p1);
                 this.dmq1 = this.d.mod(q1);
@@ -303,10 +306,6 @@ module.exports.Key = (function () {
         this.cache = this.cache || {};
         // Bit & byte length
         this.cache.keyBitLength = this.n.bitLength();
-        if (this.cache.keyBitLength % 2 == 1) {
-            this.cache.keyBitLength = this.cache.keyBitLength + 1;
-        }
-
         this.cache.keyByteLength = (this.cache.keyBitLength + 6) >> 3;
     };
 
