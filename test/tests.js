@@ -1,12 +1,10 @@
-"use strict";
-
-let fs = require('fs');
-let assert = require('chai').assert;
-let _ = require('lodash');
-let NodeRSA = require('../src/NodeRSA');
+var fs = require('fs');
+var assert = require('chai').assert;
+var _ = require('lodash');
+var NodeRSA = require('../src/NodeRSA');
 
 describe('NodeRSA', function () {
-    let keySizes = [
+    var keySizes = [
         {b: 512, e: 3},
         {b: 512, e: 5},
         {b: 512, e: 257},
@@ -15,15 +13,15 @@ describe('NodeRSA', function () {
         {b: 1024} // 'e' should be 65537
     ];
 
-    let environments = ['browser', 'node'];
-    let encryptSchemes = ['pkcs1', 'pkcs1_oaep'];
-    let signingSchemes = ['pkcs1', 'pss'];
-    let signHashAlgorithms = {
+    var environments = ['browser', 'node'];
+    var encryptSchemes = ['pkcs1', 'pkcs1_oaep'];
+    var signingSchemes = ['pkcs1', 'pss'];
+    var signHashAlgorithms = {
         'node': ['MD4', 'MD5', 'RIPEMD160', 'SHA', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512'],
         'browser': ['MD5', 'RIPEMD160', 'SHA1', 'SHA256', 'SHA512']
     };
 
-    let dataBundle = {
+    var dataBundle = {
         'string': {
             data: 'ascii + 12345678',
             encoding: 'utf8'
@@ -54,9 +52,9 @@ describe('NodeRSA', function () {
         }
     };
 
-    let generatedKeys = [];
-    let privateNodeRSA = null;
-    let publicNodeRSA = null;
+    var generatedKeys = [];
+    var privateNodeRSA = null;
+    var publicNodeRSA = null;
 
     describe('Setup options', function () {
         it('should use browser environment', function () {
@@ -68,7 +66,7 @@ describe('NodeRSA', function () {
         });
 
         it('should make empty key pair with default options', function () {
-            let key = new NodeRSA(null);
+            var key = new NodeRSA(null);
             assert.equal(key.isEmpty(), true);
             assert.equal(key.$options.signingScheme, 'pkcs1');
             assert.equal(key.$options.signingSchemeOptions.hash, 'sha256');
@@ -80,26 +78,26 @@ describe('NodeRSA', function () {
         });
 
         it('should make key pair with pkcs1-md5 signing scheme', function () {
-            let key = new NodeRSA(null, {signingScheme: 'md5'});
+            var key = new NodeRSA(null, {signingScheme: 'md5'});
             assert.equal(key.$options.signingScheme, 'pkcs1');
             assert.equal(key.$options.signingSchemeOptions.hash, 'md5');
         });
 
         it('should make key pair with pss-sha512 signing scheme', function () {
-            let key = new NodeRSA(null, {signingScheme: 'pss-sha512'});
+            var key = new NodeRSA(null, {signingScheme: 'pss-sha512'});
             assert.equal(key.$options.signingScheme, 'pss');
             assert.equal(key.$options.signingSchemeOptions.hash, 'sha512');
         });
 
         it('should make key pair with pkcs1 encryption scheme, and pss-sha1 signing scheme', function () {
-            let key = new NodeRSA(null, {encryptionScheme: 'pkcs1', signingScheme: 'pss'});
+            var key = new NodeRSA(null, {encryptionScheme: 'pkcs1', signingScheme: 'pss'});
             assert.equal(key.$options.encryptionScheme, 'pkcs1');
             assert.equal(key.$options.signingScheme, 'pss');
             assert.equal(key.$options.signingSchemeOptions.hash, null);
         });
 
         it('change options', function () {
-            let key = new NodeRSA(null, {signingScheme: 'pss-sha1'});
+            var key = new NodeRSA(null, {signingScheme: 'pss-sha1'});
             assert.equal(key.$options.signingScheme, 'pss');
             assert.equal(key.$options.signingSchemeOptions.hash, 'sha1');
             key.setOptions({signingScheme: 'pkcs1'});
@@ -111,7 +109,7 @@ describe('NodeRSA', function () {
         });
 
         it('advanced options change', function () {
-            let key = new NodeRSA(null);
+            var key = new NodeRSA(null);
             key.setOptions({
                 encryptionScheme: {
                     scheme: 'pkcs1_oaep',
@@ -134,7 +132,7 @@ describe('NodeRSA', function () {
         });
 
         it('should throw \'unsupported hashing algorithm\' exception', function () {
-            let key = new NodeRSA(null);
+            var key = new NodeRSA(null);
             assert.equal(key.isEmpty(), true);
             assert.equal(key.$options.signingScheme, 'pkcs1');
             assert.equal(key.$options.signingSchemeOptions.hash, 'sha256');
@@ -150,7 +148,7 @@ describe('NodeRSA', function () {
 
     describe('Work with keys', function () {
         describe('Generating keys', function () {
-            for (let size in keySizes) {
+            for (var size in keySizes) {
                 (function (size) {
                     it('should make key pair ' + size.b + '-bit length and public exponent is ' + (size.e ? size.e : size.e + ' and should be 65537'), function () {
                         generatedKeys.push(new NodeRSA({b: size.b, e: size.e}, {encryptionScheme: 'pkcs1'}));
@@ -165,7 +163,7 @@ describe('NodeRSA', function () {
         });
 
         describe('Imprt/Export keys', function () {
-            let privateKeyPKCS1 = '-----BEGIN RSA PRIVATE KEY-----\n' +
+            var privateKeyPKCS1 = '-----BEGIN RSA PRIVATE KEY-----\n' +
                 'MIIFwgIBAAKCAUEAsE1edyfToZRv6cFOkB0tAJ5qJor4YF5CccJAL0fS/o1Yk10V\n' +
                 'SXH4Xx4peSJgYQKkO0HqO1hAz6k9dFQB4U1CnWtRjtNEcIfycqrZrhu6you5syb6\n' +
                 'ScV3Zu/9bm7/DyaLlx/gJhUPR1OxOzaqsEvlu7hbDhNLIYo1zKFb/aUBbD6+UcaG\n' +
@@ -199,7 +197,7 @@ describe('NodeRSA', function () {
                 'RywhDUAjW8U0RBnzlmXhQQ6B9bjqooS2MsRrJrS5CU682fb3hBo=\n' +
                 '-----END RSA PRIVATE KEY-----';
 
-            let privateKeyComponents = {
+            var privateKeyComponents = {
                 n: 'ALBNXncn06GUb+nBTpAdLQCeaiaK+GBeQnHCQC9H0v6NWJNdFUlx+F8eKXkiYGECpDtB6jtYQM+pPXRUAeFNQp1rUY7TRHCH8nKq2a4busqLubMm+knFd2bv/W5u/w8mi5cf4CYVD0dTsTs2qrBL5bu4Ww4TSyGKNcyhW/2lAWw+vlHGhsR9gXxTXc1QLVUlaXP7NmN7G6DDe6wclI+/d+4kJWjCDb1Y8mrMp2LsxzcOmUT/ST/X8MawsmsZ0z1sVZdKr1WkDtvk7RTLQ1x9jlWbVlnixwC/HIpXcNBvrtqlak6iBhMDciZbAB8pGjxQDFtMS7nrpq0pQfiVCT60b78OJwQneBjqzUpTwhP8ZZNQm/CWiAky7w1HGHN2ai946gLngYZKcNrgs/MVSXjgNSmOJECCMfCRAbAGM4Mj9ost',
                 e: 65537,
                 d: 'IwXLnUoZHYEaVkpja/ePyA6wMaXrv2EaO/UFwR64iH7VuLiGEQgF+gdI39p3YO4gZ/EpMc7PWTFalvBVS0eI0zLNidzoPJ6VCDhuc8roaXImWrOEhwEmPhmws65zFrRmiIf5hDcsyNOUYpnygIEjSw5NcFde1nPZSiRH3PRZewJf1mjkvsXb4jHBcZba2o5LC5I89Lgw/de3irJGxOOZVC3xqniNJGA2nVqfPKcOopFyZZ9qd2NTzUBd3stnDfkp83dI8f3OXw/Qdc8SmL+W1KPlJ08wcVfNXvcQiX5HV7/ug+ag59YBi3WWWuRcbWW0YFYf2Zaj/cWK+9mrP1hZiANtMEYBz4Fry8h7IdF04amX9vzt0fCphb/Gk/pJnOYrOrFSLSCIu5baK1WqU5CWot88/1UjAQWi/srRTfY1ZeE=',
@@ -210,7 +208,7 @@ describe('NodeRSA', function () {
                 coeff: 'N3eUVas9q2DGkXUlcwQUVtohF03EeQoDhhiAxMzgw+BWK6dhf/IntJpfyNacLbfUD25Wfj6Rv4O8qNz5m5NC+chQra7ou8iKdUWycMQD4FtfB6EC3B0cMwO2pgV3HiG8JZDAE2fincnQ47a1thUy28zlo4R9FJhqB+ZHLCENQCNbxTREGfOWZeFBDoH1uOqihLYyxGsmtLkJTrzZ9veEGg=='
             };
 
-            let publicKeyPKCS8 = '-----BEGIN PUBLIC KEY-----\n' +
+            var publicKeyPKCS8 = '-----BEGIN PUBLIC KEY-----\n' +
                 'MIIBYjANBgkqhkiG9w0BAQEFAAOCAU8AMIIBSgKCAUEAsE1edyfToZRv6cFOkB0t\n' +
                 'AJ5qJor4YF5CccJAL0fS/o1Yk10VSXH4Xx4peSJgYQKkO0HqO1hAz6k9dFQB4U1C\n' +
                 'nWtRjtNEcIfycqrZrhu6you5syb6ScV3Zu/9bm7/DyaLlx/gJhUPR1OxOzaqsEvl\n' +
@@ -221,15 +219,15 @@ describe('NodeRSA', function () {
                 'KY4kQIIx8JEBsAYzgyP2iy0CAwEAAQ==\n' +
                 '-----END PUBLIC KEY-----';
 
-            let publicKeyComponents = {
+            var publicKeyComponents = {
                 n: 'ALBNXncn06GUb+nBTpAdLQCeaiaK+GBeQnHCQC9H0v6NWJNdFUlx+F8eKXkiYGECpDtB6jtYQM+pPXRUAeFNQp1rUY7TRHCH8nKq2a4busqLubMm+knFd2bv/W5u/w8mi5cf4CYVD0dTsTs2qrBL5bu4Ww4TSyGKNcyhW/2lAWw+vlHGhsR9gXxTXc1QLVUlaXP7NmN7G6DDe6wclI+/d+4kJWjCDb1Y8mrMp2LsxzcOmUT/ST/X8MawsmsZ0z1sVZdKr1WkDtvk7RTLQ1x9jlWbVlnixwC/HIpXcNBvrtqlak6iBhMDciZbAB8pGjxQDFtMS7nrpq0pQfiVCT60b78OJwQneBjqzUpTwhP8ZZNQm/CWiAky7w1HGHN2ai946gLngYZKcNrgs/MVSXjgNSmOJECCMfCRAbAGM4Mj9ost',
                 e: 65537,
             };
 
-            let privateKeyPEMNotTrimmed = '     \n\n    \n\n ' + privateKeyPKCS1 + '\n \n  \n\n  ';
-            let publicKeyPEMNotTrimmed = '\n\n\n\n ' + publicKeyPKCS8 + '\n \n\n\n  ';
+            var privateKeyPEMNotTrimmed = '     \n\n    \n\n ' + privateKeyPKCS1 + '\n \n  \n\n  ';
+            var publicKeyPEMNotTrimmed = '\n\n\n\n ' + publicKeyPKCS8 + '\n \n\n\n  ';
 
-            let fileKeyPKCS1 = '-----BEGIN RSA PRIVATE KEY-----\n' +
+            var fileKeyPKCS1 = '-----BEGIN RSA PRIVATE KEY-----\n' +
                 'MIICXAIBAAKBgQCCdY+EpDC/vPa335l751SBM8d5Lf4z4QZX4bc+DqTY9zVY/rmP\n' +
                 'GbTkCueKnIKApuOGMXJOaCwNH9wUftNt7T0foEwjl16uIC8m4hwSjjNL5TKqMVey\n' +
                 'Syv04oBuidv76u5yNiLC4J85lbmW3WAyYkTCbm/VJZAXNJuqCm7AVWmQMQIDAQAB\n' +
@@ -244,8 +242,8 @@ describe('NodeRSA', function () {
                 'q3V0cqHb6c8rI4TizRsCQANIyhoJ33ughNzbCIknkMPKtgvLOUARnbya/bkfRexL\n' +
                 'icyYzXPNuqZDY8JZQHlshN8cCcZcYjGPYYscd2LKB6o=\n' +
                 '-----END RSA PRIVATE KEY-----';
-            let keysFolder = __dirname + '/keys/';
-            let keys_formats = {
+            var keysFolder = __dirname + '/keys/';
+            var keys_formats = {
                 'pkcs1-private-der': {public: false, der: true, file: 'private_pkcs1.der'},
                 'pkcs1-private-pem': {public: false, der: false, file: 'private_pkcs1.pem'},
                 'pkcs8-private-der': {public: false, der: true, file: 'private_pkcs8.der'},
@@ -302,7 +300,7 @@ describe('NodeRSA', function () {
                     });
 
                     it('should create and load key from buffer/fs.readFileSync output', function () {
-                        let key = new NodeRSA(fs.readFileSync(keysFolder + 'private_pkcs1.pem'));
+                        var key = new NodeRSA(fs.readFileSync(keysFolder + 'private_pkcs1.pem'));
                         assert.equal(key.exportKey(), fileKeyPKCS1);
                         key = new NodeRSA();
                         key.importKey(fs.readFileSync(keysFolder + 'private_pkcs1.pem'));
@@ -310,7 +308,7 @@ describe('NodeRSA', function () {
                     });
 
                     it('.importKey() from private components', function () {
-                        let key = new NodeRSA();
+                        var key = new NodeRSA();
                         key.importKey({
                             n: new Buffer(privateKeyComponents.n, 'base64'),
                             e: 65537,
@@ -327,7 +325,7 @@ describe('NodeRSA', function () {
                     });
 
                     it('.importKey() from public components', function () {
-                        let key = new NodeRSA();
+                        var key = new NodeRSA();
                         key.importKey({
                             n: new Buffer(publicKeyComponents.n, 'base64'),
                             e: 65537
@@ -337,8 +335,8 @@ describe('NodeRSA', function () {
                     });
 
                     it('.exportKey() private components', function () {
-                        let key = new NodeRSA(privateKeyPKCS1);
-                        let components = key.exportKey('components');
+                        var key = new NodeRSA(privateKeyPKCS1);
+                        var components = key.exportKey('components');
                         assert(_.isEqual({
                             n: components.n.toString('base64'),
                             e: components.e,
@@ -352,8 +350,8 @@ describe('NodeRSA', function () {
                     });
 
                     it('.exportKey() public components', function () {
-                        let key = new NodeRSA(publicKeyPKCS8);
-                        let components = key.exportKey('components-public');
+                        var key = new NodeRSA(publicKeyPKCS8);
+                        var components = key.exportKey('components-public');
                         assert(_.isEqual({
                             n: components.n.toString('base64'),
                             e: components.e
@@ -362,14 +360,14 @@ describe('NodeRSA', function () {
                 });
 
                 describe('Different key formats', function () {
-                    let sampleKey = new NodeRSA(fileKeyPKCS1);
+                    var sampleKey = new NodeRSA(fileKeyPKCS1);
 
-                    for (let format in keys_formats) {
+                    for (var format in keys_formats) {
                         (function (format) {
-                            let options = keys_formats[format];
+                            var options = keys_formats[format];
 
                             it('should load from ' + options.file + ' (' + format + ')', function () {
-                                let key = new NodeRSA(fs.readFileSync(keysFolder + options.file), format);
+                                var key = new NodeRSA(fs.readFileSync(keysFolder + options.file), format);
                                 if (options.public) {
                                     assert.equal(key.exportKey('public'), sampleKey.exportKey('public'));
                                 } else {
@@ -378,8 +376,8 @@ describe('NodeRSA', function () {
                             });
 
                             it('should export to \'' + format + '\' format', function () {
-                                let keyData = fs.readFileSync(keysFolder + options.file);
-                                let exported = sampleKey.exportKey(format);
+                                var keyData = fs.readFileSync(keysFolder + options.file);
+                                var exported = sampleKey.exportKey(format);
 
                                 if (options.der) {
                                     assert(Buffer.isBuffer(exported));
@@ -396,7 +394,7 @@ describe('NodeRSA', function () {
 
             describe('Bad cases', function () {
                 it('not public key', function () {
-                    let key = new NodeRSA();
+                    var key = new NodeRSA();
                     assert.throw(function () {
                         key.exportKey();
                     }, Error, 'This is not private key');
@@ -406,7 +404,7 @@ describe('NodeRSA', function () {
                 });
 
                 it('not private key', function () {
-                    let key = new NodeRSA(publicKeyPKCS8);
+                    var key = new NodeRSA(publicKeyPKCS8);
                     assert.throw(function () {
                         key.exportKey();
                     }, Error, 'This is not private key');
@@ -419,18 +417,18 @@ describe('NodeRSA', function () {
     });
 
     describe('Encrypting & decrypting', function () {
-        for (let env in environments) {
+        for (var env in environments) {
             (function (env) {
-                for (let scheme_i in encryptSchemes) {
+                for (var scheme_i in encryptSchemes) {
                     (function (scheme) {
                         describe('Environment: ' + env + '. Encryption scheme: ' + scheme, function () {
                             describe('Good cases', function () {
-                                let encrypted = {};
-                                let decrypted = {};
-                                for (let i in dataBundle) {
+                                var encrypted = {};
+                                var decrypted = {};
+                                for (var i in dataBundle) {
                                     (function (i) {
-                                        let key = null;
-                                        let suit = dataBundle[i];
+                                        var key = null;
+                                        var suit = dataBundle[i];
 
                                         it('`encrypt()` should encrypt ' + i, function () {
                                             key = new NodeRSA(generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length].exportKey(), {
@@ -470,7 +468,7 @@ describe('NodeRSA', function () {
                                 });
 
                                 it('incorrect key for decrypting', function () {
-                                    let encrypted = generatedKeys[0].encrypt('data');
+                                    var encrypted = generatedKeys[0].encrypt('data');
                                     assert.throw(function () {
                                         generatedKeys[1].decrypt(encrypted);
                                     }, Error, 'Error during decryption');
@@ -481,12 +479,12 @@ describe('NodeRSA', function () {
                 }
 
                 describe('Environment: ' + env + '. encryptPrivate & decryptPublic', function () {
-                    let encrypted = {};
-                    let decrypted = {};
-                    for (let i in dataBundle) {
+                    var encrypted = {};
+                    var decrypted = {};
+                    for (var i in dataBundle) {
                         (function (i) {
-                            let key = null;
-                            let suit = dataBundle[i];
+                            var key = null;
+                            var suit = dataBundle[i];
 
                             it('`encryptPrivate()` should encrypt ' + i, function () {
                                 key = new NodeRSA(generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length].exportKey(), {
@@ -512,18 +510,18 @@ describe('NodeRSA', function () {
         }
 
         describe('Compatibility of different environments', function () {
-            for (let scheme_i in encryptSchemes) {
+            for (var scheme_i in encryptSchemes) {
                 (function (scheme) {
-                    let encrypted = {};
-                    let decrypted = {};
-                    for (let i in dataBundle) {
+                    var encrypted = {};
+                    var decrypted = {};
+                    for (var i in dataBundle) {
                         (function (i) {
-                            let key1 = null;
-                            let key2 = null;
-                            let suit = dataBundle[i];
+                            var key1 = null;
+                            var key2 = null;
+                            var suit = dataBundle[i];
 
                             it('Encryption scheme: ' + scheme + ' `encrypt()` by browser ' + i, function () {
-                                let key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length].exportKey();
+                                var key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length].exportKey();
                                 key1 = new NodeRSA(key, {
                                     environment: 'browser',
                                     encryptionScheme: scheme
@@ -550,14 +548,14 @@ describe('NodeRSA', function () {
 
                     encrypted = {};
                     decrypted = {};
-                    for (let i in dataBundle) {
+                    for (var i in dataBundle) {
                         (function (i) {
-                            let key1 = null;
-                            let key2 = null;
-                            let suit = dataBundle[i];
+                            var key1 = null;
+                            var key2 = null;
+                            var suit = dataBundle[i];
 
                             it('Encryption scheme: ' + scheme + ' `encrypt()` by node ' + i + '. Scheme', function () {
-                                let key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length].exportKey();
+                                var key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length].exportKey();
                                 key1 = new NodeRSA(key, {
                                     environment: 'node',
                                     encryptionScheme: scheme
@@ -585,16 +583,16 @@ describe('NodeRSA', function () {
             }
 
             describe('encryptPrivate & decryptPublic', function () {
-                let encrypted = {};
-                let decrypted = {};
-                for (let i in dataBundle) {
+                var encrypted = {};
+                var decrypted = {};
+                for (var i in dataBundle) {
                     (function (i) {
-                        let key1 = null;
-                        let key2 = null;
-                        let suit = dataBundle[i];
+                        var key1 = null;
+                        var key2 = null;
+                        var suit = dataBundle[i];
 
                         it('`encryptPrivate()` by browser ' + i, function () {
-                            let key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length].exportKey();
+                            var key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length].exportKey();
                             key1 = new NodeRSA(key, {environment: 'browser'});
                             key2 = new NodeRSA(key, {environment: 'node'});
                             encrypted[i] = key1.encryptPrivate(suit.data);
@@ -613,14 +611,14 @@ describe('NodeRSA', function () {
                     })(i);
                 }
 
-                for (let i in dataBundle) {
+                for (var i in dataBundle) {
                     (function (i) {
-                        let key1 = null;
-                        let key2 = null;
-                        let suit = dataBundle[i];
+                        var key1 = null;
+                        var key2 = null;
+                        var suit = dataBundle[i];
 
                         it('`encryptPrivate()` by node ' + i, function () {
-                            let key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length].exportKey();
+                            var key = generatedKeys[Math.round(Math.random() * 1000) % generatedKeys.length].exportKey();
                             key1 = new NodeRSA(key, {environment: 'browser'});
                             key2 = new NodeRSA(key, {environment: 'node'});
                             encrypted[i] = key1.encryptPrivate(suit.data);
@@ -643,23 +641,23 @@ describe('NodeRSA', function () {
     });
 
     describe('Signing & verifying', function () {
-        for (let scheme_i in signingSchemes) {
+        for (var scheme_i in signingSchemes) {
             (function (scheme) {
                 describe('Signing scheme: ' + scheme, function () {
-                    let envs = ['node'];
+                    var envs = ['node'];
                     if (scheme == 'pkcs1') {
                         envs = environments;
                     }
 
-                    for (let env in envs) {
+                    for (var env in envs) {
                         (function (env) {
                             describe('Good cases ' + (envs.length > 1 ? ' in ' + env + ' environment' : ''), function () {
-                                let signed = {};
-                                let key = null;
+                                var signed = {};
+                                var key = null;
 
-                                for (let i in dataBundle) {
+                                for (var i in dataBundle) {
                                     (function (i) {
-                                        let suit = dataBundle[i];
+                                        var suit = dataBundle[i];
                                         it('should sign ' + i, function () {
                                             key = new NodeRSA(generatedKeys[generatedKeys.length - 1].exportKey(), {
                                                 signingScheme: scheme + '-sha256',
@@ -679,14 +677,14 @@ describe('NodeRSA', function () {
                                     })(i);
                                 }
 
-                                for (let alg in signHashAlgorithms[env]) {
+                                for (var alg in signHashAlgorithms[env]) {
                                     (function (alg) {
                                         it('signing with custom algorithm (' + alg + ')', function () {
-                                            let key = new NodeRSA(generatedKeys[generatedKeys.length - 1].exportKey(), {
+                                            var key = new NodeRSA(generatedKeys[generatedKeys.length - 1].exportKey(), {
                                                 signingScheme: scheme + '-' + alg,
                                                 environment: env
                                             });
-                                            let signed = key.sign('data');
+                                            var signed = key.sign('data');
                                             if (!key.verify('data', signed)) {
                                                 key.verify('data', signed);
                                             }
@@ -698,16 +696,16 @@ describe('NodeRSA', function () {
 
                             describe('Bad cases' + (envs.length > 1 ? ' in ' + env + ' environment' : ''), function () {
                                 it('incorrect data for verifying', function () {
-                                    let key = new NodeRSA(generatedKeys[0].exportKey(), {
+                                    var key = new NodeRSA(generatedKeys[0].exportKey(), {
                                         signingScheme: scheme + '-sha256',
                                         environment: env
                                     });
-                                    let signed = key.sign('data1');
+                                    var signed = key.sign('data1');
                                     assert(!key.verify('data2', signed));
                                 });
 
                                 it('incorrect key for signing', function () {
-                                    let key = new NodeRSA(generatedKeys[0].exportKey('pkcs8-public'), {
+                                    var key = new NodeRSA(generatedKeys[0].exportKey('pkcs8-public'), {
                                         signingScheme: scheme + '-sha256',
                                         environment: env
                                     });
@@ -717,20 +715,20 @@ describe('NodeRSA', function () {
                                 });
 
                                 it('incorrect key for verifying', function () {
-                                    let key1 = new NodeRSA(generatedKeys[0].exportKey(), {
+                                    var key1 = new NodeRSA(generatedKeys[0].exportKey(), {
                                         signingScheme: scheme + '-sha256',
                                         environment: env
                                     });
-                                    let key2 = new NodeRSA(generatedKeys[1].exportKey('pkcs8-public'), {
+                                    var key2 = new NodeRSA(generatedKeys[1].exportKey('pkcs8-public'), {
                                         signingScheme: scheme + '-sha256',
                                         environment: env
                                     });
-                                    let signed = key1.sign('data');
+                                    var signed = key1.sign('data');
                                     assert(!key2.verify('data', signed));
                                 });
 
                                 it('incorrect key for verifying (empty)', function () {
-                                    let key = new NodeRSA(null, {environment: env});
+                                    var key = new NodeRSA(null, {environment: env});
 
                                     assert.throw(function () {
                                         key.verify('data', 'somesignature');
@@ -738,15 +736,15 @@ describe('NodeRSA', function () {
                                 });
 
                                 it('different algorithms', function () {
-                                    let singKey = new NodeRSA(generatedKeys[0].exportKey(), {
+                                    var singKey = new NodeRSA(generatedKeys[0].exportKey(), {
                                         signingScheme: scheme + '-md5',
                                         environment: env
                                     });
-                                    let verifyKey = new NodeRSA(generatedKeys[0].exportKey(), {
+                                    var verifyKey = new NodeRSA(generatedKeys[0].exportKey(), {
                                         signingScheme: scheme + '-sha1',
                                         environment: env
                                     });
-                                    let signed = singKey.sign('data');
+                                    var signed = singKey.sign('data');
                                     assert(!verifyKey.verify('data', signed));
                                 });
                             });
@@ -758,14 +756,14 @@ describe('NodeRSA', function () {
                     }
 
                     describe('Compatibility of different environments', function () {
-                        for (let alg in signHashAlgorithms['browser']) {
+                        for (var alg in signHashAlgorithms['browser']) {
                             (function (alg) {
                                 it('signing with custom algorithm (' + alg + ') (equal test)', function () {
-                                    let nodeKey = new NodeRSA(generatedKeys[5].exportKey(), {
+                                    var nodeKey = new NodeRSA(generatedKeys[5].exportKey(), {
                                         signingScheme: scheme + '-' + alg,
                                         environment: 'node'
                                     });
-                                    let browserKey = new NodeRSA(generatedKeys[5].exportKey(), {
+                                    var browserKey = new NodeRSA(generatedKeys[5].exportKey(), {
                                         signingScheme: scheme + '-' + alg,
                                         environment: 'browser'
                                     });
@@ -774,11 +772,11 @@ describe('NodeRSA', function () {
                                 });
 
                                 it('sign in node & verify in browser (' + alg + ')', function () {
-                                    let nodeKey = new NodeRSA(generatedKeys[5].exportKey(), {
+                                    var nodeKey = new NodeRSA(generatedKeys[5].exportKey(), {
                                         signingScheme: scheme + '-' + alg,
                                         environment: 'node'
                                     });
-                                    let browserKey = new NodeRSA(generatedKeys[5].exportKey(), {
+                                    var browserKey = new NodeRSA(generatedKeys[5].exportKey(), {
                                         signingScheme: scheme + '-' + alg,
                                         environment: 'browser'
                                     });
@@ -787,11 +785,11 @@ describe('NodeRSA', function () {
                                 });
 
                                 it('sign in browser & verify in node (' + alg + ')', function () {
-                                    let nodeKey = new NodeRSA(generatedKeys[5].exportKey(), {
+                                    var nodeKey = new NodeRSA(generatedKeys[5].exportKey(), {
                                         signingScheme: scheme + '-' + alg,
                                         environment: 'node'
                                     });
-                                    let browserKey = new NodeRSA(generatedKeys[5].exportKey(), {
+                                    var browserKey = new NodeRSA(generatedKeys[5].exportKey(), {
                                         signingScheme: scheme + '-' + alg,
                                         environment: 'browser'
                                     });
