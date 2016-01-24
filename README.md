@@ -156,6 +156,13 @@ key.importKey({
     coeff: new Buffer('00b399675e5e81506b729a777cc03026f0b2119853dfc5eb124610c0ab82999e45', 'hex')
 }, 'components');
 var publicComponents = key.exportKey('components-public');
+console.log(publicComponents);
+
+/*
+{ n: <Buffer 00 86 fa 9b a0 66 68 58 45 fc 03 83 3a 96 99 c8 ba ef b5 3c fb f1 90 52 a7 f1 0f 1e aa 30 48 8c ec 1c eb 75 2b df f2 df 9f ad 6c 64 b3 49 89 56 e7 db ... >,
+  e: 65537 
+}
+*/
 ```
 
 
