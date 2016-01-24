@@ -37,7 +37,7 @@
  */
 
 var crypt = require('crypto');
-var _ = require('lodash');
+var _ = require('../utils')._;
 
 // Bits per digit
 var dbits;

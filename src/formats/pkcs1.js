@@ -1,5 +1,5 @@
 var ber = require('asn1').Ber;
-var _ = require('lodash');
+var _ = require('../utils')._;
 var utils = require('../utils');
 
 module.exports = {

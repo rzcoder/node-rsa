@@ -1,5 +1,5 @@
 var ber = require('asn1').Ber;
-var _ = require('lodash');
+var _ = require('../utils')._;
 var PUBLIC_RSA_OID = '1.2.840.113549.1.1.1';
 var utils = require('../utils');
 

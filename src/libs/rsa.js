@@ -39,7 +39,7 @@
  * 2014 rzcoder
  */
 
-var _ = require('lodash');
+var _ = require('../utils')._;
 var crypt = require('crypto');
 var BigInteger = require('./jsbn.js');
 var utils = require('../utils.js');
@@ -141,9 +141,9 @@ module.exports.Key = (function () {
      * @param C
      */
     RSAKey.prototype.setPrivate = function (N, E, D, P, Q, DP, DQ, C) {
-        if (N && E && D && N.length > 0 && E.length > 0 && D.length > 0) {
+        if (N && E && D && N.length > 0 && (_.isNumber(E) || E.length > 0) && D.length > 0) {
             this.n = new BigInteger(N);
-            this.e = utils.get32IntFromBuffer(E, 0);
+            this.e = _.isNumber(E) ? E : utils.get32IntFromBuffer(E, 0);
             this.d = new BigInteger(D);
 
             if (P && Q && DP && DQ && C) {
@@ -156,8 +156,9 @@ module.exports.Key = (function () {
                 // TODO: re-calculate any missing CRT params
             }
             this.$$recalculateCache();
-        } else
+        } else {
             throw Error("Invalid RSA private key");
+        }
     };
 
     /**
@@ -166,12 +167,13 @@ module.exports.Key = (function () {
      * @param E
      */
     RSAKey.prototype.setPublic = function (N, E) {
-        if (N && E && N.length > 0 && E.length > 0) {
+        if (N && E && N.length > 0 && (_.isNumber(E) || E.length > 0)) {
             this.n = new BigInteger(N);
-            this.e = utils.get32IntFromBuffer(E, 0);
+            this.e = _.isNumber(E) ? E : utils.get32IntFromBuffer(E, 0);
             this.$$recalculateCache();
-        } else
+        } else {
             throw Error("Invalid RSA public key");
+        }
     };
 
     /**

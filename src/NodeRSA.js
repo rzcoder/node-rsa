@@ -10,7 +10,7 @@
 var rsa = require('./libs/rsa.js');
 var crypt = require('crypto');
 var ber = require('asn1').Ber;
-var _ = require('lodash');
+var _ = require('./utils')._;
 var utils = require('./utils');
 var schemes = require('./schemes/schemes.js');
 var formats = require('./formats/formats.js');
@@ -31,7 +31,7 @@ module.exports = (function () {
         'private': 'pkcs1-private-pem',
         'private-der': 'pkcs1-private-der',
         'public': 'pkcs8-public-pem',
-        'public-der': 'pkcs8-public-der'
+        'public-der': 'pkcs8-public-der',
     };
 
     /**
@@ -88,7 +88,7 @@ module.exports = (function () {
             if (_.isString(options.signingScheme)) {
                 var signingScheme = options.signingScheme.toLowerCase().split('-');
                 if (signingScheme.length == 1) {
-                    if (_.indexOf(SUPPORTED_HASH_ALGORITHMS.node, signingScheme[0]) > -1) {
+                    if (SUPPORTED_HASH_ALGORITHMS.node.indexOf(signingScheme[0]) > -1) {
                         this.$options.signingSchemeOptions = {
                             hash: signingScheme[0]
                         };
@@ -115,7 +115,7 @@ module.exports = (function () {
             }
 
             if (this.$options.signingSchemeOptions.hash &&
-                _.indexOf(SUPPORTED_HASH_ALGORITHMS[this.$options.environment], this.$options.signingSchemeOptions.hash) == -1) {
+                SUPPORTED_HASH_ALGORITHMS[this.$options.environment].indexOf(this.$options.signingSchemeOptions.hash) === -1) {
                 throw Error('Unsupported hashing algorithm for ' + this.$options.environment + ' environment');
             }
         }
@@ -134,7 +134,7 @@ module.exports = (function () {
             }
 
             if (this.$options.encryptionSchemeOptions.hash &&
-                _.indexOf(SUPPORTED_HASH_ALGORITHMS[this.$options.environment], this.$options.encryptionSchemeOptions.hash) == -1) {
+                SUPPORTED_HASH_ALGORITHMS[this.$options.environment].indexOf(this.$options.encryptionSchemeOptions.hash) === -1) {
                 throw Error('Unsupported hashing algorithm for ' + this.$options.environment + ' environment');
             }
         }
@@ -164,7 +164,7 @@ module.exports = (function () {
 
     /**
      * Importing key
-     * @param keyData {string|buffer}
+     * @param keyData {string|buffer|Object}
      * @param format {string}
      */
     NodeRSA.prototype.importKey = function (keyData, format) {
@@ -207,7 +207,7 @@ module.exports = (function () {
 
     /**
      * Check if key pair contains public key
-     * @param strict {boolean} - public key only, return false if have private exponent
+     * @param [strict] {boolean} - public key only, return false if have private exponent
      */
     NodeRSA.prototype.isPublic = function (strict) {
         return this.keyPair.isPublic(strict);
@@ -306,7 +306,7 @@ module.exports = (function () {
      */
     NodeRSA.prototype.sign = function (buffer, encoding, source_encoding) {
         if (!this.isPrivate()) {
-            throw Error("It is not private key");
+            throw Error("This is not private key");
         }
 
         var res = this.keyPair.sign(this.$getDataForEncrypt(buffer, source_encoding));
@@ -329,7 +329,7 @@ module.exports = (function () {
      */
     NodeRSA.prototype.verify = function (buffer, signature, source_encoding, signature_encoding) {
         if (!this.isPublic()) {
-            throw Error("It is not public key");
+            throw Error("This is not public key");
         }
         signature_encoding = (!signature_encoding || signature_encoding == 'buffer' ? null : signature_encoding);
         return this.keyPair.verify(this.$getDataForEncrypt(buffer, source_encoding), signature, signature_encoding);
