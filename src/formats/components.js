@@ -12,7 +12,7 @@ module.exports = {
             dmp1: key.dmp1.toBuffer(),
             dmq1: key.dmq1.toBuffer(),
             coeff: key.coeff.toBuffer()
-        }
+        };
     },
 
     privateImport: function (key, data, options) {
@@ -36,7 +36,7 @@ module.exports = {
         return {
             n: key.n.toBuffer(),
             e: key.e
-        }
+        };
     },
 
     publicImport: function (key, data, options) {
