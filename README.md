@@ -237,7 +237,7 @@ Questions, comments, bug reports, and pull requests are all welcome.
 
 ## Changelog
 
-### 0.3.1
+### 0.3.2
  * Fixed environment detection in web worker.
 
 ### 0.3.0
