@@ -185,7 +185,7 @@ module.exports = (function () {
 
     /**
      * Exporting key
-     * @param format {string}
+     * @param [format] {string}
      */
     NodeRSA.prototype.exportKey = function (format) {
         format = format || DEFAULT_EXPORT_FORMAT;

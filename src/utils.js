@@ -12,7 +12,7 @@ var crypt = require('crypto');
  * @returns {string}
  */
 module.exports.linebrk = function (str, maxLen) {
-    var res = "";
+    var res = '';
     var i = 0;
     while (i + maxLen < str.length) {
         res += str.substring(i, i + maxLen) + "\n";
@@ -22,11 +22,10 @@ module.exports.linebrk = function (str, maxLen) {
 };
 
 module.exports.detectEnvironment = function () {
-    if (process && process.title != 'browser') {
-        return 'node';
-    } else if (typeof(window) !== 'undefined' && window) {
+    if (process && process.title === 'browser' || (typeof(window) !== 'undefined' && window)) {
         return 'browser';
     }
+
     return 'node';
 };
 
