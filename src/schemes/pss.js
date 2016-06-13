@@ -101,9 +101,9 @@ module.exports.makeScheme = function (key, options) {
             maskedDB[i] = DB[i] ^ dbMask[i];
         }
 
-        var bits = emBits - 8 * (emLen - 1);
-        var mask = 255 << 8 - bits >> 8 - bits;
-        maskedDB[0] &= ((maskedDB[0] ^ mask) & maskedDB[0]);
+        var bits = 8 * emLen - emBits;
+        var mask = 255 ^ (255 >> 8 - bits << 8 - bits);
+        maskedDB[0] = maskedDB[0] & mask;
 
         var EM = new Buffer(maskedDB.length + H.length + 1);
         maskedDB.copy(EM, 0);
@@ -153,13 +153,19 @@ module.exports.makeScheme = function (key, options) {
             DB[i] ^= dbMask[i];
         }
 
-        mask = 0;
-        for (i = 0, bits = emBits - 8 * (emLen - 1); i < bits; i++) {
+      /*  mask = 0;
+        var bits = emBits - 8 * (emLen - 1);
+        for (i = 0; i < bits; i++) {
             mask |= 1 << i;
         }
-        DB[0] &= mask;
+        DB[0] &= mask;*/
+
+        var bits = 8 * emLen - emBits;
+        var mask = 255 ^ (255 >> 8 - bits << 8 - bits);
+        DB[0] = DB[0] & mask;
 
         // Filter out padding
+        i = 0;
         while (DB[i++] === 0 && i < DB.length);
         if (DB[i - 1] != 1) {
             return false;
