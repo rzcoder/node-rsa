@@ -153,7 +153,7 @@ describe('NodeRSA', function () {
             for (var size in keySizes) {
                 (function (size) {
                     it('should make key pair ' + size.b + '-bit length and public exponent is ' + (size.e ? size.e : size.e + ' and should be 65537'), function () {
-                        this.timeout(15000);
+                        this.timeout(35000);
                         generatedKeys.push(new NodeRSA({b: size.b, e: size.e}, {encryptionScheme: 'pkcs1'}));
                         assert.instanceOf(generatedKeys[generatedKeys.length - 1].keyPair, Object);
                         assert.equal(generatedKeys[generatedKeys.length - 1].isEmpty(), false);
