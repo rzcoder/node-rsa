@@ -3,8 +3,6 @@ node_js:
   - '0.10'
   - '0.12'
   - 'stable' 
-  - 'iojs-v1.3'
-  - 'iojs'
 
 sudo: false
 
