@@ -237,6 +237,9 @@ Questions, comments, bug reports, and pull requests are all welcome.
 
 ## Changelog
 
+### 0.3.3
+ * Fixed PSS encode/verify methods with max salt length.     
+
 ### 0.3.2
  * Fixed environment detection in web worker.
 

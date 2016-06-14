@@ -2,6 +2,7 @@ var fs = require('fs');
 var assert = require('chai').assert;
 var _ = require('lodash');
 var NodeRSA = require('../src/NodeRSA');
+var OAEP = require('../src/schemes/oaep');
 
 describe('NodeRSA', function () {
     var keySizes = [
@@ -10,7 +11,8 @@ describe('NodeRSA', function () {
         {b: 512, e: 257},
         {b: 512, e: 65537},
         {b: 768}, // 'e' should be 65537
-        {b: 1024} // 'e' should be 65537
+        {b: 1024}, // 'e' should be 65537
+        {b: 2048} // 'e' should be 65537
     ];
 
     var environments = ['browser', 'node'];
@@ -151,6 +153,7 @@ describe('NodeRSA', function () {
             for (var size in keySizes) {
                 (function (size) {
                     it('should make key pair ' + size.b + '-bit length and public exponent is ' + (size.e ? size.e : size.e + ' and should be 65537'), function () {
+                        this.timeout(15000);
                         generatedKeys.push(new NodeRSA({b: size.b, e: size.e}, {encryptionScheme: 'pkcs1'}));
                         assert.instanceOf(generatedKeys[generatedKeys.length - 1].keyPair, Object);
                         assert.equal(generatedKeys[generatedKeys.length - 1].isEmpty(), false);
@@ -669,9 +672,6 @@ describe('NodeRSA', function () {
                                         });
 
                                         it('should verify ' + i, function () {
-                                            if (!key.verify(suit.data, signed[i])) {
-                                                key.verify(suit.data, signed[i]);
-                                            }
                                             assert(key.verify(suit.data, signed[i]));
                                         });
                                     })(i);
@@ -685,11 +685,20 @@ describe('NodeRSA', function () {
                                                 environment: env
                                             });
                                             var signed = key.sign('data');
-                                            if (!key.verify('data', signed)) {
-                                                key.verify('data', signed);
-                                            }
                                             assert(key.verify('data', signed));
                                         });
+
+                                        if (scheme === 'pss') {
+                                            it('signing with custom algorithm (' + alg + ') with max salt length', function () {
+                                                var a = alg.toLowerCase();
+                                                var key = new NodeRSA(generatedKeys[generatedKeys.length - 1].exportKey(), {
+                                                    signingScheme: { scheme: scheme, hash: a, saltLength: OAEP.digestLength[a] },
+                                                    environment: env
+                                                });
+                                                var signed = key.sign('data');
+                                                assert(key.verify('data', signed));
+                                            });
+                                        }
                                     })(signHashAlgorithms[env][alg]);
                                 }
                             });

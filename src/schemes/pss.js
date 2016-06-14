@@ -165,9 +165,8 @@ module.exports.makeScheme = function (key, options) {
         DB[0] = DB[0] & mask;
 
         // Filter out padding
-        i = 0;
-        while (DB[i++] === 0 && i < DB.length);
-        if (DB[i - 1] != 1) {
+        for (i = 0; DB[i] === 0 && i < DB.length; i++);
+        if (DB[i] != 1) {
             return false;
         }
 
