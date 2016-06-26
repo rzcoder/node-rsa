@@ -31,7 +31,10 @@ module.exports.makeScheme = function (key, options) {
     }
 
     Scheme.prototype.sign = function (buffer) {
-        var encoded = this.emsa_pss_encode(buffer, this.key.keySize - 1);
+        var mHash = crypt.createHash(this.options.signingSchemeOptions.hash || DEFAULT_HASH_FUNCTION);
+        mHash.update(buffer);
+
+        var encoded = this.emsa_pss_encode(mHash.digest(), this.key.keySize - 1);
         var res = this.key.$doPrivate(new BigInteger(encoded)).toBuffer(this.key.encryptedDataLength);
         return res;
     };
@@ -45,17 +48,20 @@ module.exports.makeScheme = function (key, options) {
         var emLen = Math.ceil((this.key.keySize - 1) / 8);
         var m = this.key.$doPublic(signature).toBuffer(emLen);
 
-        return this.emsa_pss_verify(buffer, m, this.key.keySize - 1);
+        var mHash = crypt.createHash(this.options.signingSchemeOptions.hash || DEFAULT_HASH_FUNCTION);
+        mHash.update(buffer);
+
+        return this.emsa_pss_verify(mHash.digest(), m, this.key.keySize - 1);
     };
 
     /*
      * https://tools.ietf.org/html/rfc3447#section-9.1.1
      *
-     * M		[Buffer]	Message to encode
+     * mHash		[Buffer]	Hashed message to encode
      * emBits	[uint]		Maximum length of output in bits. Must be at least 8hLen + 8sLen + 9 (hLen = Hash digest length in bytes | sLen = length of salt in bytes)
      * @returns {Buffer} The encoded message
      */
-    Scheme.prototype.emsa_pss_encode = function (M, emBits) {
+    Scheme.prototype.emsa_pss_encode = function (mHash, emBits) {
         var hash = this.options.signingSchemeOptions.hash || DEFAULT_HASH_FUNCTION;
         var mgf = this.options.signingSchemeOptions.mgf || OAEP.eme_oaep_mgf1;
         var sLen = this.options.signingSchemeOptions.saltLength || DEFAULT_SALT_LENGTH;
@@ -69,10 +75,6 @@ module.exports.makeScheme = function (key, options) {
                 (8 * hLen + 8 * sLen + 9) + ")"
             );
         }
-
-        var mHash = crypt.createHash(hash);
-        mHash.update(M);
-        mHash = mHash.digest();
 
         var salt = crypt.randomBytes(sLen);
 
@@ -116,12 +118,12 @@ module.exports.makeScheme = function (key, options) {
     /*
      * https://tools.ietf.org/html/rfc3447#section-9.1.2
      *
-     * M		[Buffer]	Message
+     * mHash		[Buffer]	Hashed message
      * EM		[Buffer]	Signature
      * emBits	[uint]		Length of EM in bits. Must be at least 8hLen + 8sLen + 9 to be a valid signature. (hLen = Hash digest length in bytes | sLen = length of salt in bytes)
      * @returns {Boolean} True if signature(EM) matches message(M)
      */
-    Scheme.prototype.emsa_pss_verify = function (M, EM, emBits) {
+    Scheme.prototype.emsa_pss_verify = function (mHash, EM, emBits) {
         var hash = this.options.signingSchemeOptions.hash || DEFAULT_HASH_FUNCTION;
         var mgf = this.options.signingSchemeOptions.mgf || OAEP.eme_oaep_mgf1;
         var sLen = this.options.signingSchemeOptions.saltLength || DEFAULT_SALT_LENGTH;
@@ -171,10 +173,6 @@ module.exports.makeScheme = function (key, options) {
         }
 
         var salt = DB.slice(DB.length - sLen);
-
-        var mHash = crypt.createHash(hash);
-        mHash.update(M);
-        mHash = mHash.digest();
 
         var Mapostrophe = new Buffer(8 + hLen + sLen);
         Mapostrophe.fill(0, 0, 8);
