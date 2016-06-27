@@ -1,6 +1,6 @@
 {
   "name": "node-rsa",
-  "version": "0.3.4",
+  "version": "0.4.0",
   "description": "Node.js RSA library",
   "main": "src/NodeRSA.js",
   "scripts": {
@@ -24,7 +24,7 @@
     "pss"
   ],
   "author": "rzcoder",
-  "license": "BSD",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/rzcoder/node-rsa/issues"
   },
