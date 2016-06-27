@@ -18,6 +18,7 @@ module.exports.makeScheme = function (key, options) {
 
     /**
      * @param key
+     * @param options
      * options    [Object]    An object that contains the following keys that specify certain options for encoding.
      *  └>signingSchemeOptions
      *     ├>hash    [String]    Hash function to use when encoding and generating masks. Must be a string accepted by node's crypto.createHash function. (default = "sha1")
@@ -35,8 +36,7 @@ module.exports.makeScheme = function (key, options) {
         mHash.update(buffer);
 
         var encoded = this.emsa_pss_encode(mHash.digest(), this.key.keySize - 1);
-        var res = this.key.$doPrivate(new BigInteger(encoded)).toBuffer(this.key.encryptedDataLength);
-        return res;
+        return this.key.$doPrivate(new BigInteger(encoded)).toBuffer(this.key.encryptedDataLength);
     };
 
     Scheme.prototype.verify = function (buffer, signature, signature_encoding) {
@@ -57,7 +57,7 @@ module.exports.makeScheme = function (key, options) {
     /*
      * https://tools.ietf.org/html/rfc3447#section-9.1.1
      *
-     * mHash		[Buffer]	Hashed message to encode
+     * mHash	[Buffer]	Hashed message to encode
      * emBits	[uint]		Maximum length of output in bits. Must be at least 8hLen + 8sLen + 9 (hLen = Hash digest length in bytes | sLen = length of salt in bytes)
      * @returns {Buffer} The encoded message
      */
@@ -118,7 +118,7 @@ module.exports.makeScheme = function (key, options) {
     /*
      * https://tools.ietf.org/html/rfc3447#section-9.1.2
      *
-     * mHash		[Buffer]	Hashed message
+     * mHash	[Buffer]	Hashed message
      * EM		[Buffer]	Signature
      * emBits	[uint]		Length of EM in bits. Must be at least 8hLen + 8sLen + 9 to be a valid signature. (hLen = Hash digest length in bytes | sLen = length of salt in bytes)
      * @returns {Boolean} True if signature(EM) matches message(M)
@@ -155,15 +155,8 @@ module.exports.makeScheme = function (key, options) {
             DB[i] ^= dbMask[i];
         }
 
-      /*  mask = 0;
-        var bits = emBits - 8 * (emLen - 1);
-        for (i = 0; i < bits; i++) {
-            mask |= 1 << i;
-        }
-        DB[0] &= mask;*/
-
-        var bits = 8 * emLen - emBits;
-        var mask = 255 ^ (255 >> 8 - bits << 8 - bits);
+        bits = 8 * emLen - emBits;
+        mask = 255 ^ (255 >> 8 - bits << 8 - bits);
         DB[0] = DB[0] & mask;
 
         // Filter out padding
