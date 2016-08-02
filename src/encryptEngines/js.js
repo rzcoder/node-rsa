@@ -8,6 +8,7 @@ module.exports = function (keyPair, options) {
         encrypt: function (buffer, usePrivate) {
             var m, c;
             if (usePrivate) {
+                /* Type 1: zeros padding for private key encrypt */
                 m = new BigInteger(pkcs1Scheme.encPad(buffer, {type: 1}));
                 c = keyPair.$doPrivate(m);
             } else {
@@ -22,6 +23,7 @@ module.exports = function (keyPair, options) {
 
             if (usePublic) {
                 m = keyPair.$doPublic(c);
+                /* Type 1: zeros padding for private key decrypt */
                 return pkcs1Scheme.encUnPad(m.toBuffer(keyPair.encryptedDataLength), {type: 1});
             } else {
                 m = keyPair.$doPrivate(c);

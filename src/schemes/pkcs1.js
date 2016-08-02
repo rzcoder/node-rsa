@@ -50,6 +50,7 @@ module.exports.makeScheme = function (key, options) {
             throw new Error("Message too long for RSA (n=" + this.key.encryptedDataLength + ", l=" + buffer.length + ")");
         }
 
+        /* Type 1: zeros padding for private key encrypt */
         if (options.type === 1) {
             filled = new Buffer(this.key.encryptedDataLength - buffer.length - 1);
             filled.fill(0xff, 0, filled.length - 1);
@@ -58,6 +59,7 @@ module.exports.makeScheme = function (key, options) {
 
             return Buffer.concat([filled, buffer]);
         } else {
+            /* random padding for public key encrypt */
             filled = new Buffer(this.key.encryptedDataLength - buffer.length);
             filled[0] = 0;
             filled[1] = 2;
@@ -88,6 +90,7 @@ module.exports.makeScheme = function (key, options) {
             return null;
         }
 
+        /* Type 1: zeros padding for private key decrypt */
         if (options.type === 1) {
             if (buffer[0] !== 0 && buffer[1] !== 1) {
                 return null;
@@ -99,6 +102,7 @@ module.exports.makeScheme = function (key, options) {
                 }
             }
         } else {
+            /* random padding for public key decrypt */
             if (buffer[0] !== 0 && buffer[1] !== 2) {
                 return null;
             }
