@@ -13,6 +13,9 @@ module.exports = function (keyPair, options) {
             if (options.encryptionScheme === 'pkcs1') {
                 padding = constants.RSA_PKCS1_PADDING;
             }
+            if (options.encryptionSchemeOptions && options.encryptionSchemeOptions.padding) {
+                padding = options.encryptionSchemeOptions.padding;
+            }
 
             return crypto.publicEncrypt({
                 key: options.rsaUtils.exportKey('public'),
@@ -27,6 +30,9 @@ module.exports = function (keyPair, options) {
             var padding = constants.RSA_PKCS1_OAEP_PADDING;
             if (options.encryptionScheme === 'pkcs1') {
                 padding = constants.RSA_PKCS1_PADDING;
+            }
+            if (options.encryptionSchemeOptions && options.encryptionSchemeOptions.padding) {
+                padding = options.encryptionSchemeOptions.padding;
             }
 
             return crypto.privateDecrypt({

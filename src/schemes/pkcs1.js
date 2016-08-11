@@ -4,6 +4,7 @@
 
 var BigInteger = require('../libs/jsbn');
 var crypt = require('crypto');
+var constants = require('constants');
 var SIGN_INFO_HEAD = {
     md2: new Buffer('3020300c06082a864886f70d020205000410', 'hex'),
     md5: new Buffer('3020300c06082a864886f70d020505000410', 'hex'),
@@ -34,6 +35,9 @@ module.exports.makeScheme = function (key, options) {
     }
 
     Scheme.prototype.maxMessageLength = function () {
+        if (this.options.encryptionSchemeOptions && this.options.encryptionSchemeOptions.padding == constants.RSA_NO_PADDING) {
+            return this.key.encryptedDataLength;
+        }
         return this.key.encryptedDataLength - 11;
     };
 
@@ -48,6 +52,13 @@ module.exports.makeScheme = function (key, options) {
         var filled;
         if (buffer.length > this.key.maxMessageLength) {
             throw new Error("Message too long for RSA (n=" + this.key.encryptedDataLength + ", l=" + buffer.length + ")");
+        }
+
+        if (this.options.encryptionSchemeOptions && this.options.encryptionSchemeOptions.padding == constants.RSA_NO_PADDING) {
+            //RSA_NO_PADDING treated like JAVA left pad with zero character
+            filled = new Buffer(this.key.maxMessageLength - buffer.length);
+            filled.fill(0);
+            return Buffer.concat([filled, buffer]);
         }
 
         /* Type 1: zeros padding for private key encrypt */
@@ -85,6 +96,17 @@ module.exports.makeScheme = function (key, options) {
     Scheme.prototype.encUnPad = function (buffer, options) {
         options = options || {};
         var i = 0;
+
+        if (this.options.encryptionSchemeOptions && this.options.encryptionSchemeOptions.padding == constants.RSA_NO_PADDING) {
+            //RSA_NO_PADDING treated like JAVA left pad with zero character
+            var unPad;
+            if (typeof buffer.lastIndexOf == "function") { //patch for old node version
+                unPad = buffer.slice(buffer.lastIndexOf('\0') + 1, buffer.length);
+            } else {
+                unPad = buffer.slice(String.prototype.lastIndexOf.call(buffer, '\0') + 1, buffer.length);
+            }
+            return unPad;
+        }
 
         if (buffer.length < 4) {
             return null;
@@ -135,6 +157,10 @@ module.exports.makeScheme = function (key, options) {
     };
 
     Scheme.prototype.verify = function (buffer, signature, signature_encoding) {
+        if (this.options.encryptionSchemeOptions && this.options.encryptionSchemeOptions.padding == constants.RSA_NO_PADDING) {
+            //RSA_NO_PADDING has no verify data
+            return true;
+        }
         var hashAlgorithm = this.options.signingSchemeOptions.hash || DEFAULT_HASH_FUNCTION;
         if (this.options.environment === 'browser') {
             hashAlgorithm = SIGN_ALG_TO_HASH_ALIASES[hashAlgorithm] || hashAlgorithm;

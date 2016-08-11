@@ -7,16 +7,22 @@ module.exports = function (keyPair, options) {
     return {
         encrypt: function (buffer, usePrivate) {
             if (usePrivate) {
+                var padding = constants.RSA_PKCS1_PADDING;
+                if (options.encryptionSchemeOptions && options.encryptionSchemeOptions.padding) {
+                    padding = options.encryptionSchemeOptions.padding;
+                }
                 return crypto.privateEncrypt({
                     key: options.rsaUtils.exportKey('private'),
-                    padding: constants.RSA_PKCS1_PADDING
+                    padding: padding
                 }, buffer);
             } else {
                 var padding = constants.RSA_PKCS1_OAEP_PADDING;
                 if (options.encryptionScheme === 'pkcs1') {
                     padding = constants.RSA_PKCS1_PADDING;
                 }
-
+                if (options.encryptionSchemeOptions && options.encryptionSchemeOptions.padding) {
+                    padding = options.encryptionSchemeOptions.padding;
+                }
                 return crypto.publicEncrypt({
                     key: options.rsaUtils.exportKey('public'),
                     padding: padding
@@ -26,16 +32,22 @@ module.exports = function (keyPair, options) {
 
         decrypt: function (buffer, usePublic) {
             if (usePublic) {
+                var padding = constants.RSA_PKCS1_PADDING;
+                if (options.encryptionSchemeOptions && options.encryptionSchemeOptions.padding) {
+                    padding = options.encryptionSchemeOptions.padding;
+                }
                 return crypto.publicDecrypt({
                     key: options.rsaUtils.exportKey('public'),
-                    padding: constants.RSA_PKCS1_PADDING
+                    padding: padding
                 }, buffer);
             } else {
                 var padding = constants.RSA_PKCS1_OAEP_PADDING;
                 if (options.encryptionScheme === 'pkcs1') {
                     padding = constants.RSA_PKCS1_PADDING;
                 }
-
+                if (options.encryptionSchemeOptions && options.encryptionSchemeOptions.padding) {
+                    padding = options.encryptionSchemeOptions.padding;
+                }
                 return crypto.privateDecrypt({
                     key: options.rsaUtils.exportKey('private'),
                     padding: padding
