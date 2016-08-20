@@ -17,7 +17,19 @@ describe('NodeRSA', function () {
     ];
 
     var environments = ['browser', 'node'];
-    var encryptSchemes = ['pkcs1', 'pkcs1_oaep', {scheme:'pkcs1', encryptionScheme:{padding: constants.RSA_NO_PADDING}}];
+    var encryptSchemes = [
+        'pkcs1',
+        'pkcs1_oaep',
+        {
+            scheme:'pkcs1',
+            encryptionScheme:{
+                padding: constants.RSA_NO_PADDING
+            },
+            toString: function() {
+                return 'pkcs1-nopadding';
+            }
+        }
+        ];
     var signingSchemes = ['pkcs1', 'pss'];
     var signHashAlgorithms = {
         'node': ['MD4', 'MD5', 'RIPEMD160', 'SHA', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512'],
@@ -117,8 +129,7 @@ describe('NodeRSA', function () {
                 encryptionScheme: {
                     scheme: 'pkcs1_oaep',
                     hash: 'sha512',
-                    label: 'horay',
-                    padding: constants.RSA_NO_PADDING
+                    label: 'horay'
                 },
                 signingScheme: {
                     scheme: 'pss',
@@ -133,7 +144,6 @@ describe('NodeRSA', function () {
             assert.equal(key.$options.encryptionScheme, 'pkcs1_oaep');
             assert.equal(key.$options.encryptionSchemeOptions.hash, 'sha512');
             assert.equal(key.$options.encryptionSchemeOptions.label, 'horay');
-            assert.equal(key.$options.encryptionSchemeOptions.padding, constants.RSA_NO_PADDING);
         });
 
         it('should throw \'unsupported hashing algorithm\' exception', function () {

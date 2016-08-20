@@ -7,6 +7,7 @@
  * License BSD
  */
 
+var constants = require('constants');
 var rsa = require('./libs/rsa.js');
 var crypt = require('crypto');
 var ber = require('asn1').Ber;
@@ -14,6 +15,11 @@ var _ = require('./utils')._;
 var utils = require('./utils');
 var schemes = require('./schemes/schemes.js');
 var formats = require('./formats/formats.js');
+
+if (typeof constants.RSA_NO_PADDING == "undefined") {
+    //patch for node v0.10.x, constants do not defined
+    constants.RSA_NO_PADDING = 3;
+}
 
 module.exports = (function () {
     var SUPPORTED_HASH_ALGORITHMS = {

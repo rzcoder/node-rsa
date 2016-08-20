@@ -5,7 +5,6 @@
 var BigInteger = require('../libs/jsbn');
 var crypt = require('crypto');
 var constants = require('constants');
-var _ = require('lodash');
 var SIGN_INFO_HEAD = {
     md2: new Buffer('3020300c06082a864886f70d020205000410', 'hex'),
     md5: new Buffer('3020300c06082a864886f70d020505000410', 'hex'),
@@ -24,11 +23,6 @@ var SIGN_ALG_TO_HASH_ALIASES = {
 
 var DEFAULT_HASH_FUNCTION = 'sha256';
 
-if (typeof constants.RSA_NO_PADDING == "undefined") {
-    //patch for node v0.10.x, constants do not defined
-    constants.RSA_NO_PADDING = 3;
-}
-
 module.exports = {
     isEncryption: true,
     isSignature: true
@@ -41,7 +35,7 @@ module.exports.makeScheme = function (key, options) {
     }
 
     Scheme.prototype.maxMessageLength = function () {
-        if (!_.isEmpty(this.options.encryptionSchemeOptions) && this.options.encryptionSchemeOptions.padding == constants.RSA_NO_PADDING) {
+        if (this.options.encryptionSchemeOptions && this.options.encryptionSchemeOptions.padding == constants.RSA_NO_PADDING) {
             return this.key.encryptedDataLength;
         }
         return this.key.encryptedDataLength - 11;
@@ -59,7 +53,7 @@ module.exports.makeScheme = function (key, options) {
         if (buffer.length > this.key.maxMessageLength) {
             throw new Error("Message too long for RSA (n=" + this.key.encryptedDataLength + ", l=" + buffer.length + ")");
         }
-        if (!_.isEmpty(this.options.encryptionSchemeOptions) && this.options.encryptionSchemeOptions.padding == constants.RSA_NO_PADDING) {
+        if (this.options.encryptionSchemeOptions && this.options.encryptionSchemeOptions.padding == constants.RSA_NO_PADDING) {
             //RSA_NO_PADDING treated like JAVA left pad with zero character
             filled = new Buffer(this.key.maxMessageLength - buffer.length);
             filled.fill(0);
@@ -102,7 +96,7 @@ module.exports.makeScheme = function (key, options) {
         options = options || {};
         var i = 0;
 
-        if (!_.isEmpty(this.options.encryptionSchemeOptions) && this.options.encryptionSchemeOptions.padding == constants.RSA_NO_PADDING) {
+        if (this.options.encryptionSchemeOptions && this.options.encryptionSchemeOptions.padding == constants.RSA_NO_PADDING) {
             //RSA_NO_PADDING treated like JAVA left pad with zero character
             var unPad;
             if (typeof buffer.lastIndexOf == "function") { //patch for old node version
@@ -164,7 +158,7 @@ module.exports.makeScheme = function (key, options) {
     Scheme.prototype.verify = function (buffer, signature, signature_encoding) {
         if (this.options.encryptionSchemeOptions && this.options.encryptionSchemeOptions.padding == constants.RSA_NO_PADDING) {
             //RSA_NO_PADDING has no verify data
-            return true;
+            return false;
         }
         var hashAlgorithm = this.options.signingSchemeOptions.hash || DEFAULT_HASH_FUNCTION;
         if (this.options.environment === 'browser') {
