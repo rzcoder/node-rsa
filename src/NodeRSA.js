@@ -289,7 +289,7 @@ module.exports = (function () {
      */
     NodeRSA.prototype.$$decryptKey = function (usePublic, buffer, encoding) {
         try {
-            buffer = _.isString(buffer) ? new Buffer(buffer, 'base64') : buffer;
+            buffer = _.isString(buffer) ? Buffer.from(buffer, 'base64') : buffer;
             var res = this.keyPair.decrypt(buffer, usePublic);
 
             if (res === null) {
@@ -366,11 +366,11 @@ module.exports = (function () {
      */
     NodeRSA.prototype.$getDataForEncrypt = function (buffer, encoding) {
         if (_.isString(buffer) || _.isNumber(buffer)) {
-            return new Buffer('' + buffer, encoding || 'utf8');
+            return Buffer.from('' + buffer, encoding || 'utf8');
         } else if (Buffer.isBuffer(buffer)) {
             return buffer;
         } else if (_.isObject(buffer)) {
-            return new Buffer(JSON.stringify(buffer));
+            return Buffer.from(JSON.stringify(buffer));
         } else {
             throw Error("Unexpected data type");
         }

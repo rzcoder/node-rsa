@@ -6,15 +6,15 @@ var BigInteger = require('../libs/jsbn');
 var crypt = require('crypto');
 var constants = require('constants');
 var SIGN_INFO_HEAD = {
-    md2: new Buffer('3020300c06082a864886f70d020205000410', 'hex'),
-    md5: new Buffer('3020300c06082a864886f70d020505000410', 'hex'),
-    sha1: new Buffer('3021300906052b0e03021a05000414', 'hex'),
-    sha224: new Buffer('302d300d06096086480165030402040500041c', 'hex'),
-    sha256: new Buffer('3031300d060960864801650304020105000420', 'hex'),
-    sha384: new Buffer('3041300d060960864801650304020205000430', 'hex'),
-    sha512: new Buffer('3051300d060960864801650304020305000440', 'hex'),
-    ripemd160: new Buffer('3021300906052b2403020105000414', 'hex'),
-    rmd160: new Buffer('3021300906052b2403020105000414', 'hex')
+    md2: Buffer.from('3020300c06082a864886f70d020205000410', 'hex'),
+    md5: Buffer.from('3020300c06082a864886f70d020505000410', 'hex'),
+    sha1: Buffer.from('3021300906052b0e03021a05000414', 'hex'),
+    sha224: Buffer.from('302d300d06096086480165030402040500041c', 'hex'),
+    sha256: Buffer.from('3031300d060960864801650304020105000420', 'hex'),
+    sha384: Buffer.from('3041300d060960864801650304020205000430', 'hex'),
+    sha512: Buffer.from('3051300d060960864801650304020305000440', 'hex'),
+    ripemd160: Buffer.from('3021300906052b2403020105000414', 'hex'),
+    rmd160: Buffer.from('3021300906052b2403020105000414', 'hex')
 };
 
 var SIGN_ALG_TO_HASH_ALIASES = {
@@ -42,7 +42,7 @@ module.exports.makeScheme = function (key, options) {
     };
 
     /**
-     * Pad input Buffer to encryptedDataLength bytes, and return new Buffer
+     * Pad input Buffer to encryptedDataLength bytes, and return Buffer.from
      * alg: PKCS#1
      * @param buffer
      * @returns {Buffer}
@@ -55,14 +55,14 @@ module.exports.makeScheme = function (key, options) {
         }
         if (this.options.encryptionSchemeOptions && this.options.encryptionSchemeOptions.padding == constants.RSA_NO_PADDING) {
             //RSA_NO_PADDING treated like JAVA left pad with zero character
-            filled = new Buffer(this.key.maxMessageLength - buffer.length);
+            filled = Buffer.alloc(this.key.maxMessageLength - buffer.length);
             filled.fill(0);
             return Buffer.concat([filled, buffer]);
         }
 
         /* Type 1: zeros padding for private key encrypt */
         if (options.type === 1) {
-            filled = new Buffer(this.key.encryptedDataLength - buffer.length - 1);
+            filled = Buffer.alloc(this.key.encryptedDataLength - buffer.length - 1);
             filled.fill(0xff, 0, filled.length - 1);
             filled[0] = 1;
             filled[filled.length - 1] = 0;
@@ -70,7 +70,7 @@ module.exports.makeScheme = function (key, options) {
             return Buffer.concat([filled, buffer]);
         } else {
             /* random padding for public key encrypt */
-            filled = new Buffer(this.key.encryptedDataLength - buffer.length);
+            filled = Buffer.alloc(this.key.encryptedDataLength - buffer.length);
             filled[0] = 0;
             filled[1] = 2;
             var rand = crypt.randomBytes(filled.length - 3);
@@ -165,7 +165,7 @@ module.exports.makeScheme = function (key, options) {
             hashAlgorithm = SIGN_ALG_TO_HASH_ALIASES[hashAlgorithm] || hashAlgorithm;
 
             if (signature_encoding) {
-                signature = new Buffer(signature, signature_encoding);
+                signature = Buffer.from(signature, signature_encoding);
             }
 
             var hasher = crypt.createHash(hashAlgorithm);
@@ -199,7 +199,7 @@ module.exports.makeScheme = function (key, options) {
             throw Error('Key is too short for signing algorithm (' + hashAlgorithm + ')');
         }
 
-        var filled = new Buffer(this.key.encryptedDataLength - data.length - 1);
+        var filled = Buffer.alloc(this.key.encryptedDataLength - data.length - 1);
         filled.fill(0xff, 0, filled.length - 1);
         filled[0] = 1;
         filled[filled.length - 1] = 0;

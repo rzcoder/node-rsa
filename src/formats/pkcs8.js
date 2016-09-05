@@ -60,7 +60,7 @@ module.exports = {
                 var pem = data.replace('-----BEGIN PRIVATE KEY-----', '')
                     .replace('-----END PRIVATE KEY-----', '')
                     .replace(/\s+|\n\r|\n|\r$/gm, '');
-                buffer = new Buffer(pem, 'base64');
+                buffer = Buffer.from(pem, 'base64');
             } else {
                 throw Error('Unsupported key format');
             }
@@ -136,7 +136,7 @@ module.exports = {
                 var pem = data.replace('-----BEGIN PUBLIC KEY-----', '')
                     .replace('-----END PUBLIC KEY-----', '')
                     .replace(/\s+|\n\r|\n|\r$/gm, '');
-                buffer = new Buffer(pem, 'base64');
+                buffer = Buffer.from(pem, 'base64');
             }
         } else if (Buffer.isBuffer(data)) {
             buffer = data;

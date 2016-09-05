@@ -4,8 +4,9 @@ var constants = require('constants');
 module.exports = function (keyPair, options) {
     return {
         encrypt: function (buffer, usePrivate) {
+            var padding;
             if (usePrivate) {
-                var padding = constants.RSA_PKCS1_PADDING;
+                padding = constants.RSA_PKCS1_PADDING;
                 if (options.encryptionSchemeOptions && options.encryptionSchemeOptions.padding) {
                     padding = options.encryptionSchemeOptions.padding;
                 }
@@ -14,7 +15,7 @@ module.exports = function (keyPair, options) {
                     padding: padding
                 }, buffer);
             } else {
-                var padding = constants.RSA_PKCS1_OAEP_PADDING;
+                padding = constants.RSA_PKCS1_OAEP_PADDING;
                 if (options.encryptionScheme === 'pkcs1') {
                     padding = constants.RSA_PKCS1_PADDING;
                 }
@@ -29,8 +30,9 @@ module.exports = function (keyPair, options) {
         },
 
         decrypt: function (buffer, usePublic) {
+            var padding;
             if (usePublic) {
-                var padding = constants.RSA_PKCS1_PADDING;
+                padding = constants.RSA_PKCS1_PADDING;
                 if (options.encryptionSchemeOptions && options.encryptionSchemeOptions.padding) {
                     padding = options.encryptionSchemeOptions.padding;
                 }
@@ -39,7 +41,7 @@ module.exports = function (keyPair, options) {
                     padding: padding
                 }, buffer);
             } else {
-                var padding = constants.RSA_PKCS1_OAEP_PADDING;
+                padding = constants.RSA_PKCS1_OAEP_PADDING;
                 if (options.encryptionScheme === 'pkcs1') {
                     padding = constants.RSA_PKCS1_PADDING;
                 }

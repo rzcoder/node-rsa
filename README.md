@@ -237,6 +237,9 @@ Questions, comments, bug reports, and pull requests are all welcome.
 
 ## Changelog
 
+### 0.4.2
+  * Removed all `new Buffer()` call.
+
 ### 0.4.1
  * `PKCS1 no padding` scheme support.
     

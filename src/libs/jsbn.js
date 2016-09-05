@@ -829,7 +829,7 @@ function bnToByteArray() {
  * @returns {Buffer}
  */
 function bnToBuffer(trimOrSize) {
-    var res = new Buffer(this.toByteArray());
+    var res = Buffer.from(this.toByteArray());
     if (trimOrSize === true && res[0] === 0) {
         res = res.slice(1);
     } else if (_.isNumber(trimOrSize)) {
@@ -841,7 +841,7 @@ function bnToBuffer(trimOrSize) {
             }
             return res.slice(res.length - trimOrSize);
         } else if (res.length < trimOrSize) {
-            var padded = new Buffer(trimOrSize);
+            var padded = Buffer.alloc(trimOrSize);
             padded.fill(0, 0, trimOrSize - res.length);
             res.copy(padded, trimOrSize - res.length);
             return padded;
