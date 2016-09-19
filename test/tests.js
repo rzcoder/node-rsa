@@ -22,9 +22,7 @@ describe('NodeRSA', function () {
         'pkcs1_oaep',
         {
             scheme:'pkcs1',
-            encryptionScheme:{
-                padding: constants.RSA_NO_PADDING
-            },
+            padding: constants.RSA_NO_PADDING,
             toString: function() {
                 return 'pkcs1-nopadding';
             }
@@ -178,7 +176,7 @@ describe('NodeRSA', function () {
             }
         });
 
-        describe('Imprt/Export keys', function () {
+        describe('Import/Export keys', function () {
             var privateKeyPKCS1 = '-----BEGIN RSA PRIVATE KEY-----\n' +
                 'MIIFwgIBAAKCAUEAsE1edyfToZRv6cFOkB0tAJ5qJor4YF5CccJAL0fS/o1Yk10V\n' +
                 'SXH4Xx4peSJgYQKkO0HqO1hAz6k9dFQB4U1CnWtRjtNEcIfycqrZrhu6you5syb6\n' +

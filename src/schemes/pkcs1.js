@@ -55,9 +55,7 @@ module.exports.makeScheme = function (key, options) {
         }
         if (this.options.encryptionSchemeOptions && this.options.encryptionSchemeOptions.padding == constants.RSA_NO_PADDING) {
             //RSA_NO_PADDING treated like JAVA left pad with zero character
-            filled = new Buffer(this.key.maxMessageLength - buffer.length);
-            filled.fill(0);
-            return Buffer.concat([filled, buffer]);
+            return this.pkcs0pad(buffer);
         }
 
         /* Type 1: zeros padding for private key encrypt */
@@ -98,13 +96,7 @@ module.exports.makeScheme = function (key, options) {
 
         if (this.options.encryptionSchemeOptions && this.options.encryptionSchemeOptions.padding == constants.RSA_NO_PADDING) {
             //RSA_NO_PADDING treated like JAVA left pad with zero character
-            var unPad;
-            if (typeof buffer.lastIndexOf == "function") { //patch for old node version
-                unPad = buffer.slice(buffer.lastIndexOf('\0') + 1, buffer.length);
-            } else {
-                unPad = buffer.slice(String.prototype.lastIndexOf.call(buffer, '\0') + 1, buffer.length);
-            }
-            return unPad;
+            return this.pkcs0unpad(buffer);
         }
 
         if (buffer.length < 4) {
@@ -179,6 +171,31 @@ module.exports.makeScheme = function (key, options) {
             verifier.update(buffer);
             return verifier.verify(this.options.rsaUtils.exportKey('public'), signature, signature_encoding);
         }
+    };
+
+    /**
+     * PKCS#1 zero pad input buffer to max data length
+     * @param hashBuf
+     * @param hashAlgorithm
+     * @returns {*}
+     */
+    Scheme.prototype.pkcs0pad = function (buffer) {
+        var filled = new Buffer(this.key.maxMessageLength - buffer.length);
+        filled.fill(0);
+        return Buffer.concat([filled, buffer]);
+
+        return filled;
+    };
+
+    Scheme.prototype.pkcs0unpad = function (buffer) {
+        var unPad;
+        if (typeof buffer.lastIndexOf == "function") { //patch for old node version
+            unPad = buffer.slice(buffer.lastIndexOf('\0') + 1, buffer.length);
+        } else {
+            unPad = buffer.slice(String.prototype.lastIndexOf.call(buffer, '\0') + 1, buffer.length);
+        }
+
+        return unPad;
     };
 
     /**
