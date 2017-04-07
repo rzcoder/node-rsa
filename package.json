@@ -32,10 +32,10 @@
   "devDependencies": {
     "chai": "^3.5.0",
     "grunt": "^1.0.1",
-    "grunt-contrib-jshint": "^1.0.0",
+    "grunt-contrib-jshint": "^1.1.0",
     "grunt-simple-mocha": "^0.4.1",
     "jit-grunt": "^0.10.0",
-    "lodash": "^4.13.1"
+    "lodash": "^4.17.4"
   },
   "dependencies": {
     "asn1": "0.2.3"
