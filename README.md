@@ -27,7 +27,7 @@ console.log('decrypted: ', decrypted);
 ```shell
 npm install node-rsa
 ```
-> <sub>Requires nodejs >= 0.10.x or io.js >= 1.x</sub>
+> <sub>Requires nodejs >= 5.10
 
 ### Testing
 
@@ -237,9 +237,12 @@ Questions, comments, bug reports, and pull requests are all welcome.
 
 ## Changelog
 
+### 1.0.0
+  * **Possible breaking changes** `new Buffer()` call as deprecated was replaced by `Buffer.from` & `Buffer.alloc`. As result dropped support for node version < 5.10.
+
 ### 0.4.2
  * `no padding` scheme will padded data with zeros on all environments.
- 
+
 ### 0.4.1
  * `PKCS1 no padding` scheme support.
     
