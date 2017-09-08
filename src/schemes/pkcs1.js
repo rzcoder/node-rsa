@@ -183,8 +183,6 @@ module.exports.makeScheme = function (key, options) {
         var filled = new Buffer(this.key.maxMessageLength - buffer.length);
         filled.fill(0);
         return Buffer.concat([filled, buffer]);
-
-        return filled;
     };
 
     Scheme.prototype.pkcs0unpad = function (buffer) {
