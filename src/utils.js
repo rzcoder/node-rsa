@@ -22,7 +22,8 @@ module.exports.linebrk = function (str, maxLen) {
 };
 
 module.exports.detectEnvironment = function () {
-    if (process && process.title === 'browser' || (typeof(window) !== 'undefined' && window)) {
+
+    if (typeof(window) !== 'undefined' && window && !(process && process.title === 'node')) {
         return 'browser';
     }
 
