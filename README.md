@@ -237,6 +237,13 @@ Questions, comments, bug reports, and pull requests are all welcome.
 
 ## Changelog
 
+### 1.0.0
+ * Using semver now 🎉
+ * **Possible breaking change**: Drop support nodejs < 8.11.1
+ * **Possible breaking change**: Drop support for hash scheme `sha` (was removed in node ~10). `sha1`, `sha256` and others still works.
+ * **Possible breaking change**: Little change in environment detect algorithm. 
+ 
+
 ### 0.4.2
  * `no padding` scheme will padded data with zeros on all environments.
  

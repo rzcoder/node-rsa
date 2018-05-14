@@ -15,7 +15,6 @@ module.exports.digestLength = {
     md5: 16,
     ripemd160: 20,
     rmd160: 20,
-    sha: 20,
     sha1: 20,
     sha224: 28,
     sha256: 32,

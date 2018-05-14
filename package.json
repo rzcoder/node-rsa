@@ -1,6 +1,6 @@
 {
   "name": "node-rsa",
-  "version": "0.4.2",
+  "version": "1.0.0",
   "description": "Node.js RSA library",
   "main": "src/NodeRSA.js",
   "scripts": {
@@ -30,12 +30,12 @@
   },
   "homepage": "https://github.com/rzcoder/node-rsa",
   "devDependencies": {
-    "chai": "3.5.0",
-    "grunt": "1.0.1",
-    "grunt-contrib-jshint": "1.0.0",
+    "chai": "^4.1.2",
+    "grunt": "^1.0.2",
+    "grunt-contrib-jshint": "^1.1.0",
     "grunt-simple-mocha": "0.4.1",
     "jit-grunt": "0.10.0",
-    "lodash": "4.13.1"
+    "lodash": "^4.17.10"
   },
   "dependencies": {
     "asn1": "0.2.3"
