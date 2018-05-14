@@ -23,9 +23,9 @@ if (typeof constants.RSA_NO_PADDING == "undefined") {
 
 module.exports = (function () {
     var SUPPORTED_HASH_ALGORITHMS = {
-        node10: ['md4', 'md5', 'ripemd160', 'sha', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'],
-        node: ['md4', 'md5', 'ripemd160', 'sha', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'],
-        iojs: ['md4', 'md5', 'ripemd160', 'sha', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'],
+        node10: ['md4', 'md5', 'ripemd160', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'],
+        node: ['md4', 'md5', 'ripemd160', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'],
+        iojs: ['md4', 'md5', 'ripemd160', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'],
         browser: ['md5', 'ripemd160', 'sha1', 'sha256', 'sha512']
     };
 
@@ -289,7 +289,7 @@ module.exports = (function () {
      */
     NodeRSA.prototype.$$decryptKey = function (usePublic, buffer, encoding) {
         try {
-            buffer = _.isString(buffer) ? new Buffer(buffer, 'base64') : buffer;
+            buffer = _.isString(buffer) ? Buffer.from(buffer, 'base64') : buffer;
             var res = this.keyPair.decrypt(buffer, usePublic);
 
             if (res === null) {
@@ -366,11 +366,11 @@ module.exports = (function () {
      */
     NodeRSA.prototype.$getDataForEncrypt = function (buffer, encoding) {
         if (_.isString(buffer) || _.isNumber(buffer)) {
-            return new Buffer('' + buffer, encoding || 'utf8');
+            return Buffer.from('' + buffer, encoding || 'utf8');
         } else if (Buffer.isBuffer(buffer)) {
             return buffer;
         } else if (_.isObject(buffer)) {
-            return new Buffer(JSON.stringify(buffer));
+            return Buffer.from(JSON.stringify(buffer));
         } else {
             throw Error("Unexpected data type");
         }

@@ -15,7 +15,6 @@ module.exports.digestLength = {
     md5: 16,
     ripemd160: 20,
     rmd160: 20,
-    sha: 20,
     sha1: 20,
     sha224: 28,
     sha256: 32,
@@ -44,8 +43,8 @@ module.exports.eme_oaep_mgf1 = function (seed, maskLength, hashFunction) {
     hashFunction = hashFunction || DEFAULT_HASH_FUNCTION;
     var hLen = module.exports.digestLength[hashFunction];
     var count = Math.ceil(maskLength / hLen);
-    var T = new Buffer(hLen * count);
-    var c = new Buffer(4);
+    var T = Buffer.alloc(hLen * count);
+    var c = Buffer.alloc(4);
     for (var i = 0; i < count; ++i) {
         var hash = crypt.createHash(hashFunction);
         hash.update(seed);
@@ -75,7 +74,7 @@ module.exports.makeScheme = function (key, options) {
     Scheme.prototype.encPad = function (buffer) {
         var hash = this.options.encryptionSchemeOptions.hash || DEFAULT_HASH_FUNCTION;
         var mgf = this.options.encryptionSchemeOptions.mgf || module.exports.eme_oaep_mgf1;
-        var label = this.options.encryptionSchemeOptions.label || new Buffer(0);
+        var label = this.options.encryptionSchemeOptions.label || Buffer.alloc(0);
         var emLen = this.key.encryptedDataLength;
 
         var hLen = module.exports.digestLength[hash];
@@ -90,7 +89,7 @@ module.exports.makeScheme = function (key, options) {
         lHash.update(label);
         lHash = lHash.digest();
 
-        var PS = new Buffer(emLen - buffer.length - 2 * hLen - 1); // Padding "String"
+        var PS = Buffer.alloc(emLen - buffer.length - 2 * hLen - 1); // Padding "String"
         PS.fill(0); // Fill the buffer with octets of 0
         PS[PS.length - 1] = 1;
 
@@ -113,7 +112,7 @@ module.exports.makeScheme = function (key, options) {
         }
         // seed = maskedSeed
 
-        var em = new Buffer(1 + seed.length + DB.length);
+        var em = Buffer.alloc(1 + seed.length + DB.length);
         em[0] = 0;
         seed.copy(em, 1);
         DB.copy(em, 1 + seed.length);
@@ -133,7 +132,7 @@ module.exports.makeScheme = function (key, options) {
     Scheme.prototype.encUnPad = function (buffer) {
         var hash = this.options.encryptionSchemeOptions.hash || DEFAULT_HASH_FUNCTION;
         var mgf = this.options.encryptionSchemeOptions.mgf || module.exports.eme_oaep_mgf1;
-        var label = this.options.encryptionSchemeOptions.label || new Buffer(0);
+        var label = this.options.encryptionSchemeOptions.label || Buffer.alloc(0);
 
         var hLen = module.exports.digestLength[hash];
 
