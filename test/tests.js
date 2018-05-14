@@ -52,7 +52,7 @@ describe('NodeRSA', function () {
             encoding: ['utf8', 'ascii']
         },
         'buffer': {
-            data: new Buffer('ascii + юникод スラ ⑨'),
+            data: Buffer.from('ascii + юникод スラ ⑨'),
             encoding: 'buffer'
         },
         'json object': {
@@ -324,14 +324,14 @@ describe('NodeRSA', function () {
                     it('.importKey() from private components', function () {
                         var key = new NodeRSA();
                         key.importKey({
-                            n: new Buffer(privateKeyComponents.n, 'base64'),
+                            n: Buffer.from(privateKeyComponents.n, 'base64'),
                             e: 65537,
-                            d: new Buffer(privateKeyComponents.d, 'base64'),
-                            p: new Buffer(privateKeyComponents.p, 'base64'),
-                            q: new Buffer(privateKeyComponents.q, 'base64'),
-                            dmp1: new Buffer(privateKeyComponents.dmp1, 'base64'),
-                            dmq1: new Buffer(privateKeyComponents.dmq1, 'base64'),
-                            coeff: new Buffer(privateKeyComponents.coeff, 'base64')
+                            d: Buffer.from(privateKeyComponents.d, 'base64'),
+                            p: Buffer.from(privateKeyComponents.p, 'base64'),
+                            q: Buffer.from(privateKeyComponents.q, 'base64'),
+                            dmp1: Buffer.from(privateKeyComponents.dmp1, 'base64'),
+                            dmq1: Buffer.from(privateKeyComponents.dmq1, 'base64'),
+                            coeff: Buffer.from(privateKeyComponents.coeff, 'base64')
                         }, 'components');
                         assert(key.isPrivate());
                         assert.equal(key.exportKey('pkcs1-private'), privateKeyPKCS1);
@@ -341,7 +341,7 @@ describe('NodeRSA', function () {
                     it('.importKey() from public components', function () {
                         var key = new NodeRSA();
                         key.importKey({
-                            n: new Buffer(publicKeyComponents.n, 'base64'),
+                            n: Buffer.from(publicKeyComponents.n, 'base64'),
                             e: 65537
                         }, 'components-public');
                         assert(key.isPublic(true));
