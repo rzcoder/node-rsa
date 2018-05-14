@@ -12,13 +12,13 @@ Based on jsbn library from Tom Wu http://www-cs-students.stanford.edu/~tjw/jsbn/
 ## Example
 
 ```javascript
-var NodeRSA = require('node-rsa');
-var key = new NodeRSA({b: 512});
+const NodeRSA = require('node-rsa');
+const key = new NodeRSA({b: 512});
 
-var text = 'Hello RSA!';
-var encrypted = key.encrypt(text, 'base64');
+const text = 'Hello RSA!';
+const encrypted = key.encrypt(text, 'base64');
 console.log('encrypted: ', encrypted);
-var decrypted = key.decrypt(encrypted, 'utf8');
+const decrypted = key.decrypt(encrypted, 'utf8');
 console.log('decrypted: ', decrypted);
 ```
 
@@ -43,9 +43,9 @@ This library developed and tested primary for Node.js, but it still can work in 
 
 ### Create instance
 ```javascript
-var NodeRSA = require('node-rsa');
+const NodeRSA = require('node-rsa');
 
-var key = new NodeRSA([keyData, [format]], [options]);
+const key = new NodeRSA([keyData, [format]], [options]);
 ```
 
 * keyData — `{string|buffer|object}` — parameters for generating key or the key in one of supported formats.<br/>
@@ -67,12 +67,12 @@ You can specify some options by second/third constructor argument, or over `key.
 
 #### Creating "empty" key
 ```javascript
-var key = new NodeRSA();
+const key = new NodeRSA();
 ```
 
 #### Generate new 512bit-length key
 ```javascript
-var key = new NodeRSA({b: 512});
+const key = new NodeRSA({b: 512});
 ```
 
 Also you can use next method:
@@ -87,7 +87,7 @@ key.generateKeyPair([bits], [exp]);
 #### Load key from PEM string
 
 ```javascript
-var key = new NodeRSA('-----BEGIN RSA PRIVATE KEY-----\n'+
+const key = new NodeRSA('-----BEGIN RSA PRIVATE KEY-----\n'+
                       'MIIBOQIBAAJAVY6quuzCwyOWzymJ7C4zXjeV/232wt2ZgJZ1kHzjI73wnhQ3WQcL\n'+
                       'DFCSoi2lPUW8/zspk0qWvPdtp6Jg5Lu7hwIDAQABAkBEws9mQahZ6r1mq2zEm3D/\n'+
                       'VM9BpV//xtd6p/G+eRCYBT2qshGx42ucdgZCYJptFoW+HEx/jtzWe74yK6jGIkWJ\n'+
@@ -138,10 +138,10 @@ Output type — can be:
 **Code example**
 
 ```javascript
-var keyData = '-----BEGIN PUBLIC KEY----- ... -----END PUBLIC KEY-----';
+const keyData = '-----BEGIN PUBLIC KEY----- ... -----END PUBLIC KEY-----';
 key.importKey(keyData, 'pkcs8');
-var publicDer = key.exportKey('pkcs8-public-der');
-var privateDer = key.exportKey('pkcs1-der');
+const publicDer = key.exportKey('pkcs8-public-der');
+const privateDer = key.exportKey('pkcs1-der');
 ```
 
 ```javascript
@@ -155,7 +155,7 @@ key.importKey({
     dmq1: new Buffer('1a7370470e0f8a4095df40922a430fe498720e03e1f70d257c3ce34202249d21', 'hex'),
     coeff: new Buffer('00b399675e5e81506b729a777cc03026f0b2119853dfc5eb124610c0ab82999e45', 'hex')
 }, 'components');
-var publicComponents = key.exportKey('components-public');
+const publicComponents = key.exportKey('components-public');
 console.log(publicComponents);
 
 /*
@@ -239,10 +239,10 @@ Questions, comments, bug reports, and pull requests are all welcome.
 
 ### 1.0.0
  * Using semver now 🎉
- * **Possible breaking change**: Drop support nodejs < 8.11.1
+ * **Breaking change**: Drop support nodejs < 8.11.1
+ * **Possible breaking change**: `new Buffer()` call as deprecated was replaced by `Buffer.from` & `Buffer.alloc`.
  * **Possible breaking change**: Drop support for hash scheme `sha` (was removed in node ~10). `sha1`, `sha256` and others still works.
  * **Possible breaking change**: Little change in environment detect algorithm. 
- 
 
 ### 0.4.2
  * `no padding` scheme will padded data with zeros on all environments.
