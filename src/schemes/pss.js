@@ -41,7 +41,7 @@ module.exports.makeScheme = function (key, options) {
 
     Scheme.prototype.verify = function (buffer, signature, signature_encoding) {
         if (signature_encoding) {
-            signature = new Buffer(signature, signature_encoding);
+            signature = Buffer.from(signature, signature_encoding);
         }
         signature = new BigInteger(signature);
 
@@ -78,7 +78,7 @@ module.exports.makeScheme = function (key, options) {
 
         var salt = crypt.randomBytes(sLen);
 
-        var Mapostrophe = new Buffer(8 + hLen + sLen);
+        var Mapostrophe = Buffer.alloc(8 + hLen + sLen);
         Mapostrophe.fill(0, 0, 8);
         mHash.copy(Mapostrophe, 8);
         salt.copy(Mapostrophe, 8 + mHash.length);
@@ -87,10 +87,10 @@ module.exports.makeScheme = function (key, options) {
         H.update(Mapostrophe);
         H = H.digest();
 
-        var PS = new Buffer(emLen - salt.length - hLen - 2);
+        var PS = Buffer.alloc(emLen - salt.length - hLen - 2);
         PS.fill(0);
 
-        var DB = new Buffer(PS.length + 1 + salt.length);
+        var DB = Buffer.alloc(PS.length + 1 + salt.length);
         PS.copy(DB);
         DB[PS.length] = 0x01;
         salt.copy(DB, PS.length + 1);
@@ -98,7 +98,7 @@ module.exports.makeScheme = function (key, options) {
         var dbMask = mgf(H, DB.length, hash);
 
         // XOR DB and dbMask together
-        var maskedDB = new Buffer(DB.length);
+        var maskedDB = Buffer.alloc(DB.length);
         for (var i = 0; i < dbMask.length; i++) {
             maskedDB[i] = DB[i] ^ dbMask[i];
         }
@@ -107,7 +107,7 @@ module.exports.makeScheme = function (key, options) {
         var mask = 255 ^ (255 >> 8 - bits << 8 - bits);
         maskedDB[0] = maskedDB[0] & mask;
 
-        var EM = new Buffer(maskedDB.length + H.length + 1);
+        var EM = Buffer.alloc(maskedDB.length + H.length + 1);
         maskedDB.copy(EM, 0);
         H.copy(EM, maskedDB.length);
         EM[EM.length - 1] = 0xbc;
@@ -135,7 +135,7 @@ module.exports.makeScheme = function (key, options) {
             return false;
         }
 
-        var DB = new Buffer(emLen - hLen - 1);
+        var DB = Buffer.alloc(emLen - hLen - 1);
         EM.copy(DB, 0, 0, emLen - hLen - 1);
 
         var mask = 0;
@@ -167,7 +167,7 @@ module.exports.makeScheme = function (key, options) {
 
         var salt = DB.slice(DB.length - sLen);
 
-        var Mapostrophe = new Buffer(8 + hLen + sLen);
+        var Mapostrophe = Buffer.alloc(8 + hLen + sLen);
         Mapostrophe.fill(0, 0, 8);
         mHash.copy(Mapostrophe, 8);
         salt.copy(Mapostrophe, 8 + mHash.length);
