@@ -165,7 +165,14 @@ console.log(publicComponents);
 */
 ```
 
+If you want to only import the public key use `'components-public'` as an option:
 
+```javascript
+key.importKey({
+    n: new Buffer('0086fa9ba066685845fc03833a9699c8baefb53cfbf19052a7f10f1eaa30488cec1ceb752bdff2df9fad6c64b3498956e7dbab4035b4823c99a44cc57088a23783', 'hex'),
+    e: 65537,
+}, 'components-public');
+```
 
 ### Properties
 
