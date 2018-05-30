@@ -1,7 +1,7 @@
 {
   "name": "node-rsa",
-  "version": "1.0.0",
-  "description": "Node.js RSA library",
+  "version": "1.0.1",
+  "description": "Node.js RSA library modified from node-rsa(rzcoder) to enable public key decrypt and private key encrypt",
   "main": "src/NodeRSA.js",
   "scripts": {
     "test": "grunt test"
@@ -10,20 +10,8 @@
     "type": "git",
     "url": "https://github.com/rzcoder/node-rsa.git"
   },
-  "keywords": [
-    "node",
-    "rsa",
-    "crypto",
-    "assymetric",
-    "encryption",
-    "decryption",
-    "sign",
-    "verify",
-    "pkcs1",
-    "oaep",
-    "pss"
-  ],
-  "author": "rzcoder",
+  "keywords": [],
+  "author": "gorenjai/rzcoder",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/rzcoder/node-rsa/issues"

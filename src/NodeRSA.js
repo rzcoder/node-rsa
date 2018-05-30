@@ -23,9 +23,9 @@ if (typeof constants.RSA_NO_PADDING == "undefined") {
 
 module.exports = (function () {
     var SUPPORTED_HASH_ALGORITHMS = {
-        node10: ['md4', 'md5', 'ripemd160', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'],
-        node: ['md4', 'md5', 'ripemd160', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'],
-        iojs: ['md4', 'md5', 'ripemd160', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'],
+        node10: ['md4', 'md5', 'ripemd160', 'sha', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'],
+        node: ['md4', 'md5', 'ripemd160', 'sha', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'],
+        iojs: ['md4', 'md5', 'ripemd160', 'sha', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'],
         browser: ['md5', 'ripemd160', 'sha1', 'sha256', 'sha512']
     };
 
@@ -227,15 +227,16 @@ module.exports = (function () {
     };
 
     /**
-     * Encrypting data method with public key
+     * Encrypting data method with public key or private key
      *
      * @param buffer {string|number|object|array|Buffer} - data for encrypting. Object and array will convert to JSON string.
      * @param encoding {string} - optional. Encoding for output result, may be 'buffer', 'binary', 'hex' or 'base64'. Default 'buffer'.
      * @param source_encoding {string} - optional. Encoding for given string. Default utf8.
+     * @param isPrivateKey {boolean} - optional. Set it to true if key passed in is private, false by default.
      * @returns {string|Buffer}
      */
-    NodeRSA.prototype.encrypt = function (buffer, encoding, source_encoding) {
-        return this.$$encryptKey(false, buffer, encoding, source_encoding);
+    NodeRSA.prototype.encrypt = function (buffer, encoding, source_encoding, isPrivateKey = false) {
+        return this.$$encryptKey(isPrivateKey, buffer, encoding, source_encoding);
     };
 
     /**
@@ -243,10 +244,11 @@ module.exports = (function () {
      *
      * @param buffer {Buffer} - buffer for decrypting
      * @param encoding - encoding for result string, can also take 'json' or 'buffer' for the automatic conversion of this type
+     * @param isPublicKey {boolean} - optional. Set it to true if key passed in is public, false by default.
      * @returns {Buffer|object|string}
      */
-    NodeRSA.prototype.decrypt = function (buffer, encoding) {
-        return this.$$decryptKey(false, buffer, encoding);
+    NodeRSA.prototype.decrypt = function (buffer, encoding, isPublicKey = false) {
+        return this.$$decryptKey(isPublicKey, buffer, encoding);
     };
 
     /**
@@ -289,7 +291,7 @@ module.exports = (function () {
      */
     NodeRSA.prototype.$$decryptKey = function (usePublic, buffer, encoding) {
         try {
-            buffer = _.isString(buffer) ? Buffer.from(buffer, 'base64') : buffer;
+            buffer = _.isString(buffer) ? new Buffer(buffer, 'base64') : buffer;
             var res = this.keyPair.decrypt(buffer, usePublic);
 
             if (res === null) {
@@ -366,11 +368,11 @@ module.exports = (function () {
      */
     NodeRSA.prototype.$getDataForEncrypt = function (buffer, encoding) {
         if (_.isString(buffer) || _.isNumber(buffer)) {
-            return Buffer.from('' + buffer, encoding || 'utf8');
+            return new Buffer('' + buffer, encoding || 'utf8');
         } else if (Buffer.isBuffer(buffer)) {
             return buffer;
         } else if (_.isObject(buffer)) {
-            return Buffer.from(JSON.stringify(buffer));
+            return new Buffer(JSON.stringify(buffer));
         } else {
             throw Error("Unexpected data type");
         }
