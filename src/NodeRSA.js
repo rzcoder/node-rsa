@@ -185,8 +185,10 @@ module.exports = (function () {
         if (!formats.detectAndImport(this.keyPair, keyData, format) && format === undefined) {
             throw Error("Key format must be specified");
         }
-
+        
         this.$cache = {};
+        
+        return this;
     };
 
     /**
