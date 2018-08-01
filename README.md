@@ -244,6 +244,9 @@ Questions, comments, bug reports, and pull requests are all welcome.
 
 ## Changelog
 
+### 1.0.1
+ * `importKey()` now returns this
+
 ### 1.0.0
  * Using semver now 🎉
  * **Breaking change**: Drop support nodejs < 8.11.1

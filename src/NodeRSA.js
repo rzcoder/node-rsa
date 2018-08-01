@@ -1,10 +1,8 @@
 /*!
  * RSA library for Node.js
  *
- * Copyright (c) 2014 rzcoder
- * All Rights Reserved.
- *
- * License BSD
+ * Author: rzcoder
+ * License MIT
  */
 
 var constants = require('constants');
@@ -16,7 +14,7 @@ var utils = require('./utils');
 var schemes = require('./schemes/schemes.js');
 var formats = require('./formats/formats.js');
 
-if (typeof constants.RSA_NO_PADDING == "undefined") {
+if (typeof constants.RSA_NO_PADDING === "undefined") {
     //patch for node v0.10.x, constants do not defined
     constants.RSA_NO_PADDING = 3;
 }
