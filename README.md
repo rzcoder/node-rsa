@@ -244,6 +244,9 @@ Questions, comments, bug reports, and pull requests are all welcome.
 
 ## Changelog
 
+### 1.0.2
+ * Importing keys from PEM now is less dependent on non-key data in files.
+ 
 ### 1.0.1
  * `importKey()` now returns `this`
 

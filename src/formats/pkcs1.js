@@ -8,24 +8,6 @@ const PRIVATE_CLOSING_BOUNDARY = '-----END RSA PRIVATE KEY-----';
 const PUBLIC_OPENING_BOUNDARY = '-----BEGIN RSA PUBLIC KEY-----';
 const PUBLIC_CLOSING_BOUNDARY = '-----END RSA PUBLIC KEY-----';
 
-/**
- * Strips everything around the opening and closing lines, including the lines
- * themselves.
- */
-function trimSurroundingText(data, opening, closing) {
-    let openingBoundaryIndex = data.indexOf(opening);
-    if (openingBoundaryIndex < 0) {
-        throw Error('Unsupported key format - Missing BEGIN line');
-    }
-
-    let closingBoundaryIndex = data.indexOf(closing, openingBoundaryIndex);
-    if (closingBoundaryIndex < 0) {
-        throw Error('Unsupported key format - Missing END line');
-    }
-
-    return data.substring(openingBoundaryIndex + opening.length, closingBoundaryIndex);
-}
-
 module.exports = {
     privateExport: function (key, options) {
         options = options || {};
@@ -56,7 +38,7 @@ module.exports = {
         if (options.type === 'der') {
             return writer.buffer;
         } else {
-            return '-----BEGIN RSA PRIVATE KEY-----\n' + utils.linebrk(writer.buffer.toString('base64'), 64) + '\n-----END RSA PRIVATE KEY-----';
+            return PRIVATE_OPENING_BOUNDARY + '\n' + utils.linebrk(writer.buffer.toString('base64'), 64) + '\n' + PRIVATE_CLOSING_BOUNDARY;
         }
     },
 
@@ -70,7 +52,7 @@ module.exports = {
             }
 
             if (_.isString(data)) {
-                let pem = trimSurroundingText(data, PRIVATE_OPENING_BOUNDARY, PRIVATE_CLOSING_BOUNDARY)
+                let pem = utils.trimSurroundingText(data, PRIVATE_OPENING_BOUNDARY, PRIVATE_CLOSING_BOUNDARY)
                     .replace(/\s+|\n\r|\n|\r$/gm, '');
                 buffer = Buffer.from(pem, 'base64');
             } else {
@@ -112,7 +94,7 @@ module.exports = {
         if (options.type === 'der') {
             return bodyWriter.buffer;
         } else {
-            return '-----BEGIN RSA PUBLIC KEY-----\n' + utils.linebrk(bodyWriter.buffer.toString('base64'), 64) + '\n-----END RSA PUBLIC KEY-----';
+            return PUBLIC_OPENING_BOUNDARY + '\n' + utils.linebrk(bodyWriter.buffer.toString('base64'), 64) + '\n' + PUBLIC_CLOSING_BOUNDARY;
         }
     },
 
@@ -126,7 +108,7 @@ module.exports = {
             }
 
             if (_.isString(data)) {
-                var pem = trimSurroundingText(data, PUBLIC_OPENING_BOUNDARY, PUBLIC_CLOSING_BOUNDARY)
+                var pem = utils.trimSurroundingText(data, PUBLIC_OPENING_BOUNDARY, PUBLIC_CLOSING_BOUNDARY)
                     .replace(/\s+|\n\r|\n|\r$/gm, '');
                 buffer = Buffer.from(pem, 'base64');
             }
