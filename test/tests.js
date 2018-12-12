@@ -336,6 +336,21 @@ describe('NodeRSA', function () {
                         assert.equal(key.exportKey(), fileKeyPKCS1);
                     });
 
+                    it('should gracefully handle data outside of encapsulation boundaries for private keys', function () {
+                        let privateFileWithNoise = 'Lorem ipsum' + fs.readFileSync(keysFolder + 'private_pkcs1.pem') + 'dulce et decorum';
+                        let key = new NodeRSA(privateFileWithNoise);
+                        assert.equal(key.exportKey(), fileKeyPKCS1);
+                    });
+
+                    it('should gracefully handle data outside of encapsulation boundaries for public keys', function () {
+                        let publicFileWithNoise = 'Lorem ipsum' + fs.readFileSync(keysFolder + 'public_pkcs1.pem') + 'dulce et decorum';
+                        let publicNodeRSA = new NodeRSA(publicFileWithNoise);
+                        assert.instanceOf(privateNodeRSA.keyPair, Object);
+                        assert(publicNodeRSA.isPublic());
+                        assert(publicNodeRSA.isPublic(true));
+                        assert(!publicNodeRSA.isPrivate());
+                    });
+
                     it('.importKey() from private components', function () {
                         var key = new NodeRSA();
                         key.importKey({
