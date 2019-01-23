@@ -91,15 +91,18 @@ module.exports._ = {
  * themselves.
  */
 module.exports.trimSurroundingText = function (data, opening, closing) {
+    let trimStartIndex = 0;
+    let trimEndIndex = data.length;
+
     let openingBoundaryIndex = data.indexOf(opening);
-    if (openingBoundaryIndex < 0) {
-        throw Error('Missing BEGIN line');
+    if (openingBoundaryIndex >= 0) {
+        trimStartIndex = openingBoundaryIndex + opening.length;
     }
 
     let closingBoundaryIndex = data.indexOf(closing, openingBoundaryIndex);
-    if (closingBoundaryIndex < 0) {
-        throw Error('Missing END line');
+    if (closingBoundaryIndex >= 0) {
+        trimEndIndex = closingBoundaryIndex;
     }
 
-    return data.substring(openingBoundaryIndex + opening.length, closingBoundaryIndex);
+    return data.substring(trimStartIndex, trimEndIndex);
 }
