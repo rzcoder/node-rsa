@@ -309,7 +309,7 @@ describe('NodeRSA', function () {
 
                     it('should load public key from (not trimmed) PKCS8-PEM string', function () {
                         publicNodeRSA = new NodeRSA(publicKeyPEMNotTrimmed);
-                        assert.instanceOf(privateNodeRSA.keyPair, Object);
+                        assert.instanceOf(publicNodeRSA.keyPair, Object);
                         assert(publicNodeRSA.isPublic());
                         assert(publicNodeRSA.isPublic(true));
                         assert(!publicNodeRSA.isPrivate());
@@ -345,7 +345,7 @@ describe('NodeRSA', function () {
                     it('should gracefully handle data outside of encapsulation boundaries for pkcs1 public keys', function () {
                         let publicFileWithNoise = 'Lorem ipsum' + fs.readFileSync(keysFolder + 'public_pkcs1.pem') + 'dulce et decorum';
                         let publicNodeRSA = new NodeRSA(publicFileWithNoise);
-                        assert.instanceOf(privateNodeRSA.keyPair, Object);
+                        assert.instanceOf(publicNodeRSA.keyPair, Object);
                         assert(publicNodeRSA.isPublic());
                         assert(publicNodeRSA.isPublic(true));
                         assert(!publicNodeRSA.isPrivate());
@@ -360,7 +360,7 @@ describe('NodeRSA', function () {
                     it('should gracefully handle data outside of encapsulation boundaries for pkcs8 public keys', function () {
                         let publicFileWithNoise = 'Lorem ipsum' + fs.readFileSync(keysFolder + 'public_pkcs8.pem') + 'dulce et decorum';
                         let publicNodeRSA = new NodeRSA(publicFileWithNoise);
-                        assert.instanceOf(privateNodeRSA.keyPair, Object);
+                        assert.instanceOf(publicNodeRSA.keyPair, Object);
                         assert(publicNodeRSA.isPublic());
                         assert(publicNodeRSA.isPublic(true));
                         assert(!publicNodeRSA.isPrivate());
