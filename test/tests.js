@@ -366,6 +366,40 @@ describe('NodeRSA', function () {
                         assert(!publicNodeRSA.isPrivate());
                     });
 
+                    it('should handle data without begin/end encapsulation boundaries for pkcs1 private keys', function () {
+                        let privateFile = fs.readFileSync(keysFolder + 'private_pkcs1.pem', "utf8");
+                        let privateFileNoBoundaries = privateFile.substring("-----BEGIN RSA PRIVATE KEY-----".length, privateFile.indexOf("-----END RSA PRIVATE KEY-----"));
+                        let key = new NodeRSA(privateFileNoBoundaries, "pkcs1-private-pem");
+                        assert.equal(key.exportKey(), fileKeyPKCS1);
+                    });
+
+                    it('should handle data without begin/end encapsulation boundaries for pkcs1 public keys', function () {
+                        let publicFile = fs.readFileSync(keysFolder + 'public_pkcs1.pem', "utf8");
+                        let publicFileNoBoundaries = publicFile.substring("-----BEGIN RSA PUBLIC KEY-----".length, publicFile.indexOf("-----END RSA PUBLIC KEY-----"));
+                        let publicNodeRSA = new NodeRSA(publicFileNoBoundaries, "pkcs1-public-pem");
+                        assert.instanceOf(publicNodeRSA.keyPair, Object);
+                        assert(publicNodeRSA.isPublic());
+                        assert(publicNodeRSA.isPublic(true));
+                        assert(!publicNodeRSA.isPrivate());
+                    });
+
+                    it('should handle data without begin/end encapsulation boundaries for pkcs8 private keys', function () {
+                        let privateFile = fs.readFileSync(keysFolder + 'private_pkcs8.pem', "utf8");
+                        let privateFileNoBoundaries = privateFile.substring('-----BEGIN PRIVATE KEY-----'.length, privateFile.indexOf('-----END PRIVATE KEY-----'));
+                        let key = new NodeRSA(privateFileNoBoundaries, "pkcs8-private-pem");
+                        assert.equal(key.exportKey(), fileKeyPKCS1);
+                    });
+
+                    it('should handle data without begin/end encapsulation boundaries for pkcs8 public keys', function () {
+                        let publicFile = fs.readFileSync(keysFolder + 'public_pkcs8.pem', "utf8");
+                        let publicFileNoBoundaries = publicFile.substring("-----BEGIN PUBLIC KEY-----".length, publicFile.indexOf("-----END PUBLIC KEY-----"));
+                        let publicNodeRSA = new NodeRSA(publicFileNoBoundaries, "pkcs8-public-pem");
+                        assert.instanceOf(publicNodeRSA.keyPair, Object);
+                        assert(publicNodeRSA.isPublic());
+                        assert(publicNodeRSA.isPublic(true));
+                        assert(!publicNodeRSA.isPrivate());
+                    });
+
                     it('.importKey() from private components', function () {
                         var key = new NodeRSA();
                         key.importKey({
