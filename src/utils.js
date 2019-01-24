@@ -91,15 +91,15 @@ module.exports._ = {
  * themselves.
  */
 module.exports.trimSurroundingText = function (data, opening, closing) {
-    let trimStartIndex = 0;
-    let trimEndIndex = data.length;
+    var trimStartIndex = 0;
+    var trimEndIndex = data.length;
 
-    let openingBoundaryIndex = data.indexOf(opening);
+    var openingBoundaryIndex = data.indexOf(opening);
     if (openingBoundaryIndex >= 0) {
         trimStartIndex = openingBoundaryIndex + opening.length;
     }
 
-    let closingBoundaryIndex = data.indexOf(closing, openingBoundaryIndex);
+    var closingBoundaryIndex = data.indexOf(closing, openingBoundaryIndex);
     if (closingBoundaryIndex >= 0) {
         trimEndIndex = closingBoundaryIndex;
     }
