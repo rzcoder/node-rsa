@@ -253,8 +253,8 @@ describe('NodeRSA', function () {
                 e: 65537,
             };
 
-            var privateKeyPEMNotTrimmed = '     \n\n    \n\n ' + privateKeyPKCS1 + '\n \n  \n\n  ';
-            var publicKeyPEMNotTrimmed = '\n\n\n\n ' + publicKeyPKCS8 + '\n \n\n\n  ';
+            var privateKeyPEMNotTrimmed = 'random     \n\n data    \n\n ' + privateKeyPKCS1 + '\n \n  \n\n random data ';
+            var publicKeyPEMNotTrimmed = '\n\n\n\nrandom     \n\n data\n ' + publicKeyPKCS8 + '\n \n random data\n\n  ';
 
             var fileKeyPKCS1 = '-----BEGIN RSA PRIVATE KEY-----\n' +
                 'MIICXAIBAAKBgQCCdY+EpDC/vPa335l751SBM8d5Lf4z4QZX4bc+DqTY9zVY/rmP\n' +
