@@ -52,7 +52,7 @@ module.exports = {
             }
 
             if (_.isString(data)) {
-                let pem = utils.trimSurroundingText(data, PRIVATE_OPENING_BOUNDARY, PRIVATE_CLOSING_BOUNDARY)
+                var pem = utils.trimSurroundingText(data, PRIVATE_OPENING_BOUNDARY, PRIVATE_CLOSING_BOUNDARY)
                     .replace(/\s+|\n\r|\n|\r$/gm, '');
                 buffer = Buffer.from(pem, 'base64');
             } else {
