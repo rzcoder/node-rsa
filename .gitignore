@@ -2,3 +2,4 @@
 .idea
 .tmp
 node_modules/
+.nyc_output
