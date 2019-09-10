@@ -3,6 +3,12 @@ var _ = require('../utils')._;
 var PUBLIC_RSA_OID = '1.2.840.113549.1.1.1';
 var utils = require('../utils');
 
+const PRIVATE_OPENING_BOUNDARY = '-----BEGIN PRIVATE KEY-----';
+const PRIVATE_CLOSING_BOUNDARY = '-----END PRIVATE KEY-----';
+
+const PUBLIC_OPENING_BOUNDARY = '-----BEGIN PUBLIC KEY-----';
+const PUBLIC_CLOSING_BOUNDARY = '-----END PUBLIC KEY-----';
+
 module.exports = {
     privateExport: function (key, options) {
         options = options || {};
@@ -43,7 +49,7 @@ module.exports = {
         if (options.type === 'der') {
             return writer.buffer;
         } else {
-            return '-----BEGIN PRIVATE KEY-----\n' + utils.linebrk(writer.buffer.toString('base64'), 64) + '\n-----END PRIVATE KEY-----';
+            return PRIVATE_OPENING_BOUNDARY + '\n' + utils.linebrk(writer.buffer.toString('base64'), 64) + '\n' + PRIVATE_CLOSING_BOUNDARY;
         }
     },
 
@@ -57,7 +63,7 @@ module.exports = {
             }
 
             if (_.isString(data)) {
-                var pem = data.replace('-----BEGIN PRIVATE KEY-----', '')
+                var pem = utils.trimSurroundingText(data, PRIVATE_OPENING_BOUNDARY, PRIVATE_CLOSING_BOUNDARY)
                     .replace('-----END PRIVATE KEY-----', '')
                     .replace(/\s+|\n\r|\n|\r$/gm, '');
                 buffer = Buffer.from(pem, 'base64');
@@ -119,7 +125,7 @@ module.exports = {
         if (options.type === 'der') {
             return writer.buffer;
         } else {
-            return '-----BEGIN PUBLIC KEY-----\n' + utils.linebrk(writer.buffer.toString('base64'), 64) + '\n-----END PUBLIC KEY-----';
+            return PUBLIC_OPENING_BOUNDARY + '\n' + utils.linebrk(writer.buffer.toString('base64'), 64) + '\n' + PUBLIC_CLOSING_BOUNDARY;
         }
     },
 
@@ -133,8 +139,7 @@ module.exports = {
             }
 
             if (_.isString(data)) {
-                var pem = data.replace('-----BEGIN PUBLIC KEY-----', '')
-                    .replace('-----END PUBLIC KEY-----', '')
+                var pem = utils.trimSurroundingText(data, PUBLIC_OPENING_BOUNDARY, PUBLIC_CLOSING_BOUNDARY)
                     .replace(/\s+|\n\r|\n|\r$/gm, '');
                 buffer = Buffer.from(pem, 'base64');
             }
@@ -167,12 +172,12 @@ module.exports = {
      * @param data
      */
     autoImport: function (key, data) {
-        if (/^\s*-----BEGIN PRIVATE KEY-----\s*(?=(([A-Za-z0-9+/=]+\s*)+))\1-----END PRIVATE KEY-----\s*$/g.test(data)) {
+        if (/^[\S\s]*-----BEGIN PRIVATE KEY-----\s*(?=(([A-Za-z0-9+/=]+\s*)+))\1-----END PRIVATE KEY-----[\S\s]*$/g.test(data)) {
             module.exports.privateImport(key, data);
             return true;
         }
 
-        if (/^\s*-----BEGIN PUBLIC KEY-----\s*(?=(([A-Za-z0-9+/=]+\s*)+))\1-----END PUBLIC KEY-----\s*$/g.test(data)) {
+        if (/^[\S\s]*-----BEGIN PUBLIC KEY-----\s*(?=(([A-Za-z0-9+/=]+\s*)+))\1-----END PUBLIC KEY-----[\S\s]*$/g.test(data)) {
             module.exports.publicImport(key, data);
             return true;
         }

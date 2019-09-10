@@ -85,3 +85,24 @@ module.exports._ = {
         return newObj;
     }
 };
+
+/**
+ * Strips everything around the opening and closing lines, including the lines
+ * themselves.
+ */
+module.exports.trimSurroundingText = function (data, opening, closing) {
+    var trimStartIndex = 0;
+    var trimEndIndex = data.length;
+
+    var openingBoundaryIndex = data.indexOf(opening);
+    if (openingBoundaryIndex >= 0) {
+        trimStartIndex = openingBoundaryIndex + opening.length;
+    }
+
+    var closingBoundaryIndex = data.indexOf(closing, openingBoundaryIndex);
+    if (closingBoundaryIndex >= 0) {
+        trimEndIndex = closingBoundaryIndex;
+    }
+
+    return data.substring(trimStartIndex, trimEndIndex);
+}

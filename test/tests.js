@@ -65,6 +65,62 @@ describe('NodeRSA', function () {
         }
     };
 
+    var privateKeyPKCS1 = '-----BEGIN RSA PRIVATE KEY-----\n' +
+        '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\n' +
+        '-----END RSA PRIVATE KEY-----';
+
+    var privateKeyComponents = {
+        n: 'ALBNXncn06GUb+nBTpAdLQCeaiaK+GBeQnHCQC9H0v6NWJNdFUlx+F8eKXkiYGECpDtB6jtYQM+pPXRUAeFNQp1rUY7TRHCH8nKq2a4busqLubMm+knFd2bv/W5u/w8mi5cf4CYVD0dTsTs2qrBL5bu4Ww4TSyGKNcyhW/2lAWw+vlHGhsR9gXxTXc1QLVUlaXP7NmN7G6DDe6wclI+/d+4kJWjCDb1Y8mrMp2LsxzcOmUT/ST/X8MawsmsZ0z1sVZdKr1WkDtvk7RTLQ1x9jlWbVlnixwC/HIpXcNBvrtqlak6iBhMDciZbAB8pGjxQDFtMS7nrpq0pQfiVCT60b78OJwQneBjqzUpTwhP8ZZNQm/CWiAky7w1HGHN2ai946gLngYZKcNrgs/MVSXjgNSmOJECCMfCRAbAGM4Mj9ost',
+        e: 65537,
+        d: 'IwXLnUoZHYEaVkpja/ePyA6wMaXrv2EaO/UFwR64iH7VuLiGEQgF+gdI39p3YO4gZ/EpMc7PWTFalvBVS0eI0zLNidzoPJ6VCDhuc8roaXImWrOEhwEmPhmws65zFrRmiIf5hDcsyNOUYpnygIEjSw5NcFde1nPZSiRH3PRZewJf1mjkvsXb4jHBcZba2o5LC5I89Lgw/de3irJGxOOZVC3xqniNJGA2nVqfPKcOopFyZZ9qd2NTzUBd3stnDfkp83dI8f3OXw/Qdc8SmL+W1KPlJ08wcVfNXvcQiX5HV7/ug+ag59YBi3WWWuRcbWW0YFYf2Zaj/cWK+9mrP1hZiANtMEYBz4Fry8h7IdF04amX9vzt0fCphb/Gk/pJnOYrOrFSLSCIu5baK1WqU5CWot88/1UjAQWi/srRTfY1ZeE=',
+        p: 'AN8vxMx5le6AFM3vKrrNlY3z7rQxRrHPT+Up3OajfnPfaulUp2xh33bamZyw1hqiP8f0veP80/j3P5Id9ila9NrsC8l82VdhzcFFchqul+deybrkjMrMdoX2LbF1fGR9MRgi85AMwsVKKI5tYkxX5CpTFveW67f8JHchxuB5M6l2IL9P9mX9hiXXsmplMeYsVk+rvF7C22DNCisNFYgUO2U=',
+        q: 'AMo4+uM9f4BpOHSmayhLhHArIGs4386BkXSeOLeQitaQJ/2czb459O87XoCAonZbq+dI7XRnBU3toQvEsZgrtGkOFXCZJMWAQxD5BQ5vEYT6c86huGpX6h3ODlJ6UGi+5CWyMQ1cFlBkfffFAarjSYTVlyj736sOeDuJWX133z5VQBQ81xSH23kNF95vxB4I1fXG8WL11YZU7VEwSLC4aCk=',
+        dmp1: 'CkY/sA4U2eLpkkVlWS4nqV5GaeMu1vatPeZ8dd2m75ykZlNwVav3xpfvpGf7o0Q+3Wyl5T35YCe5tHdOor6+MOnW7RKjSsOE3lXdF99bvNn/PWxSEu/wsOARYG8BJ/sfbHYHcmUz/jMYxN3CPbN6HHywvPskpNalsxpJ9oF94FpAza3XsQBH0awpWX6JGoiF/KryRAaCZOVrh2nVyOrthQ==',
+        dmq1: 'ByidOQ4kRVd0OCzr/jEuLwpXy3Pn+Fd93rL7LwRe5dmUkNXMMr+6e/2OCt6C4c28+CMMxOIgvfF7kf8Uil6BtHZbK/E/6/3uYdtu4mPsKtjy4I25CYqzLvrsZt8NmaeoS+1S7zYjVBU6oFrJBFOndpxZDYpdEKEigHkMQfTMYliCPDUrJ/7nNhHQln8+YhHOATVZtjcdp/O5svYSnK7qgQ==',
+        coeff: 'N3eUVas9q2DGkXUlcwQUVtohF03EeQoDhhiAxMzgw+BWK6dhf/IntJpfyNacLbfUD25Wfj6Rv4O8qNz5m5NC+chQra7ou8iKdUWycMQD4FtfB6EC3B0cMwO2pgV3HiG8JZDAE2fincnQ47a1thUy28zlo4R9FJhqB+ZHLCENQCNbxTREGfOWZeFBDoH1uOqihLYyxGsmtLkJTrzZ9veEGg=='
+    };
+
+    var publicKeyPKCS8 = '-----BEGIN PUBLIC KEY-----\n' +
+        'MIIBYjANBgkqhkiG9w0BAQEFAAOCAU8AMIIBSgKCAUEAsE1edyfToZRv6cFOkB0t\n' +
+        'AJ5qJor4YF5CccJAL0fS/o1Yk10VSXH4Xx4peSJgYQKkO0HqO1hAz6k9dFQB4U1C\n' +
+        'nWtRjtNEcIfycqrZrhu6you5syb6ScV3Zu/9bm7/DyaLlx/gJhUPR1OxOzaqsEvl\n' +
+        'u7hbDhNLIYo1zKFb/aUBbD6+UcaGxH2BfFNdzVAtVSVpc/s2Y3sboMN7rByUj793\n' +
+        '7iQlaMINvVjyasynYuzHNw6ZRP9JP9fwxrCyaxnTPWxVl0qvVaQO2+TtFMtDXH2O\n' +
+        'VZtWWeLHAL8cildw0G+u2qVqTqIGEwNyJlsAHykaPFAMW0xLueumrSlB+JUJPrRv\n' +
+        'vw4nBCd4GOrNSlPCE/xlk1Cb8JaICTLvDUcYc3ZqL3jqAueBhkpw2uCz8xVJeOA1\n' +
+        'KY4kQIIx8JEBsAYzgyP2iy0CAwEAAQ==\n' +
+        '-----END PUBLIC KEY-----';
+
     var generatedKeys = [];
     var privateNodeRSA = null;
     var publicNodeRSA = null;
@@ -159,6 +215,21 @@ describe('NodeRSA', function () {
         });
     });
 
+    describe('Base methods', function () {
+        it('importKey() should throw exception if key data not specified', function () {
+            var key = new NodeRSA(null);
+
+            assert.throw(function () {
+                key.importKey();
+            }, Error, 'Empty key given');
+        });
+
+        it('importKey() should return this', function () {
+            var key = new NodeRSA(null);
+            assert.equal(key.importKey(publicKeyPKCS8), key);
+        });
+    });
+
     describe('Work with keys', function () {
         describe('Generating keys', function () {
             for (var size in keySizes) {
@@ -177,69 +248,13 @@ describe('NodeRSA', function () {
         });
 
         describe('Import/Export keys', function () {
-            var privateKeyPKCS1 = '-----BEGIN RSA PRIVATE KEY-----\n' +
-                'MIIFwgIBAAKCAUEAsE1edyfToZRv6cFOkB0tAJ5qJor4YF5CccJAL0fS/o1Yk10V\n' +
-                'SXH4Xx4peSJgYQKkO0HqO1hAz6k9dFQB4U1CnWtRjtNEcIfycqrZrhu6you5syb6\n' +
-                'ScV3Zu/9bm7/DyaLlx/gJhUPR1OxOzaqsEvlu7hbDhNLIYo1zKFb/aUBbD6+UcaG\n' +
-                'xH2BfFNdzVAtVSVpc/s2Y3sboMN7rByUj7937iQlaMINvVjyasynYuzHNw6ZRP9J\n' +
-                'P9fwxrCyaxnTPWxVl0qvVaQO2+TtFMtDXH2OVZtWWeLHAL8cildw0G+u2qVqTqIG\n' +
-                'EwNyJlsAHykaPFAMW0xLueumrSlB+JUJPrRvvw4nBCd4GOrNSlPCE/xlk1Cb8JaI\n' +
-                'CTLvDUcYc3ZqL3jqAueBhkpw2uCz8xVJeOA1KY4kQIIx8JEBsAYzgyP2iy0CAwEA\n' +
-                'AQKCAUAjBcudShkdgRpWSmNr94/IDrAxpeu/YRo79QXBHriIftW4uIYRCAX6B0jf\n' +
-                '2ndg7iBn8Skxzs9ZMVqW8FVLR4jTMs2J3Og8npUIOG5zyuhpciZas4SHASY+GbCz\n' +
-                'rnMWtGaIh/mENyzI05RimfKAgSNLDk1wV17Wc9lKJEfc9Fl7Al/WaOS+xdviMcFx\n' +
-                'ltrajksLkjz0uDD917eKskbE45lULfGqeI0kYDadWp88pw6ikXJln2p3Y1PNQF3e\n' +
-                'y2cN+Snzd0jx/c5fD9B1zxKYv5bUo+UnTzBxV81e9xCJfkdXv+6D5qDn1gGLdZZa\n' +
-                '5FxtZbRgVh/ZlqP9xYr72as/WFmIA20wRgHPgWvLyHsh0XThqZf2/O3R8KmFv8aT\n' +
-                '+kmc5is6sVItIIi7ltorVapTkJai3zz/VSMBBaL+ytFN9jVl4QKBoQDfL8TMeZXu\n' +
-                'gBTN7yq6zZWN8+60MUaxz0/lKdzmo35z32rpVKdsYd922pmcsNYaoj/H9L3j/NP4\n' +
-                '9z+SHfYpWvTa7AvJfNlXYc3BRXIarpfnXsm65IzKzHaF9i2xdXxkfTEYIvOQDMLF\n' +
-                'SiiObWJMV+QqUxb3luu3/CR3IcbgeTOpdiC/T/Zl/YYl17JqZTHmLFZPq7xewttg\n' +
-                'zQorDRWIFDtlAoGhAMo4+uM9f4BpOHSmayhLhHArIGs4386BkXSeOLeQitaQJ/2c\n' +
-                'zb459O87XoCAonZbq+dI7XRnBU3toQvEsZgrtGkOFXCZJMWAQxD5BQ5vEYT6c86h\n' +
-                'uGpX6h3ODlJ6UGi+5CWyMQ1cFlBkfffFAarjSYTVlyj736sOeDuJWX133z5VQBQ8\n' +
-                '1xSH23kNF95vxB4I1fXG8WL11YZU7VEwSLC4aCkCgaAKRj+wDhTZ4umSRWVZLiep\n' +
-                'XkZp4y7W9q095nx13abvnKRmU3BVq/fGl++kZ/ujRD7dbKXlPflgJ7m0d06ivr4w\n' +
-                '6dbtEqNKw4TeVd0X31u82f89bFIS7/Cw4BFgbwEn+x9sdgdyZTP+MxjE3cI9s3oc\n' +
-                'fLC8+ySk1qWzGkn2gX3gWkDNrdexAEfRrClZfokaiIX8qvJEBoJk5WuHadXI6u2F\n' +
-                'AoGgByidOQ4kRVd0OCzr/jEuLwpXy3Pn+Fd93rL7LwRe5dmUkNXMMr+6e/2OCt6C\n' +
-                '4c28+CMMxOIgvfF7kf8Uil6BtHZbK/E/6/3uYdtu4mPsKtjy4I25CYqzLvrsZt8N\n' +
-                'maeoS+1S7zYjVBU6oFrJBFOndpxZDYpdEKEigHkMQfTMYliCPDUrJ/7nNhHQln8+\n' +
-                'YhHOATVZtjcdp/O5svYSnK7qgQKBoDd3lFWrPatgxpF1JXMEFFbaIRdNxHkKA4YY\n' +
-                'gMTM4MPgViunYX/yJ7SaX8jWnC231A9uVn4+kb+DvKjc+ZuTQvnIUK2u6LvIinVF\n' +
-                'snDEA+BbXwehAtwdHDMDtqYFdx4hvCWQwBNn4p3J0OO2tbYVMtvM5aOEfRSYagfm\n' +
-                'RywhDUAjW8U0RBnzlmXhQQ6B9bjqooS2MsRrJrS5CU682fb3hBo=\n' +
-                '-----END RSA PRIVATE KEY-----';
-
-            var privateKeyComponents = {
-                n: 'ALBNXncn06GUb+nBTpAdLQCeaiaK+GBeQnHCQC9H0v6NWJNdFUlx+F8eKXkiYGECpDtB6jtYQM+pPXRUAeFNQp1rUY7TRHCH8nKq2a4busqLubMm+knFd2bv/W5u/w8mi5cf4CYVD0dTsTs2qrBL5bu4Ww4TSyGKNcyhW/2lAWw+vlHGhsR9gXxTXc1QLVUlaXP7NmN7G6DDe6wclI+/d+4kJWjCDb1Y8mrMp2LsxzcOmUT/ST/X8MawsmsZ0z1sVZdKr1WkDtvk7RTLQ1x9jlWbVlnixwC/HIpXcNBvrtqlak6iBhMDciZbAB8pGjxQDFtMS7nrpq0pQfiVCT60b78OJwQneBjqzUpTwhP8ZZNQm/CWiAky7w1HGHN2ai946gLngYZKcNrgs/MVSXjgNSmOJECCMfCRAbAGM4Mj9ost',
-                e: 65537,
-                d: 'IwXLnUoZHYEaVkpja/ePyA6wMaXrv2EaO/UFwR64iH7VuLiGEQgF+gdI39p3YO4gZ/EpMc7PWTFalvBVS0eI0zLNidzoPJ6VCDhuc8roaXImWrOEhwEmPhmws65zFrRmiIf5hDcsyNOUYpnygIEjSw5NcFde1nPZSiRH3PRZewJf1mjkvsXb4jHBcZba2o5LC5I89Lgw/de3irJGxOOZVC3xqniNJGA2nVqfPKcOopFyZZ9qd2NTzUBd3stnDfkp83dI8f3OXw/Qdc8SmL+W1KPlJ08wcVfNXvcQiX5HV7/ug+ag59YBi3WWWuRcbWW0YFYf2Zaj/cWK+9mrP1hZiANtMEYBz4Fry8h7IdF04amX9vzt0fCphb/Gk/pJnOYrOrFSLSCIu5baK1WqU5CWot88/1UjAQWi/srRTfY1ZeE=',
-                p: 'AN8vxMx5le6AFM3vKrrNlY3z7rQxRrHPT+Up3OajfnPfaulUp2xh33bamZyw1hqiP8f0veP80/j3P5Id9ila9NrsC8l82VdhzcFFchqul+deybrkjMrMdoX2LbF1fGR9MRgi85AMwsVKKI5tYkxX5CpTFveW67f8JHchxuB5M6l2IL9P9mX9hiXXsmplMeYsVk+rvF7C22DNCisNFYgUO2U=',
-                q: 'AMo4+uM9f4BpOHSmayhLhHArIGs4386BkXSeOLeQitaQJ/2czb459O87XoCAonZbq+dI7XRnBU3toQvEsZgrtGkOFXCZJMWAQxD5BQ5vEYT6c86huGpX6h3ODlJ6UGi+5CWyMQ1cFlBkfffFAarjSYTVlyj736sOeDuJWX133z5VQBQ81xSH23kNF95vxB4I1fXG8WL11YZU7VEwSLC4aCk=',
-                dmp1: 'CkY/sA4U2eLpkkVlWS4nqV5GaeMu1vatPeZ8dd2m75ykZlNwVav3xpfvpGf7o0Q+3Wyl5T35YCe5tHdOor6+MOnW7RKjSsOE3lXdF99bvNn/PWxSEu/wsOARYG8BJ/sfbHYHcmUz/jMYxN3CPbN6HHywvPskpNalsxpJ9oF94FpAza3XsQBH0awpWX6JGoiF/KryRAaCZOVrh2nVyOrthQ==',
-                dmq1: 'ByidOQ4kRVd0OCzr/jEuLwpXy3Pn+Fd93rL7LwRe5dmUkNXMMr+6e/2OCt6C4c28+CMMxOIgvfF7kf8Uil6BtHZbK/E/6/3uYdtu4mPsKtjy4I25CYqzLvrsZt8NmaeoS+1S7zYjVBU6oFrJBFOndpxZDYpdEKEigHkMQfTMYliCPDUrJ/7nNhHQln8+YhHOATVZtjcdp/O5svYSnK7qgQ==',
-                coeff: 'N3eUVas9q2DGkXUlcwQUVtohF03EeQoDhhiAxMzgw+BWK6dhf/IntJpfyNacLbfUD25Wfj6Rv4O8qNz5m5NC+chQra7ou8iKdUWycMQD4FtfB6EC3B0cMwO2pgV3HiG8JZDAE2fincnQ47a1thUy28zlo4R9FJhqB+ZHLCENQCNbxTREGfOWZeFBDoH1uOqihLYyxGsmtLkJTrzZ9veEGg=='
-            };
-
-            var publicKeyPKCS8 = '-----BEGIN PUBLIC KEY-----\n' +
-                'MIIBYjANBgkqhkiG9w0BAQEFAAOCAU8AMIIBSgKCAUEAsE1edyfToZRv6cFOkB0t\n' +
-                'AJ5qJor4YF5CccJAL0fS/o1Yk10VSXH4Xx4peSJgYQKkO0HqO1hAz6k9dFQB4U1C\n' +
-                'nWtRjtNEcIfycqrZrhu6you5syb6ScV3Zu/9bm7/DyaLlx/gJhUPR1OxOzaqsEvl\n' +
-                'u7hbDhNLIYo1zKFb/aUBbD6+UcaGxH2BfFNdzVAtVSVpc/s2Y3sboMN7rByUj793\n' +
-                '7iQlaMINvVjyasynYuzHNw6ZRP9JP9fwxrCyaxnTPWxVl0qvVaQO2+TtFMtDXH2O\n' +
-                'VZtWWeLHAL8cildw0G+u2qVqTqIGEwNyJlsAHykaPFAMW0xLueumrSlB+JUJPrRv\n' +
-                'vw4nBCd4GOrNSlPCE/xlk1Cb8JaICTLvDUcYc3ZqL3jqAueBhkpw2uCz8xVJeOA1\n' +
-                'KY4kQIIx8JEBsAYzgyP2iy0CAwEAAQ==\n' +
-                '-----END PUBLIC KEY-----';
-
             var publicKeyComponents = {
                 n: 'ALBNXncn06GUb+nBTpAdLQCeaiaK+GBeQnHCQC9H0v6NWJNdFUlx+F8eKXkiYGECpDtB6jtYQM+pPXRUAeFNQp1rUY7TRHCH8nKq2a4busqLubMm+knFd2bv/W5u/w8mi5cf4CYVD0dTsTs2qrBL5bu4Ww4TSyGKNcyhW/2lAWw+vlHGhsR9gXxTXc1QLVUlaXP7NmN7G6DDe6wclI+/d+4kJWjCDb1Y8mrMp2LsxzcOmUT/ST/X8MawsmsZ0z1sVZdKr1WkDtvk7RTLQ1x9jlWbVlnixwC/HIpXcNBvrtqlak6iBhMDciZbAB8pGjxQDFtMS7nrpq0pQfiVCT60b78OJwQneBjqzUpTwhP8ZZNQm/CWiAky7w1HGHN2ai946gLngYZKcNrgs/MVSXjgNSmOJECCMfCRAbAGM4Mj9ost',
                 e: 65537,
             };
 
-            var privateKeyPEMNotTrimmed = '     \n\n    \n\n ' + privateKeyPKCS1 + '\n \n  \n\n  ';
-            var publicKeyPEMNotTrimmed = '\n\n\n\n ' + publicKeyPKCS8 + '\n \n\n\n  ';
+            var privateKeyPEMNotTrimmed = 'random     \n\n data    \n\n ' + privateKeyPKCS1 + '\n \n  \n\n random data ';
+            var publicKeyPEMNotTrimmed = '\n\n\n\nrandom     \n\n data\n ' + publicKeyPKCS8 + '\n \n random data\n\n  ';
 
             var fileKeyPKCS1 = '-----BEGIN RSA PRIVATE KEY-----\n' +
                 'MIICXAIBAAKBgQCCdY+EpDC/vPa335l751SBM8d5Lf4z4QZX4bc+DqTY9zVY/rmP\n' +
@@ -294,7 +309,7 @@ describe('NodeRSA', function () {
 
                     it('should load public key from (not trimmed) PKCS8-PEM string', function () {
                         publicNodeRSA = new NodeRSA(publicKeyPEMNotTrimmed);
-                        assert.instanceOf(privateNodeRSA.keyPair, Object);
+                        assert.instanceOf(publicNodeRSA.keyPair, Object);
                         assert(publicNodeRSA.isPublic());
                         assert(publicNodeRSA.isPublic(true));
                         assert(!publicNodeRSA.isPrivate());
@@ -319,6 +334,70 @@ describe('NodeRSA', function () {
                         key = new NodeRSA();
                         key.importKey(fs.readFileSync(keysFolder + 'private_pkcs1.pem'));
                         assert.equal(key.exportKey(), fileKeyPKCS1);
+                    });
+
+                    it('should gracefully handle data outside of encapsulation boundaries for pkcs1 private keys', function () {
+                        let privateFileWithNoise = 'Lorem ipsum' + fs.readFileSync(keysFolder + 'private_pkcs1.pem') + 'dulce et decorum';
+                        let key = new NodeRSA(privateFileWithNoise);
+                        assert.equal(key.exportKey(), fileKeyPKCS1);
+                    });
+
+                    it('should gracefully handle data outside of encapsulation boundaries for pkcs1 public keys', function () {
+                        let publicFileWithNoise = 'Lorem ipsum' + fs.readFileSync(keysFolder + 'public_pkcs1.pem') + 'dulce et decorum';
+                        let publicNodeRSA = new NodeRSA(publicFileWithNoise);
+                        assert.instanceOf(publicNodeRSA.keyPair, Object);
+                        assert(publicNodeRSA.isPublic());
+                        assert(publicNodeRSA.isPublic(true));
+                        assert(!publicNodeRSA.isPrivate());
+                    });
+
+                    it('should gracefully handle data outside of encapsulation boundaries for pkcs8 private keys', function () {
+                        let privateFileWithNoise = 'Lorem ipsum' + fs.readFileSync(keysFolder + 'private_pkcs8.pem') + 'dulce et decorum';
+                        let key = new NodeRSA(privateFileWithNoise);
+                        assert.equal(key.exportKey(), fileKeyPKCS1);
+                    });
+
+                    it('should gracefully handle data outside of encapsulation boundaries for pkcs8 public keys', function () {
+                        let publicFileWithNoise = 'Lorem ipsum' + fs.readFileSync(keysFolder + 'public_pkcs8.pem') + 'dulce et decorum';
+                        let publicNodeRSA = new NodeRSA(publicFileWithNoise);
+                        assert.instanceOf(publicNodeRSA.keyPair, Object);
+                        assert(publicNodeRSA.isPublic());
+                        assert(publicNodeRSA.isPublic(true));
+                        assert(!publicNodeRSA.isPrivate());
+                    });
+
+                    it('should handle data without begin/end encapsulation boundaries for pkcs1 private keys', function () {
+                        let privateFile = fs.readFileSync(keysFolder + 'private_pkcs1.pem', "utf8");
+                        let privateFileNoBoundaries = privateFile.substring("-----BEGIN RSA PRIVATE KEY-----".length, privateFile.indexOf("-----END RSA PRIVATE KEY-----"));
+                        let key = new NodeRSA(privateFileNoBoundaries, "pkcs1-private-pem");
+                        assert.equal(key.exportKey(), fileKeyPKCS1);
+                    });
+
+                    it('should handle data without begin/end encapsulation boundaries for pkcs1 public keys', function () {
+                        let publicFile = fs.readFileSync(keysFolder + 'public_pkcs1.pem', "utf8");
+                        let publicFileNoBoundaries = publicFile.substring("-----BEGIN RSA PUBLIC KEY-----".length, publicFile.indexOf("-----END RSA PUBLIC KEY-----"));
+                        let publicNodeRSA = new NodeRSA(publicFileNoBoundaries, "pkcs1-public-pem");
+                        assert.instanceOf(publicNodeRSA.keyPair, Object);
+                        assert(publicNodeRSA.isPublic());
+                        assert(publicNodeRSA.isPublic(true));
+                        assert(!publicNodeRSA.isPrivate());
+                    });
+
+                    it('should handle data without begin/end encapsulation boundaries for pkcs8 private keys', function () {
+                        let privateFile = fs.readFileSync(keysFolder + 'private_pkcs8.pem', "utf8");
+                        let privateFileNoBoundaries = privateFile.substring('-----BEGIN PRIVATE KEY-----'.length, privateFile.indexOf('-----END PRIVATE KEY-----'));
+                        let key = new NodeRSA(privateFileNoBoundaries, "pkcs8-private-pem");
+                        assert.equal(key.exportKey(), fileKeyPKCS1);
+                    });
+
+                    it('should handle data without begin/end encapsulation boundaries for pkcs8 public keys', function () {
+                        let publicFile = fs.readFileSync(keysFolder + 'public_pkcs8.pem', "utf8");
+                        let publicFileNoBoundaries = publicFile.substring("-----BEGIN PUBLIC KEY-----".length, publicFile.indexOf("-----END PUBLIC KEY-----"));
+                        let publicNodeRSA = new NodeRSA(publicFileNoBoundaries, "pkcs8-public-pem");
+                        assert.instanceOf(publicNodeRSA.keyPair, Object);
+                        assert(publicNodeRSA.isPublic());
+                        assert(publicNodeRSA.isPublic(true));
+                        assert(!publicNodeRSA.isPrivate());
                     });
 
                     it('.importKey() from private components', function () {

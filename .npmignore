@@ -1,2 +1,6 @@
 test
 .travis.yml
+.nyc_output
+.tmp
+.idea
+.DS_Store
