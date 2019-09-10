@@ -113,7 +113,7 @@ module.exports.makeScheme = function (key, options) {
 
         /* Type 1: zeros padding for private key decrypt */
         if (options.type === 1) {
-            if (buffer[0] !== 0 || buffer[1] !== 1) {
+            if (buffer[0] !== 0 && buffer[1] !== 1) {
                 return null;
             }
             i = 3;
@@ -124,7 +124,7 @@ module.exports.makeScheme = function (key, options) {
             }
         } else {
             /* random padding for public key decrypt */
-            if (buffer[0] !== 0 || buffer[1] !== 2) {
+            if (buffer[0] !== 0 && buffer[1] !== 2) {
                 return null;
             }
             i = 3;
