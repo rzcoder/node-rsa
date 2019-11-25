@@ -1,6 +1,6 @@
 {
   "name": "node-rsa",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Node.js RSA library",
   "main": "src/NodeRSA.js",
   "scripts": {
