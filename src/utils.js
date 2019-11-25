@@ -40,7 +40,7 @@ module.exports.get32IntFromBuffer = function (buffer, offset) {
     var size = 0;
     if ((size = buffer.length - offset) > 0) {
         if (size >= 4) {
-            return buffer.readUInt32BE(offset);
+            return buffer.readUIntBE(offset, size);
         } else {
             var res = 0;
             for (var i = offset + size, d = 0; i > offset; i--, d += 2) {
