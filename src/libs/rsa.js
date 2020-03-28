@@ -272,7 +272,7 @@ module.exports.Key = (function () {
      * Check if key pair contains private key
      */
     RSAKey.prototype.isPrivate = function () {
-        return this.n && this.e && this.d || false;
+        return this.n && this.e && this.d && true || false;
     };
 
     /**
