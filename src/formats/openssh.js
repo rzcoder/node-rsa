@@ -7,7 +7,95 @@ const PRIVATE_CLOSING_BOUNDARY = '-----END OPENSSH PRIVATE KEY-----';
 
 module.exports = {
     privateExport: function (key, options) {
-        throw Error('Not implemented yet.');
+        const nbuf = key.n.toBuffer();
+
+        let ebuf = Buffer.alloc(4)
+        ebuf.writeUInt32BE(key.e, 0);
+        //Slice leading zeroes
+        while(ebuf[0] === 0) ebuf = ebuf.slice(1);
+
+        const dbuf = key.d.toBuffer();
+        const coeffbuf = key.coeff.toBuffer();
+        const pbuf = key.p.toBuffer();
+        const qbuf = key.q.toBuffer();
+        let commentbuf;
+        if(typeof key.sshcomment !== 'undefined'){
+            commentbuf = Buffer.from(key.sshcomment);
+        } else {
+            commentbuf = Buffer.from([]);
+        }
+
+        const pubkeyLength =
+            11 + // 32bit length, 'ssh-rsa'
+            4 + ebuf.byteLength +
+            4 + nbuf.byteLength;
+
+        const privateKeyLength =
+            8 + //64bit unused checksum
+            11 + // 32bit length, 'ssh-rsa'
+            4 + nbuf.byteLength +
+            4 + ebuf.byteLength +
+            4 + dbuf.byteLength +
+            4 + coeffbuf.byteLength +
+            4 + pbuf.byteLength +
+            4 + qbuf.byteLength +
+            4 + commentbuf.byteLength;
+
+        let length =
+            15 + //openssh-key-v1,0x00,
+            16 + // 2*(32bit length, 'none')
+            4 + // 32bit length, empty string
+            4 + // 32bit number of keys
+            4 + // 32bit pubkey length
+            pubkeyLength +
+            4 + //32bit private+checksum+comment+padding length
+            privateKeyLength;
+
+        const paddingLength = Math.ceil(privateKeyLength / 8)*8 - privateKeyLength;
+        length += paddingLength;
+
+        const buf = Buffer.alloc(length);
+        const writer = {buf:buf, off: 0};
+        buf.write('openssh-key-v1', 'utf8');
+        buf.writeUInt8(0, 14);
+        writer.off += 15;
+
+        writeOpenSSHKeyString(writer, Buffer.from('none'));
+        writeOpenSSHKeyString(writer, Buffer.from('none'));
+        writeOpenSSHKeyString(writer, Buffer.from(''));
+
+        writer.off = writer.buf.writeUInt32BE(1, writer.off);
+        writer.off = writer.buf.writeUInt32BE(pubkeyLength, writer.off);
+
+        writeOpenSSHKeyString(writer, Buffer.from('ssh-rsa'));
+        writeOpenSSHKeyString(writer, ebuf);
+        writeOpenSSHKeyString(writer, nbuf);
+
+        writer.off = writer.buf.writeUInt32BE(
+            length - 47 - pubkeyLength,
+            writer.off
+        );
+        writer.off += 8;
+
+        writeOpenSSHKeyString(writer, Buffer.from('ssh-rsa'));
+        writeOpenSSHKeyString(writer, nbuf);
+        writeOpenSSHKeyString(writer, ebuf);
+        writeOpenSSHKeyString(writer, dbuf);
+        writeOpenSSHKeyString(writer, coeffbuf);
+        writeOpenSSHKeyString(writer, pbuf);
+        writeOpenSSHKeyString(writer, qbuf);
+        writeOpenSSHKeyString(writer, commentbuf);
+
+        let pad = 0x01;
+        while(writer.off < length){
+            writer.off = writer.buf.writeUInt8(pad++, writer.off);
+        }
+
+        if(options.type === 'der'){
+            return writer.buf
+        } else {
+            return PRIVATE_OPENING_BOUNDARY + '\n' + utils.linebrk(buf.toString('base64'), 70) + '\n' + PRIVATE_CLOSING_BOUNDARY;
+        }
     },
 
     privateImport: function (key, data, options) {
@@ -110,7 +198,12 @@ module.exports = {
         writeOpenSSHKeyString(writer, nbuf);
 
         let comment = key.sshcomment || '';
-        return 'ssh-rsa ' + buf.toString('base64') + ' ' + comment;
+
+        if(options.type === 'der'){
+            return writer.buf
+        } else {
+            return 'ssh-rsa ' + buf.toString('base64') + ' ' + comment;
+        }
     },
 
     publicImport: function (key, data, options) {
