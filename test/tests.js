@@ -294,7 +294,10 @@ describe('NodeRSA', function () {
                 'pkcs8-private': {public: false, der: false, file: 'private_pkcs8.pem'},
                 'pkcs8-der': {public: false, der: true, file: 'private_pkcs8.der'},
                 'pkcs1-public': {public: true, der: false, file: 'public_pkcs1.pem'},
-                'pkcs8-public': {public: true, der: false, file: 'public_pkcs8.pem'}
+                'pkcs8-public': {public: true, der: false, file: 'public_pkcs8.pem'},
+
+                'openssh-public': {public: true, der: false, file: 'id_rsa.pub'},
+                'openssh-private': {public: false, der: false, file: 'id_rsa'}
             };
 
             describe('Good cases', function () {
@@ -483,6 +486,36 @@ describe('NodeRSA', function () {
                         })(format);
                     }
                 });
+
+                describe('OpenSSH keys', function () {
+                    /*
+                     * Warning!
+                     * OpenSSH private key contains unused 64bit value, this value is set by ssh-keygen,
+                     * but it's not used. NodeRSA does NOT store this value, so importing and exporting key sets this value to 0.
+                     * This value is 0 in test files, so the tests pass.
+                     */
+                    it('key export should preserve key data including comment', function(){
+                        const opensshPrivateKey = fs.readFileSync(keysFolder + 'id_rsa_comment').toString();
+                        const opensshPublicKey = fs.readFileSync(keysFolder + 'id_rsa_comment.pub').toString();
+                        const opensshPriv = new NodeRSA(opensshPrivateKey);
+                        const opensshPub = new NodeRSA(opensshPublicKey);
+
+                        assert.equal(
+                            opensshPriv.exportKey('openssh-private'),
+                            opensshPrivateKey
+                        );
+
+                        assert.equal(
+                            opensshPriv.exportKey('openssh-public'),
+                            opensshPublicKey
+                        );
+
+                        assert.equal(
+                            opensshPub.exportKey('openssh-public'),
+                            opensshPublicKey
+                        );
+                    });
+                })
             });
 
             describe('Bad cases', function () {

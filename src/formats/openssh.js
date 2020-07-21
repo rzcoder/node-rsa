@@ -94,7 +94,7 @@ module.exports = {
         if(options.type === 'der'){
             return writer.buf
         } else {
-            return PRIVATE_OPENING_BOUNDARY + '\n' + utils.linebrk(buf.toString('base64'), 70) + '\n' + PRIVATE_CLOSING_BOUNDARY;
+            return PRIVATE_OPENING_BOUNDARY + '\n' + utils.linebrk(buf.toString('base64'), 70) + '\n' + PRIVATE_CLOSING_BOUNDARY + '\n';
         }
     },
 
@@ -202,7 +202,7 @@ module.exports = {
         if(options.type === 'der'){
             return writer.buf
         } else {
-            return 'ssh-rsa ' + buf.toString('base64') + ' ' + comment;
+            return 'ssh-rsa ' + buf.toString('base64') + ' ' + comment + '\n';
         }
     },
 
@@ -218,7 +218,17 @@ module.exports = {
             if (_.isString(data)) {
                 if(data.substring(0, 8) !== 'ssh-rsa ')
                     throw Error('Unsupported key format');
-                var pem = data.substring(8, data.indexOf(' ', 8))
+                let pemEnd = data.indexOf(' ', 8);
+
+                //Handle keys with no comment
+                if(pemEnd === -1){
+                    pemEnd = data.length;
+                } else {
+                    key.sshcomment = data.substring(pemEnd + 1)
+                        .replace(/\s+|\n\r|\n|\r$/gm, '');
+                }
+
+                const pem = data.substring(8, pemEnd)
                     .replace(/\s+|\n\r|\n|\r$/gm, '');
                 buffer = Buffer.from(pem, 'base64');
             } else {
@@ -235,7 +245,7 @@ module.exports = {
         const type = readOpenSSHKeyString(reader).toString('ascii');
 
         if(type !== 'ssh-rsa')
-            throw Error('Invalid key type');
+            throw Error('Invalid key type: '+ type);
 
         const e = readOpenSSHKeyString(reader);
         const n = readOpenSSHKeyString(reader);
