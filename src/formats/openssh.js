@@ -51,7 +51,7 @@ module.exports = {
         //keynum
         reader.off += 4;
 
-        //sshpublengtn
+        //sshpublength
         reader.off += 4;
 
         //keytype
@@ -88,10 +88,29 @@ module.exports = {
             dq.toBuffer(),  // exponent2 -- d mod (q-1)
             coeff  // coefficient -- (inverse of q) mod p
         );
+
+        key.sshcomment = readOpenSSHKeyString(reader).toString('ascii');
     },
 
     publicExport: function (key, options) {
-        throw Error('Not implemented yet.');
+        let ebuf = Buffer.alloc(4)
+        ebuf.writeUInt32BE(key.e, 0);
+        //Slice leading zeroes
+        while(ebuf[0] === 0) ebuf = ebuf.slice(1);
+        const nbuf = key.n.toBuffer();
+        const buf = Buffer.alloc(
+            ebuf.byteLength + 4 +
+            nbuf.byteLength + 4 +
+            'ssh-rsa'.length + 4
+        );
+
+        const writer = {buf: buf, off: 0};
+        writeOpenSSHKeyString(writer, Buffer.from('ssh-rsa'));
+        writeOpenSSHKeyString(writer, ebuf);
+        writeOpenSSHKeyString(writer, nbuf);
+
+        let comment = key.sshcomment || '';
+        return 'ssh-rsa ' + buf.toString('base64') + ' ' + comment;
     },
 
     publicImport: function (key, data, options) {
@@ -161,4 +180,10 @@ function readOpenSSHKeyString(reader) {
     const res = reader.buf.slice(reader.off, reader.off + len);
     reader.off += len;
     return res;
+}
+
+function writeOpenSSHKeyString(writer, data) {
+    writer.buf.writeInt32BE(data.byteLength, writer.off);
+    writer.off += 4;
+    writer.off += data.copy(writer.buf, writer.off);
 }
