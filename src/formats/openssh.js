@@ -95,7 +95,43 @@ module.exports = {
     },
 
     publicImport: function (key, data, options) {
-        throw Error('Not implemented yet.');
+        options = options || {};
+        var buffer;
+
+        if (options.type !== 'der') {
+            if (Buffer.isBuffer(data)) {
+                data = data.toString('utf8');
+            }
+
+            if (_.isString(data)) {
+                if(data.substring(0, 8) !== 'ssh-rsa ')
+                    throw Error('Unsupported key format');
+                var pem = data.substring(8, data.indexOf(' ', 8))
+                    .replace(/\s+|\n\r|\n|\r$/gm, '');
+                buffer = Buffer.from(pem, 'base64');
+            } else {
+                throw Error('Unsupported key format');
+            }
+        } else if (Buffer.isBuffer(data)) {
+            buffer = data;
+        } else {
+            throw Error('Unsupported key format');
+        }
+
+        const reader = {buf:buffer, off:0};
+
+        const type = readOpenSSHKeyString(reader).toString('ascii');
+
+        if(type !== 'ssh-rsa')
+            throw Error('Invalid key type');
+
+        const e = readOpenSSHKeyString(reader);
+        const n = readOpenSSHKeyString(reader);
+
+        key.setPublic(
+            n,
+            e
+        );
     },
 
     /**
@@ -107,6 +143,11 @@ module.exports = {
         // [\S\s]* matches zero or more of any character
         if (/^[\S\s]*-----BEGIN OPENSSH PRIVATE KEY-----\s*(?=(([A-Za-z0-9+/=]+\s*)+))\1-----END OPENSSH PRIVATE KEY-----[\S\s]*$/g.test(data)) {
             module.exports.privateImport(key, data);
+            return true;
+        }
+
+        if (/^[\S\s]*ssh-rsa \s*(?=(([A-Za-z0-9+/=]+\s*)+))\1[\S\s]*$/g.test(data)) {
+            module.exports.publicImport(key, data);
             return true;
         }
 
