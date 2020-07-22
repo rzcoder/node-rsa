@@ -245,6 +245,9 @@ Questions, comments, bug reports, and pull requests are all welcome.
 
 ## Changelog
 
+### 1.1.0
+ * Added OpenSSH key format support.
+ 
 ### 1.0.2
  * Importing keys from PEM now is less dependent on non-key data in files.
  

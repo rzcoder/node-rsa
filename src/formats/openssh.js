@@ -1,9 +1,9 @@
-var _ = require('../utils')._;
-var utils = require('../utils');
-var BigInteger = require('../libs/jsbn');
+var _ = require("../utils")._;
+var utils = require("../utils");
+var BigInteger = require("../libs/jsbn");
 
-const PRIVATE_OPENING_BOUNDARY = '-----BEGIN OPENSSH PRIVATE KEY-----';
-const PRIVATE_CLOSING_BOUNDARY = '-----END OPENSSH PRIVATE KEY-----';
+const PRIVATE_OPENING_BOUNDARY = "-----BEGIN OPENSSH PRIVATE KEY-----";
+const PRIVATE_CLOSING_BOUNDARY = "-----END OPENSSH PRIVATE KEY-----";
 
 module.exports = {
     privateExport: function (key, options) {
@@ -12,14 +12,14 @@ module.exports = {
         let ebuf = Buffer.alloc(4)
         ebuf.writeUInt32BE(key.e, 0);
         //Slice leading zeroes
-        while(ebuf[0] === 0) ebuf = ebuf.slice(1);
+        while (ebuf[0] === 0) ebuf = ebuf.slice(1);
 
         const dbuf = key.d.toBuffer();
         const coeffbuf = key.coeff.toBuffer();
         const pbuf = key.p.toBuffer();
         const qbuf = key.q.toBuffer();
         let commentbuf;
-        if(typeof key.sshcomment !== 'undefined'){
+        if (typeof key.sshcomment !== "undefined") {
             commentbuf = Buffer.from(key.sshcomment);
         } else {
             commentbuf = Buffer.from([]);
@@ -51,23 +51,23 @@ module.exports = {
             4 + //32bit private+checksum+comment+padding length
             privateKeyLength;
 
-        const paddingLength = Math.ceil(privateKeyLength / 8)*8 - privateKeyLength;
+        const paddingLength = Math.ceil(privateKeyLength / 8) * 8 - privateKeyLength;
         length += paddingLength;
 
         const buf = Buffer.alloc(length);
-        const writer = {buf:buf, off: 0};
-        buf.write('openssh-key-v1', 'utf8');
+        const writer = {buf: buf, off: 0};
+        buf.write("openssh-key-v1", "utf8");
         buf.writeUInt8(0, 14);
         writer.off += 15;
 
-        writeOpenSSHKeyString(writer, Buffer.from('none'));
-        writeOpenSSHKeyString(writer, Buffer.from('none'));
-        writeOpenSSHKeyString(writer, Buffer.from(''));
+        writeOpenSSHKeyString(writer, Buffer.from("none"));
+        writeOpenSSHKeyString(writer, Buffer.from("none"));
+        writeOpenSSHKeyString(writer, Buffer.from(""));
 
         writer.off = writer.buf.writeUInt32BE(1, writer.off);
         writer.off = writer.buf.writeUInt32BE(pubkeyLength, writer.off);
 
-        writeOpenSSHKeyString(writer, Buffer.from('ssh-rsa'));
+        writeOpenSSHKeyString(writer, Buffer.from("ssh-rsa"));
         writeOpenSSHKeyString(writer, ebuf);
         writeOpenSSHKeyString(writer, nbuf);
 
@@ -77,7 +77,7 @@ module.exports = {
         );
         writer.off += 8;
 
-        writeOpenSSHKeyString(writer, Buffer.from('ssh-rsa'));
+        writeOpenSSHKeyString(writer, Buffer.from("ssh-rsa"));
         writeOpenSSHKeyString(writer, nbuf);
         writeOpenSSHKeyString(writer, ebuf);
         writeOpenSSHKeyString(writer, dbuf);
@@ -87,14 +87,14 @@ module.exports = {
         writeOpenSSHKeyString(writer, commentbuf);
 
         let pad = 0x01;
-        while(writer.off < length){
+        while (writer.off < length) {
             writer.off = writer.buf.writeUInt8(pad++, writer.off);
         }
 
-        if(options.type === 'der'){
+        if (options.type === "der") {
             return writer.buf
         } else {
-            return PRIVATE_OPENING_BOUNDARY + '\n' + utils.linebrk(buf.toString('base64'), 70) + '\n' + PRIVATE_CLOSING_BOUNDARY + '\n';
+            return PRIVATE_OPENING_BOUNDARY + "\n" + utils.linebrk(buf.toString("base64"), 70) + "\n" + PRIVATE_CLOSING_BOUNDARY + "\n";
         }
     },
 
@@ -102,40 +102,40 @@ module.exports = {
         options = options || {};
         var buffer;
 
-        if (options.type !== 'der') {
+        if (options.type !== "der") {
             if (Buffer.isBuffer(data)) {
-                data = data.toString('utf8');
+                data = data.toString("utf8");
             }
 
             if (_.isString(data)) {
                 var pem = utils.trimSurroundingText(data, PRIVATE_OPENING_BOUNDARY, PRIVATE_CLOSING_BOUNDARY)
-                    .replace(/\s+|\n\r|\n|\r$/gm, '');
-                buffer = Buffer.from(pem, 'base64');
+                    .replace(/\s+|\n\r|\n|\r$/gm, "");
+                buffer = Buffer.from(pem, "base64");
             } else {
-                throw Error('Unsupported key format');
+                throw Error("Unsupported key format");
             }
         } else if (Buffer.isBuffer(data)) {
             buffer = data;
         } else {
-            throw Error('Unsupported key format');
+            throw Error("Unsupported key format");
         }
 
-        const reader = {buf:buffer, off:0};
+        const reader = {buf: buffer, off: 0};
 
-        if(buffer.slice(0,14).toString('ascii') !== 'openssh-key-v1')
-            throw 'Invalid file format.';
+        if (buffer.slice(0, 14).toString("ascii") !== "openssh-key-v1")
+            throw "Invalid file format.";
 
         reader.off += 15;
 
         //ciphername
-        if(readOpenSSHKeyString(reader).toString('ascii') !== 'none')
-            throw Error('Unsupported key type');
+        if (readOpenSSHKeyString(reader).toString("ascii") !== "none")
+            throw Error("Unsupported key type");
         //kdfname
-        if(readOpenSSHKeyString(reader).toString('ascii') !== 'none')
-            throw Error('Unsupported key type');
+        if (readOpenSSHKeyString(reader).toString("ascii") !== "none")
+            throw Error("Unsupported key type");
         //kdf
-        if(readOpenSSHKeyString(reader).toString('ascii') !== '')
-            throw Error('Unsupported key type');
+        if (readOpenSSHKeyString(reader).toString("ascii") !== "")
+            throw Error("Unsupported key type");
         //keynum
         reader.off += 4;
 
@@ -143,14 +143,14 @@ module.exports = {
         reader.off += 4;
 
         //keytype
-        if(readOpenSSHKeyString(reader).toString('ascii') !== 'ssh-rsa')
-            throw Error('Unsupported key type');
+        if (readOpenSSHKeyString(reader).toString("ascii") !== "ssh-rsa")
+            throw Error("Unsupported key type");
         readOpenSSHKeyString(reader);
         readOpenSSHKeyString(reader);
 
         reader.off += 12;
-        if(readOpenSSHKeyString(reader).toString('ascii') !== 'ssh-rsa')
-            throw Error('Unsupported key type');
+        if (readOpenSSHKeyString(reader).toString("ascii") !== "ssh-rsa")
+            throw Error("Unsupported key type");
 
         const n = readOpenSSHKeyString(reader);
         const e = readOpenSSHKeyString(reader);
@@ -177,32 +177,32 @@ module.exports = {
             coeff  // coefficient -- (inverse of q) mod p
         );
 
-        key.sshcomment = readOpenSSHKeyString(reader).toString('ascii');
+        key.sshcomment = readOpenSSHKeyString(reader).toString("ascii");
     },
 
     publicExport: function (key, options) {
         let ebuf = Buffer.alloc(4)
         ebuf.writeUInt32BE(key.e, 0);
         //Slice leading zeroes
-        while(ebuf[0] === 0) ebuf = ebuf.slice(1);
+        while (ebuf[0] === 0) ebuf = ebuf.slice(1);
         const nbuf = key.n.toBuffer();
         const buf = Buffer.alloc(
             ebuf.byteLength + 4 +
             nbuf.byteLength + 4 +
-            'ssh-rsa'.length + 4
+            "ssh-rsa".length + 4
         );
 
         const writer = {buf: buf, off: 0};
-        writeOpenSSHKeyString(writer, Buffer.from('ssh-rsa'));
+        writeOpenSSHKeyString(writer, Buffer.from("ssh-rsa"));
         writeOpenSSHKeyString(writer, ebuf);
         writeOpenSSHKeyString(writer, nbuf);
 
-        let comment = key.sshcomment || '';
+        let comment = key.sshcomment || "";
 
-        if(options.type === 'der'){
+        if (options.type === "der") {
             return writer.buf
         } else {
-            return 'ssh-rsa ' + buf.toString('base64') + ' ' + comment + '\n';
+            return "ssh-rsa " + buf.toString("base64") + " " + comment + "\n";
         }
     },
 
@@ -210,42 +210,42 @@ module.exports = {
         options = options || {};
         var buffer;
 
-        if (options.type !== 'der') {
+        if (options.type !== "der") {
             if (Buffer.isBuffer(data)) {
-                data = data.toString('utf8');
+                data = data.toString("utf8");
             }
 
             if (_.isString(data)) {
-                if(data.substring(0, 8) !== 'ssh-rsa ')
-                    throw Error('Unsupported key format');
-                let pemEnd = data.indexOf(' ', 8);
+                if (data.substring(0, 8) !== "ssh-rsa ")
+                    throw Error("Unsupported key format");
+                let pemEnd = data.indexOf(" ", 8);
 
                 //Handle keys with no comment
-                if(pemEnd === -1){
+                if (pemEnd === -1) {
                     pemEnd = data.length;
                 } else {
                     key.sshcomment = data.substring(pemEnd + 1)
-                        .replace(/\s+|\n\r|\n|\r$/gm, '');
+                        .replace(/\s+|\n\r|\n|\r$/gm, "");
                 }
 
                 const pem = data.substring(8, pemEnd)
-                    .replace(/\s+|\n\r|\n|\r$/gm, '');
-                buffer = Buffer.from(pem, 'base64');
+                    .replace(/\s+|\n\r|\n|\r$/gm, "");
+                buffer = Buffer.from(pem, "base64");
             } else {
-                throw Error('Unsupported key format');
+                throw Error("Unsupported key format");
             }
         } else if (Buffer.isBuffer(data)) {
             buffer = data;
         } else {
-            throw Error('Unsupported key format');
+            throw Error("Unsupported key format");
         }
 
-        const reader = {buf:buffer, off:0};
+        const reader = {buf: buffer, off: 0};
 
-        const type = readOpenSSHKeyString(reader).toString('ascii');
+        const type = readOpenSSHKeyString(reader).toString("ascii");
 
-        if(type !== 'ssh-rsa')
-            throw Error('Invalid key type: '+ type);
+        if (type !== "ssh-rsa")
+            throw Error("Invalid key type: " + type);
 
         const e = readOpenSSHKeyString(reader);
         const n = readOpenSSHKeyString(reader);
