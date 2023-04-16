@@ -1,6 +1,7 @@
 var ber = require('asn1').Ber;
 var _ = require('../utils')._;
 var utils = require('../utils');
+var { Buffer } = require('buffer')
 
 const PRIVATE_OPENING_BOUNDARY = '-----BEGIN RSA PRIVATE KEY-----';
 const PRIVATE_CLOSING_BOUNDARY = '-----END RSA PRIVATE KEY-----';
