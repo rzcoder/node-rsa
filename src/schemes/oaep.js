@@ -4,6 +4,7 @@
 
 var BigInteger = require('../libs/jsbn');
 var crypt = require('crypto');
+var { Buffer } = require('buffer')
 
 module.exports = {
     isEncryption: true,

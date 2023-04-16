@@ -35,7 +35,7 @@
  * Added Node.js Buffers support
  * 2014 rzcoder
  */
-
+var { Buffer } = require('buffer')
 var crypt = require('crypto');
 var _ = require('../utils')._;
 
