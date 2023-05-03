@@ -35,8 +35,8 @@
  * Added Node.js Buffers support
  * 2014 rzcoder
  */
-var { Buffer } = require('buffer')
-var crypt = require('crypto');
+var { Buffer } = require('../polyfillHandler.js').buffer
+var crypt = require('../polyfillHandler.js').crypto;
 var _ = require('../utils')._;
 
 // Bits per digit

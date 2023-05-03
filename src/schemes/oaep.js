@@ -3,8 +3,8 @@
  */
 
 var BigInteger = require('../libs/jsbn');
-var crypt = require('crypto');
-var { Buffer } = require('buffer')
+var crypt = require('../polyfillHandler.js').crypto;
+var { Buffer } = require('../polyfillHandler.js').buffer
 
 module.exports = {
     isEncryption: true,

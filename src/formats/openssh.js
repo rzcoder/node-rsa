@@ -1,7 +1,7 @@
 var _ = require("../utils")._;
 var utils = require("../utils");
 var BigInteger = require("../libs/jsbn");
-var { Buffer } = require('buffer')
+var { Buffer } = require('../polyfillHandler.js').buffer
 
 const PRIVATE_OPENING_BOUNDARY = "-----BEGIN OPENSSH PRIVATE KEY-----";
 const PRIVATE_CLOSING_BOUNDARY = "-----END OPENSSH PRIVATE KEY-----";

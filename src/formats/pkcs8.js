@@ -2,7 +2,7 @@ var ber = require('asn1').Ber;
 var _ = require('../utils')._;
 var PUBLIC_RSA_OID = '1.2.840.113549.1.1.1';
 var utils = require('../utils');
-var { Buffer } = require('buffer')
+var { Buffer } = require('../polyfillHandler.js').buffer
 
 const PRIVATE_OPENING_BOUNDARY = '-----BEGIN PRIVATE KEY-----';
 const PRIVATE_CLOSING_BOUNDARY = '-----END PRIVATE KEY-----';
