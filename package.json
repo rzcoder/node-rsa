@@ -1,14 +1,14 @@
 {
-  "name": "@learntheropes/node-rsa",
-  "version": "1.1.3",
-  "description": "A fork of node-rsa from rzcoder that works in the browser without browserify Node.js",
+  "name": "node-rsa",
+  "version": "1.1.2",
+  "description": "Node.js RSA library",
   "main": "src/NodeRSA.js",
   "scripts": {
     "test": "grunt test"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/learntheropes/node-rsa.git"
+    "url": "https://github.com/rzcoder/node-rsa.git"
   },
   "keywords": [
     "node",
@@ -26,9 +26,9 @@
   "author": "rzcoder",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/learntheropes/node-rsa/issues"
+    "url": "https://github.com/rzcoder/node-rsa/issues"
   },
-  "homepage": "https://github.com/learntheropes/node-rsa",
+  "homepage": "https://github.com/rzcoder/node-rsa",
   "devDependencies": {
     "chai": "^4.2.0",
     "grunt": "^1.1.0",

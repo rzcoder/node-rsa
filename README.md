@@ -1,9 +1,3 @@
-# About the fork
-
-This is a fork of [rzcoder/node-rsa](https://github.com/rzcoder/node-rsa) that works in the browser out of the box, without browserify.
-
-The documentation remains the same: 
-
 # Node-RSA
 
 Node.js RSA library<br/>
@@ -14,6 +8,7 @@ Based on jsbn library from Tom Wu http://www-cs-students.stanford.edu/~tjw/jsbn/
 * Generating keys
 * Supports long messages for encrypt/decrypt
 * Signing and verifying
+* Works in browser out of the box via conditional polyfills
 
 ## Example
 
@@ -31,7 +26,7 @@ console.log('decrypted: ', decrypted);
 ## Installing
 
 ```shell
-npm install @learntheropes/node-rsa
+npm install node-rsa
 ```
 > <sub>Requires nodejs >= 8.11.1</sub>
 
