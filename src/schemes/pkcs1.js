@@ -78,7 +78,7 @@ module.exports.makeScheme = function (key, options) {
             var rand = crypt.randomBytes(filled.length - 3);
             for (var i = 0; i < rand.length; i++) {
                 var r = rand[i];
-                while (r === 0) { // non-zero only
+                while (r <= 1) { // larger than 1 values only
                     r = crypt.randomBytes(1)[0];
                 }
                 filled[i + 2] = r;
@@ -135,6 +135,10 @@ module.exports.makeScheme = function (key, options) {
                     return null;
                 }
             }
+        }
+
+        if (buffer.length - (i+1) > this.maxMessageLength()) {
+            throw new Error("Message padding is too short");
         }
         return buffer.slice(i + 1, buffer.length);
     };

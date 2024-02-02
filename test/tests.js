@@ -30,7 +30,7 @@ describe('NodeRSA', function () {
         ];
     var signingSchemes = ['pkcs1', 'pss'];
     var signHashAlgorithms = {
-        'node': ['MD4', 'MD5', 'RIPEMD160', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512'],
+        'node': ['MD5', 'RIPEMD160', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512'],
         'browser': ['MD5', 'RIPEMD160', 'SHA1', 'SHA256', 'SHA512']
     };
 
