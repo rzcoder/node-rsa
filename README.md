@@ -246,6 +246,10 @@ Questions, comments, bug reports, and pull requests are all welcome.
 
 ## Changelog
 
+### 1.2.0
+  * Added a check for padding size in the browser environment with the PKCS1 encryption scheme. This fixes a potential vulnerability. 
+<br/>**Breaking change**: May break the decryption of malformed messages that were previously decrypted normally.
+
 ### 1.1.0
  * Added OpenSSH key format support.
  

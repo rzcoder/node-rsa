@@ -65,6 +65,16 @@ describe('NodeRSA', function () {
         }
     };
 
+    var private512bit = '-----BEGIN RSA PRIVATE KEY-----\n' +
+      'MIIBOQIBAAJBAJDx09VVM2rU01QbJSITRzh1+HvXbU5XGS+S/Z31vx/SbID1+vHE\n' +
+      '4AYWSo6kzi2W25QSld35sXjO7j65FGdJFM0CAwEAAQJAQRGfJH1MSOBkQrSw9dwr\n' +
+      's+gZ9hafBnVJZDcbzgbdlz3k12hsw+9kEQtTnDCGGtAezBxaLvYEFr7V4754aaT8\n' +
+      'zQIhANd7h0h8SLwOyMMV6DN/d45wJWmfws3dG/09geTctsx3AiEArDLisTPrZRda\n' +
+      '2pTmzYTMSTJX2QntP/Ty1E2MdO7S7dsCIDvnOF2bR3EYPxGUxn+CgQ8U+CGb60Dl\n' +
+      'pgFJlxGzlhHTAiAvhLdD2ST7N4+tw+tRCXVqOYc+cFvVC147Mc8xsXnpgwIgEOIR\n' +
+      'CetDNLDo8Ikb7Vtw1EVrm8tE05vd9C11V8/H+Us=\n' +
+      '-----END RSA PRIVATE KEY-----';
+
     var privateKeyPKCS1 = '-----BEGIN RSA PRIVATE KEY-----\n' +
         'MIIFwgIBAAKCAUEAsE1edyfToZRv6cFOkB0tAJ5qJor4YF5CccJAL0fS/o1Yk10V\n' +
         'SXH4Xx4peSJgYQKkO0HqO1hAz6k9dFQB4U1CnWtRjtNEcIfycqrZrhu6you5syb6\n' +
@@ -634,6 +644,19 @@ describe('NodeRSA', function () {
                 });
             })(environments[env]);
         }
+
+        describe('PKCS#1v1.5 padding size check', function () {
+           it('should fail when message uses padding less than 11 bytes', function () {
+               var key =  new NodeRSA(private512bit, {
+                   environment: "browser",
+                   encryptionScheme: "pkcs1"
+               });
+
+               assert.throw(function () {
+                   key.decrypt("YI3E/SwjmUo6Qlhb1lnshdsX6/93mpbCpsy1rhLHNZZZCRhYDKwlvmGQcQtzBAGu1GbAq+M/v2DYTTXGRLVwPA==", "base64");
+               }, Error, 'Message padding is too short');
+           })
+        });
 
         describe('Compatibility of different environments', function () {
             for (var scheme_i in encryptSchemes) {
