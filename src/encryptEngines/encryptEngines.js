@@ -1,4 +1,4 @@
-var crypt = require('crypto');
+var crypt = require('../polyfillHandler.js').crypto;
 
 module.exports = {
     getEngine: function (keyPair, options) {

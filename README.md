@@ -8,6 +8,7 @@ Based on jsbn library from Tom Wu http://www-cs-students.stanford.edu/~tjw/jsbn/
 * Generating keys
 * Supports long messages for encrypt/decrypt
 * Signing and verifying
+* Works in browser out of the box via conditional polyfills
 
 ## Example
 

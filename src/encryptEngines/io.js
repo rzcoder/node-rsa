@@ -1,5 +1,5 @@
-var crypto = require('crypto');
-var constants = require('constants');
+var crypto = require('../polyfillHandler.js').crypto;
+var constants = require('../polyfillHandler.js').constants;
 var schemes = require('../schemes/schemes.js');
 
 module.exports = function (keyPair, options) {
