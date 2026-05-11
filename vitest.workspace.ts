@@ -26,6 +26,7 @@ export default defineWorkspace([
     test: {
       name: 'browser-emulated',
       include: ['test/**/*.spec.ts'],
+      exclude: ['test/**/*.node-only.spec.ts'],
       environment: 'node',
     },
   },
