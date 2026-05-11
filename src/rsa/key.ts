@@ -184,13 +184,57 @@ export class RSAKey {
     if (x.signum() < 0 || x.compareTo(this.n) >= 0) {
       throw new Error('RSA: input out of range (must be 0 ≤ x < n)');
     }
+
+    // Audit fix C2: Base blinding (Kocher 1996). The variable-time `modPow`
+    // (C3) leaks bits of d/dmp1/dmq1 unless the input is masked from the
+    // attacker. We pre-multiply by r^e and post-multiply by r^-1, where r
+    // is freshly random and coprime to n. Math:
+    //   blindedX^d mod n = (x * r^e)^d mod n = x^d * r^(e*d) mod n = x^d * r mod n
+    //   result = (x^d * r) * r^-1 mod n = x^d mod n
+    const blinding = this.makeBlinding();
+    const inputX = blinding ? x.multiply(blinding.re).mod(this.n) : x;
+
+    let result: BigInteger;
     if (!this.p || !this.q || !this.dmp1 || !this.dmq1 || !this.coeff) {
-      return x.modPow(this.d, this.n);
+      result = inputX.modPow(this.d, this.n);
+    } else {
+      let xp = inputX.mod(this.p).modPow(this.dmp1, this.p);
+      const xq = inputX.mod(this.q).modPow(this.dmq1, this.q);
+      while (xp.compareTo(xq) < 0) xp = xp.add(this.p);
+      result = xp.subtract(xq).multiply(this.coeff).mod(this.p).multiply(this.q).add(xq);
     }
-    let xp = x.mod(this.p).modPow(this.dmp1, this.p);
-    const xq = x.mod(this.q).modPow(this.dmq1, this.q);
-    while (xp.compareTo(xq) < 0) xp = xp.add(this.p);
-    return xp.subtract(xq).multiply(this.coeff).mod(this.p).multiply(this.q).add(xq);
+
+    if (blinding) {
+      result = result.multiply(blinding.rInv).mod(this.n);
+    }
+    return result;
+  }
+
+  /**
+   * Produce a fresh blinding pair (r^e mod n, r^-1 mod n) for one private
+   * operation. Returns null only in the astronomically rare case that the
+   * RNG keeps producing r with gcd(r, n) ≠ 1 — probability ≈ 2/√n per
+   * attempt; 10 attempts is overkill safety.
+   *
+   * Returns null also if there's no backend yet (e.g., key without
+   * setOptions() — only happens in some test setups).
+   */
+  private makeBlinding(): { re: BigInteger; rInv: BigInteger } | null {
+    if (!this.n || !this.options) return null;
+    const n = this.n;
+    const byteLen = ((n.bitLength() + 7) >> 3) + 1;
+    const two = new BigInteger(Uint8Array.of(2));
+    const nMinus3 = n.subtract(BigInteger.ONE).subtract(two); // range size for [2, n-2]
+
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const rb = this.options.backend.randomBytes(byteLen);
+      const r = new BigInteger(rb).mod(nMinus3).add(two);
+      const rInv = r.modInverse(n);
+      if (rInv.signum() === 0) continue; // gcd(r, n) ≠ 1; retry
+      const re = r.modPowInt(this.e, n);
+      return { re, rInv };
+    }
+    return null;
   }
 
   /** x^e mod n. */
