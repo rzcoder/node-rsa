@@ -1,6 +1,0 @@
-{
-  "name": "node-rsa-legacy-source",
-  "private": true,
-  "type": "commonjs",
-  "description": "Legacy v1 source kept for cross-reference during the v2 port. Will be deleted in Chapter 11."
-}

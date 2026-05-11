@@ -1,8 +1,7 @@
 #!/usr/bin/env node
-import { statSync } from 'node:fs';
-import { gzipSync } from 'node:zlib';
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { gzipSync } from 'node:zlib';
 
 const root = resolve(import.meta.dirname, '..');
 const BUDGETS = {
@@ -26,7 +25,9 @@ for (const [rel, budget] of Object.entries(BUDGETS)) {
 }
 
 if (failed) {
-  console.error('\nBundle size budget exceeded. Update the budget in scripts/check-bundle-size.mjs or trim the build.');
+  console.error(
+    '\nBundle size budget exceeded. Update the budget in scripts/check-bundle-size.mjs or trim the build.',
+  );
   process.exit(1);
 }
 

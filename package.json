@@ -1,6 +1,6 @@
 {
   "name": "node-rsa",
-  "version": "2.0.0-alpha.0",
+  "version": "2.0.0",
   "description": "RSA library for Node.js and browsers — pure-TS, no Buffer/crypto polyfills required in the browser",
   "type": "module",
   "engines": {
@@ -25,7 +25,7 @@
     "./package.json": "./package.json"
   },
   "sideEffects": false,
-  "files": ["dist", "README.md", "CHANGELOG.md", "LICENSE"],
+  "files": ["dist", "README.md", "CHANGELOG.md", "MIGRATION.md", "LICENSE"],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
@@ -67,7 +67,7 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/node": "^20.17.0",
-    "asn1": "^0.2.6",
+    "chai": "^4.5.0",
     "tsup": "^8.3.5",
     "typescript": "^5.6.3",
     "vitest": "^2.1.5"
