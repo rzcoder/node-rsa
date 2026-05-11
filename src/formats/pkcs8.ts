@@ -44,12 +44,33 @@ export const pkcs8Format: FormatProvider = {
   privateImport(key: RSAKey, data: Uint8Array | string, options: ImportOptions = {}): void {
     const buffer = resolveBytes(data, options, PRIVATE_OPENING, PRIVATE_CLOSING);
     const outer = new DerReader(buffer).readSequence();
-    outer.readSmallInteger(); // version
+    // Audit fix M7: RFC 5958 §2 defines version ∈ {0, 1} for
+    // PrivateKeyInfo / OneAsymmetricKey. Legacy code accepted any integer.
+    const outerVersion = outer.readSmallInteger();
+    if (outerVersion !== 0 && outerVersion !== 1) {
+      throw new Error(
+        `PKCS#8: unsupported version ${outerVersion} (RFC 5958 §2 requires 0 or 1)`,
+      );
+    }
     const header = outer.readSequence();
-    if (header.readOid() !== OID.RSA_ENCRYPTION) throw new Error('Invalid Public key format');
+    // Audit fix H8: distinguish rsaEncryption from scheme-specific RSA
+    // OIDs that some implementations erroneously embed here. RFC 5958 §2
+    // and RFC 8017 require rsaEncryption (1.2.840.113549.1.1.1) for the
+    // PKCS#8 privateKeyAlgorithm field, not PSS/OAEP specifiers.
+    const oid = header.readOid();
+    if (oid !== OID.RSA_ENCRYPTION) {
+      throw pkcs8OidError(oid, 'private');
+    }
     header.readNull();
     const body = new DerReader(outer.readOctetString()).readSequence();
-    body.readSmallInteger(); // PKCS#1 inner version
+    // PKCS#1 inner version: RFC 8017 §A.1.2 defines 0 = two-prime, 1 =
+    // multi-prime. We support only two-prime RSA.
+    const innerVersion = body.readSmallInteger();
+    if (innerVersion !== 0) {
+      throw new Error(
+        `PKCS#8: PKCS#1 multi-prime keys (version ${innerVersion}) are not supported`,
+      );
+    }
     const n = body.readInteger();
     const e = body.readSmallInteger();
     const d = body.readInteger();
@@ -87,7 +108,11 @@ export const pkcs8Format: FormatProvider = {
     const buffer = resolveBytes(data, options, PUBLIC_OPENING, PUBLIC_CLOSING);
     const outer = new DerReader(buffer).readSequence();
     const header = outer.readSequence();
-    if (header.readOid() !== OID.RSA_ENCRYPTION) throw new Error('Invalid Public key format');
+    // Audit fix H8: same OID-allowlist rationale as privateImport.
+    const oid = header.readOid();
+    if (oid !== OID.RSA_ENCRYPTION) {
+      throw pkcs8OidError(oid, 'public');
+    }
     header.readNull();
     const inner = new DerReader(outer.readBitString()).readSequence();
     const n = inner.readInteger();
@@ -122,6 +147,23 @@ export const pkcs8Format: FormatProvider = {
     return false;
   },
 };
+
+/** Audit H8: clear diagnostics for non-rsaEncryption RSA-family OIDs. */
+function pkcs8OidError(oid: string, kind: 'private' | 'public'): Error {
+  if (oid === '1.2.840.113549.1.1.10') {
+    return new Error(
+      `PKCS#8 ${kind} key: RSASSA-PSS-only keys (1.2.840.113549.1.1.10) are not supported; expected rsaEncryption`,
+    );
+  }
+  if (oid === '1.2.840.113549.1.1.7') {
+    return new Error(
+      `PKCS#8 ${kind} key: RSAES-OAEP-only keys (1.2.840.113549.1.1.7) are not supported; expected rsaEncryption`,
+    );
+  }
+  return new Error(
+    `PKCS#8 ${kind} key: unsupported algorithm OID ${oid}; expected rsaEncryption (1.2.840.113549.1.1.1)`,
+  );
+}
 
 function resolveBytes(
   data: Uint8Array | string,
