@@ -40,7 +40,9 @@ jobs:
 
       - name: Browser bundle hygiene check
         run: |
-          if grep -E "node:|require\(['\"]crypto|require\(['\"]buffer|require\(['\"]fs" dist/index.browser.js; then
+          # Only flag actual imports/requires of node: modules — not string
+          # literals or comments that happen to contain "node:".
+          if grep -E "require\(['\"](node:|crypto|buffer|fs)['\"]|import.*from.*['\"]node:|import\s+['\"]node:" dist/index.browser.js; then
             echo "::error::Browser bundle contains forbidden Node imports"
             exit 1
           fi
