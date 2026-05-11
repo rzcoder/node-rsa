@@ -69,7 +69,10 @@ export class RSAKey {
     const ee = new BigInteger(E, 16);
     while (true) {
       while (true) {
-        this.p = new BigInteger(B - qs);
+        // Second arg = Miller-Rabin certainty: BigInteger(bits, certainty)
+        // triggers sequential-probe-prime generation. Outer loop re-checks
+        // with the stronger isProbablePrime(10). Matches legacy v1.
+        this.p = new BigInteger(B - qs, 1);
         if (
           this.p.subtract(BigInteger.ONE).gcd(ee).compareTo(BigInteger.ONE) === 0 &&
           this.p.isProbablePrime(10)
@@ -78,7 +81,7 @@ export class RSAKey {
         }
       }
       while (true) {
-        this.q = new BigInteger(qs);
+        this.q = new BigInteger(qs, 1);
         if (
           this.q.subtract(BigInteger.ONE).gcd(ee).compareTo(BigInteger.ONE) === 0 &&
           this.q.isProbablePrime(10)

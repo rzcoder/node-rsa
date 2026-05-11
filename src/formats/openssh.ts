@@ -174,7 +174,9 @@ export const opensshFormat: FormatProvider = {
       if (pemEnd === -1) {
         pemEnd = text.length;
       } else {
-        key.sshcomment = text.substring(pemEnd + 1).replace(/\s+$/g, '');
+        // Legacy strips ALL whitespace (not just trailing) — multi-word
+        // comments are lossy on round-trip. Preserving that for 1-to-1.
+        key.sshcomment = text.substring(pemEnd + 1).replace(/\s+|\n\r|\n|\r$/gm, '');
       }
       const pem = text.substring(8, pemEnd).replace(/\s+/g, '');
       buffer = fromBase64(pem);
