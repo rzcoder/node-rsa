@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assert } from 'chai';
 import { beforeAll, describe, it } from 'vitest';
+import { nodeBackend } from '../src/crypto/backend.node.js';
 import { fromBase64, toHex } from '../src/crypto/bytes.js';
 import { DIGEST_LENGTH } from '../src/crypto/digest-length.js';
 import NodeRSA from '../src/index.node.js';
@@ -63,9 +64,15 @@ describe('NodeRSA', () => {
   ];
   const signingSchemes = ['pkcs1', 'pss'] as const;
   const signHashAlgorithms: Record<'node' | 'browser', string[]> = {
-    node: ['MD5', 'RIPEMD160', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512'],
+    node: ['MD4', 'MD5', 'RIPEMD160', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512'],
     browser: ['MD5', 'RIPEMD160', 'SHA1', 'SHA256', 'SHA512'],
   };
+
+  // MD4 lives in OpenSSL's legacy provider, not loaded by default in
+  // OpenSSL 3 (Node 17+). Skip MD4-specific cases when unsupported.
+  function shouldSkip(alg: string): boolean {
+    return alg.toLowerCase() === 'md4' && !nodeBackend.supportsHash('md4');
+  }
 
   type DataKey =
     | 'string'
@@ -249,6 +256,14 @@ describe('NodeRSA', () => {
         public: { public: true, der: false, file: 'public_pkcs8.pem' },
         'private-der': { public: false, der: true, file: 'private_pkcs1.der' },
         'public-der': { public: true, der: true, file: 'public_pkcs8.der' },
+        pkcs1: { public: false, der: false, file: 'private_pkcs1.pem' },
+        'pkcs1-private': { public: false, der: false, file: 'private_pkcs1.pem' },
+        'pkcs1-der': { public: false, der: true, file: 'private_pkcs1.der' },
+        pkcs8: { public: false, der: false, file: 'private_pkcs8.pem' },
+        'pkcs8-private': { public: false, der: false, file: 'private_pkcs8.pem' },
+        'pkcs8-der': { public: false, der: true, file: 'private_pkcs8.der' },
+        'pkcs1-public': { public: true, der: false, file: 'public_pkcs1.pem' },
+        'pkcs8-public': { public: true, der: false, file: 'public_pkcs8.pem' },
         'openssh-public': { public: true, der: false, file: 'id_rsa.pub' },
         'openssh-private': { public: false, der: false, file: 'id_rsa' },
       };
@@ -587,6 +602,135 @@ describe('NodeRSA', () => {
         }
       });
     }
+
+    // ── Cross-environment compatibility ────────────────────────────────────
+    // JsEngine (forced when env='browser') and NodeNativeEngine (env='node')
+    // must produce interoperable ciphertexts for the same key.
+    describe('Compatibility of different environments', () => {
+      for (const scheme of encryptSchemes) {
+        const schemeLabel = typeof scheme === 'string' ? scheme : scheme.toString();
+
+        // browser-encrypt → node-decrypt
+        const encryptedA: Record<string, Uint8Array> = {};
+        let key1A: NodeRSA;
+        let key2A: NodeRSA;
+        for (const [name, suit] of Object.entries(dataBundle)) {
+          it(`Encryption scheme: ${schemeLabel} \`encrypt()\` by browser ${name}`, () => {
+            const idx = Math.floor(Math.random() * generatedKeys.length);
+            const sourceKey = (generatedKeys[idx] as NodeRSA).exportKey();
+            key1A = new NodeRSA(sourceKey, {
+              environment: 'browser',
+              encryptionScheme: scheme as 'pkcs1',
+            });
+            key2A = new NodeRSA(sourceKey, {
+              environment: 'node',
+              encryptionScheme: scheme as 'pkcs1',
+            });
+            encryptedA[name] = key1A.encrypt(suit.data) as Uint8Array;
+            assert(encryptedA[name] instanceof Uint8Array);
+            assert((encryptedA[name] as Uint8Array).length > 0);
+          });
+
+          it(`Encryption scheme: ${schemeLabel} \`decrypt()\` by node ${name}`, () => {
+            const enc = Array.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding;
+            const dec = key2A.decrypt(encryptedA[name] as Uint8Array, enc);
+            if (dec instanceof Uint8Array) {
+              assert.equal(asHex(suit.data), asHex(dec));
+            } else {
+              assert.deepEqual(suit.data, dec);
+            }
+          });
+        }
+
+        // node-encrypt → browser-decrypt
+        const encryptedB: Record<string, Uint8Array> = {};
+        let key1B: NodeRSA;
+        let key2B: NodeRSA;
+        for (const [name, suit] of Object.entries(dataBundle)) {
+          it(`Encryption scheme: ${schemeLabel} \`encrypt()\` by node ${name}. Scheme`, () => {
+            const idx = Math.floor(Math.random() * generatedKeys.length);
+            const sourceKey = (generatedKeys[idx] as NodeRSA).exportKey();
+            key1B = new NodeRSA(sourceKey, {
+              environment: 'node',
+              encryptionScheme: scheme as 'pkcs1',
+            });
+            key2B = new NodeRSA(sourceKey, {
+              environment: 'browser',
+              encryptionScheme: scheme as 'pkcs1',
+            });
+            encryptedB[name] = key1B.encrypt(suit.data) as Uint8Array;
+            assert(encryptedB[name] instanceof Uint8Array);
+            assert((encryptedB[name] as Uint8Array).length > 0);
+          });
+
+          it(`Encryption scheme: ${schemeLabel} \`decrypt()\` by browser ${name}`, () => {
+            const enc = Array.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding;
+            const dec = key2B.decrypt(encryptedB[name] as Uint8Array, enc);
+            if (dec instanceof Uint8Array) {
+              assert.equal(asHex(suit.data), asHex(dec));
+            } else {
+              assert.deepEqual(suit.data, dec);
+            }
+          });
+        }
+      }
+
+      describe('encryptPrivate & decryptPublic', () => {
+        // browser-encryptPrivate → node-decryptPublic
+        const encryptedC: Record<string, Uint8Array> = {};
+        let key1C: NodeRSA;
+        let key2C: NodeRSA;
+        for (const [name, suit] of Object.entries(dataBundle)) {
+          it(`\`encryptPrivate()\` by browser ${name}`, () => {
+            const idx = Math.floor(Math.random() * generatedKeys.length);
+            const sourceKey = (generatedKeys[idx] as NodeRSA).exportKey();
+            key1C = new NodeRSA(sourceKey, { environment: 'browser' });
+            key2C = new NodeRSA(sourceKey, { environment: 'node' });
+            encryptedC[name] = key1C.encryptPrivate(suit.data) as Uint8Array;
+            assert(encryptedC[name] instanceof Uint8Array);
+            assert((encryptedC[name] as Uint8Array).length > 0);
+          });
+
+          it(`\`decryptPublic()\` by node ${name}`, () => {
+            const enc = Array.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding;
+            const dec = key2C.decryptPublic(encryptedC[name] as Uint8Array, enc);
+            if (dec instanceof Uint8Array) {
+              assert.equal(asHex(suit.data), asHex(dec));
+            } else {
+              assert.deepEqual(suit.data, dec);
+            }
+          });
+        }
+
+        // node-encryptPrivate → browser-decryptPublic
+        const encryptedD: Record<string, Uint8Array> = {};
+        let key1D: NodeRSA;
+        let key2D: NodeRSA;
+        for (const [name, suit] of Object.entries(dataBundle)) {
+          it(`\`encryptPrivate()\` by node ${name}`, () => {
+            const idx = Math.floor(Math.random() * generatedKeys.length);
+            const sourceKey = (generatedKeys[idx] as NodeRSA).exportKey();
+            // Note: legacy uses 'browser' for key1 here too (looks like a bug
+            // in v1's test, but porting verbatim).
+            key1D = new NodeRSA(sourceKey, { environment: 'browser' });
+            key2D = new NodeRSA(sourceKey, { environment: 'node' });
+            encryptedD[name] = key1D.encryptPrivate(suit.data) as Uint8Array;
+            assert(encryptedD[name] instanceof Uint8Array);
+            assert((encryptedD[name] as Uint8Array).length > 0);
+          });
+
+          it(`\`decryptPublic()\` by browser ${name}`, () => {
+            const enc = Array.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding;
+            const dec = key2D.decryptPublic(encryptedD[name] as Uint8Array, enc);
+            if (dec instanceof Uint8Array) {
+              assert.equal(asHex(suit.data), asHex(dec));
+            } else {
+              assert.deepEqual(suit.data, dec);
+            }
+          });
+        }
+      });
+    });
   });
 
   describe('Signing & verifying', () => {
@@ -620,7 +764,7 @@ describe('NodeRSA', () => {
             }
 
             for (const alg of signHashAlgorithms[env]) {
-              it(`signing with custom algorithm (${alg})`, () => {
+              it.skipIf(shouldSkip(alg))(`signing with custom algorithm (${alg})`, () => {
                 const sourceKey = generatedKeys[generatedKeys.length - 1] as NodeRSA;
                 const key = new NodeRSA(sourceKey.exportKey(), {
                   signingScheme: `${scheme}-${alg}`,
@@ -631,16 +775,19 @@ describe('NodeRSA', () => {
               });
 
               if (scheme === 'pss') {
-                it(`signing with custom algorithm (${alg}) with max salt length`, () => {
-                  const a = alg.toLowerCase() as HashAlg;
-                  const sourceKey = generatedKeys[generatedKeys.length - 1] as NodeRSA;
-                  const key = new NodeRSA(sourceKey.exportKey(), {
-                    signingScheme: { scheme: scheme, hash: a, saltLength: DIGEST_LENGTH[a] },
-                    environment: env,
-                  });
-                  const signed = key.sign('data');
-                  assert(key.verify('data', signed as Uint8Array));
-                });
+                it.skipIf(shouldSkip(alg))(
+                  `signing with custom algorithm (${alg}) with max salt length`,
+                  () => {
+                    const a = alg.toLowerCase() as HashAlg;
+                    const sourceKey = generatedKeys[generatedKeys.length - 1] as NodeRSA;
+                    const key = new NodeRSA(sourceKey.exportKey(), {
+                      signingScheme: { scheme: scheme, hash: a, saltLength: DIGEST_LENGTH[a] },
+                      environment: env,
+                    });
+                    const signed = key.sign('data');
+                    assert(key.verify('data', signed as Uint8Array));
+                  },
+                );
               }
             }
           });
@@ -700,6 +847,57 @@ describe('NodeRSA', () => {
             });
           });
         }
+
+        // ── Cross-environment compatibility ────────────────────────────────
+        // PSS uses a random salt, so cross-env signature bytes don't match.
+        // Only PKCS#1 v1.5 (deterministic) gets cross-env equality testing.
+        if (scheme !== 'pkcs1') return;
+
+        describe('Compatibility of different environments', () => {
+          for (const alg of signHashAlgorithms.browser) {
+            it.skipIf(shouldSkip(alg))(
+              `signing with custom algorithm (${alg}) (equal test)`,
+              () => {
+                const sourceKey = (generatedKeys[5] as NodeRSA).exportKey();
+                const nodeKey = new NodeRSA(sourceKey, {
+                  signingScheme: `${scheme}-${alg}`,
+                  environment: 'node',
+                });
+                const browserKey = new NodeRSA(sourceKey, {
+                  signingScheme: `${scheme}-${alg}`,
+                  environment: 'browser',
+                });
+                assert.equal(nodeKey.sign('data', 'hex'), browserKey.sign('data', 'hex'));
+              },
+            );
+
+            it.skipIf(shouldSkip(alg))(`sign in node & verify in browser (${alg})`, () => {
+              const sourceKey = (generatedKeys[5] as NodeRSA).exportKey();
+              const nodeKey = new NodeRSA(sourceKey, {
+                signingScheme: `${scheme}-${alg}`,
+                environment: 'node',
+              });
+              const browserKey = new NodeRSA(sourceKey, {
+                signingScheme: `${scheme}-${alg}`,
+                environment: 'browser',
+              });
+              assert(browserKey.verify('data', nodeKey.sign('data') as Uint8Array));
+            });
+
+            it.skipIf(shouldSkip(alg))(`sign in browser & verify in node (${alg})`, () => {
+              const sourceKey = (generatedKeys[5] as NodeRSA).exportKey();
+              const nodeKey = new NodeRSA(sourceKey, {
+                signingScheme: `${scheme}-${alg}`,
+                environment: 'node',
+              });
+              const browserKey = new NodeRSA(sourceKey, {
+                signingScheme: `${scheme}-${alg}`,
+                environment: 'browser',
+              });
+              assert(nodeKey.verify('data', browserKey.sign('data') as Uint8Array));
+            });
+          }
+        });
       });
     }
   });
