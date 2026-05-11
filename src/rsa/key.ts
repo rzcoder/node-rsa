@@ -36,6 +36,9 @@ export class RSAKey {
   signingScheme!: SignatureScheme;
   options!: SchemeOptions;
 
+  /** OpenSSH key comment field (preserved across import/export). */
+  sshcomment?: string;
+
   setOptions(
     options: SchemeOptions,
     schemes: Record<string, { makeScheme(key: RSAKey, opts: SchemeOptions): unknown }>,
