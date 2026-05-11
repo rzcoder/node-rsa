@@ -72,11 +72,35 @@ class Pkcs1Scheme implements EncryptionScheme, SignatureScheme {
     return concat(filled, buffer);
   }
 
+  /**
+   * Audit fix C5 (Bleichenbacher / ROBOT): the legacy decoder had three
+   * distinct `return null` paths (header byte wrong, no separator found,
+   * buffer-length overflow), each reached in different wall-clock time.
+   * Combined with engine.ts's single-message throw, this still left an
+   * exploitable internal-differential timing oracle that, given 10⁶-10⁹
+   * queries, recovers plaintext (Bleichenbacher 1998, ROBOT 2017).
+   *
+   * Fix: constant-iteration scan over the entire buffer, accumulating all
+   * failure conditions (wrong header, wrong padding bytes, missing
+   * separator, PS shorter than 8 bytes per RFC 8017 §7.2.1) into a single
+   * bitwise `bad` flag. One `return null` for all failure modes.
+   *
+   * Limitation: a full Bleichenbacher fix requires *implicit rejection*
+   * (RFC 8017 §7.2.2 NOTE) — returning a deterministic synthetic plaintext
+   * instead of null on failure, so the caller cannot distinguish valid
+   * from invalid via the throw/no-throw binary oracle. That requires
+   * session-key plumbing and a public-API change (callers expect throw).
+   * This fix closes the *internal* differential-timing oracle (the only
+   * channel for Manger-style attacks); the surviving valid/invalid binary
+   * oracle is the standard PKCS#1 v1.5 limitation — README warns against
+   * using v1.5 encryption with untrusted ciphertexts; use OAEP instead.
+   */
   encUnPad(buffer: Uint8Array, opts?: { type?: number }): Uint8Array | null {
     const { type } = opts ?? {};
 
     if (this.noPadding()) {
-      // Strip leading zero pad — matches legacy lastIndexOf('\0') semantics.
+      // RSA_NO_PADDING: strip leading zero pad — matches legacy
+      // lastIndexOf('\0') semantics. Not security-sensitive (no padding).
       let lastZero = -1;
       for (let j = buffer.length - 1; j >= 0; j--) {
         if (buffer[j] === 0) {
@@ -87,23 +111,41 @@ class Pkcs1Scheme implements EncryptionScheme, SignatureScheme {
       return buffer.subarray(lastZero + 1).slice();
     }
 
-    if (buffer.length < 4) return null;
+    // Length precondition — public-known (= key chunk size); safe to branch.
+    if (buffer.length < 11) return null;
 
-    let i = 0;
-    if (type === 1) {
-      if (buffer[0] !== 0 || buffer[1] !== 1) return null;
-      i = 3;
-      while (buffer[i] !== 0) {
-        if (buffer[i] !== 0xff || ++i >= buffer.length) return null;
+    const expectedType = type === 1 ? 1 : 2;
+
+    // From here on: all checks accumulate into `bad`; no branch on data.
+    let bad = buffer[0] as number;             // must be 0x00
+    bad |= (buffer[1] as number) ^ expectedType; // must match type
+
+    let found = 0;
+    let sepPos = 0;
+    for (let i = 2; i < buffer.length; i++) {
+      const b = buffer[i] as number;
+      const isZero = (((b | -b) >>> 31) ^ 1) & 1; // 1 if b == 0
+      const notFoundYet = (1 - found) & 1;
+      if (expectedType === 1) {
+        // PS bytes must be 0xff. Mark `bad` if a byte before separator is
+        // neither 0xff (continue PS) nor 0x00 (separator).
+        const isNotFF = ((b ^ 0xff) === 0 ? 0 : 1) & 1;
+        bad |= notFoundYet & (1 - isZero) & isNotFF;
       }
-    } else {
-      if (buffer[0] !== 0 || buffer[1] !== 2) return null;
-      i = 3;
-      while (buffer[i] !== 0) {
-        if (++i >= buffer.length) return null;
-      }
+      // For type 2: PS bytes are random non-zero; first 0x00 is the separator.
+      // No per-byte check needed beyond the separator-position validation below.
+
+      // Record sepPos = i the first time we see 0x00.
+      const recordMask = -(notFoundYet & isZero);
+      sepPos = (sepPos & ~recordMask) | (i & recordMask);
+      found |= isZero;
     }
-    return buffer.subarray(i + 1).slice();
+    bad |= 1 - found;
+    // PS must be ≥ 8 bytes (RFC 8017 §7.2.1) → sepPos ≥ 10 (indices 2..9 inclusive are PS).
+    bad |= ((sepPos - 10) >>> 31) & 1;
+
+    if (bad) return null;
+    return buffer.subarray(sepPos + 1).slice();
   }
 
   sign(buffer: Uint8Array): Uint8Array {
@@ -121,7 +163,16 @@ class Pkcs1Scheme implements EncryptionScheme, SignatureScheme {
     const hashAlgorithm = this.options.signingSchemeOptions.hash ?? DEFAULT_HASH;
     const hash = this.options.backend.digest(hashAlgorithm, buffer);
     const padded = this.pkcs1pad(hash, hashAlgorithm);
-    const m = this.key.$doPublic(new BigInteger(signature)).toBuffer();
+    // RFC 8017 §8.2.2 step 2.b: if signature is out-of-range or the RSA
+    // primitive otherwise fails, output "invalid signature" — i.e. false,
+    // not a thrown error. $doPublic enforces the H2 bounds check by
+    // throwing; catch and translate.
+    let m: Uint8Array | null;
+    try {
+      m = this.key.$doPublic(new BigInteger(signature)).toBuffer();
+    } catch {
+      return false;
+    }
     if (!m) return false;
     return equals(m, padded);
   }

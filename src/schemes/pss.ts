@@ -42,7 +42,15 @@ class PssScheme implements SignatureScheme {
   verify(buffer: Uint8Array, signature: Uint8Array): boolean {
     const hash = this.hash();
     const emLen = Math.ceil((this.key.keySize - 1) / 8);
-    const m = this.key.$doPublic(new BigInteger(signature)).toBuffer(emLen);
+    // RFC 8017 §8.1.2 step 2.b: signature-out-of-range yields "invalid
+    // signature" (false), never a thrown error. $doPublic throws on H2
+    // bounds violation; catch and translate.
+    let m: Uint8Array | null;
+    try {
+      m = this.key.$doPublic(new BigInteger(signature)).toBuffer(emLen);
+    } catch {
+      return false;
+    }
     if (!m) return false;
     const mHash = this.options.backend.digest(hash, buffer);
     return this.emsaPssVerify(mHash, m, this.key.keySize - 1);
