@@ -79,20 +79,11 @@ class OaepScheme implements EncryptionScheme {
   }
 
   /**
-   * Audit fix C4 (Manger oracle): RFC 8017 §7.1.2 requires that ALL
-   * decryption failure modes be indistinguishable in timing. The legacy
-   * implementation had:
-   *   - early throw on lHash byte mismatch (leaks position byte-by-byte),
-   *   - linear scan for 0x01 separator (leaks separator position),
-   *   - distinct throw messages for each failure mode (leak via wall-clock),
-   *   - no check that EM[0] == 0x00 (Y, per RFC step 3).
-   *
-   * Fixed: single boolean `bad` aggregated bitwise without branches; one
-   * common `return null` for all failures. Engine.ts wraps null in a
-   * single generic "Decryption failed (invalid padding)" throw.
-   *
-   * Also folds in audit M8: validate `msg.length <= maxMessageLength()`
-   * before returning, per RFC 8017 §7.1.1 step 1.b.
+   * Constant-time OAEP decode per RFC 8017 §7.1.2: all failure modes —
+   * wrong Y byte, lHash mismatch, no 0x01 separator, message length over
+   * the geometric maximum — must be indistinguishable in timing or a
+   * Manger oracle recovers plaintext in ~10⁵ queries. We accumulate a
+   * single `bad` flag without branches and return null once at the end.
    */
   encUnPad(buffer: Uint8Array): Uint8Array | null {
     const hash = this.hash();
@@ -106,7 +97,7 @@ class OaepScheme implements EncryptionScheme {
     // From here on, all checks are constant-time and accumulate into `bad`.
     const work = buffer.slice();
 
-    // RFC step 3 (post 3.e): Y must equal 0x00. Was missing entirely.
+    // RFC 8017 §7.1.2 step 3: Y (the leading byte) must equal 0x00.
     let bad = work[0] === 0x00 ? 0 : 1;
 
     const seed = work.subarray(1, hLen + 1);
@@ -148,7 +139,7 @@ class OaepScheme implements EncryptionScheme {
     if (bad) return null;
 
     const msg = DB.subarray(msgStart).slice();
-    // Audit M8: RFC 8017 §7.1.1 step 1.b bound.
+    // RFC 8017 §7.1.1 step 1.b: enforce mLen ≤ k − 2hLen − 2.
     if (msg.length > this.maxMessageLength()) return null;
     return msg;
   }

@@ -2,8 +2,7 @@ import { BigInteger } from '../bigint/big-integer.js';
 import type { CryptoBackend } from '../crypto/types.js';
 import type { EncryptionScheme, SchemeOptions, SignatureScheme } from '../schemes/types.js';
 
-// Audit fix H5: one-shot small-key warning. Module-level flag so repeated
-// calls during a test run (or legitimate small-key usage) don't spam stderr.
+// One-shot guard so repeated small-key calls don't spam stderr.
 let warnedSmallKey = false;
 
 /**
@@ -68,10 +67,6 @@ export class RSAKey {
    * Matches v1's algorithm and RNG call pattern exactly.
    */
   generate(B: number, E: string): void {
-    // Audit fix H5: refuse cryptographically trivial sizes outright; emit a
-    // one-shot warning for sub-NIST sizes (below SP 800-56B §6.1.6.2's 2048-bit
-    // minimum for ≥112-bit symmetric strength). Tests / legacy compat may
-    // legitimately use 512–1024-bit keys; production code should not.
     if (B < 512) {
       throw new Error(
         `Key size ${B} bits is cryptographically broken (< 512); refusing to generate`,
@@ -79,6 +74,7 @@ export class RSAKey {
     }
     if (B < 2048 && !warnedSmallKey) {
       warnedSmallKey = true;
+      // Below NIST SP 800-56B §6.1.6.2's 2048-bit minimum.
       // eslint-disable-next-line no-console
       console.warn(
         `node-rsa: generating ${B}-bit RSA key — below NIST SP 800-56B §6.1.6.2 minimum (2048 bits); not recommended for production`,
@@ -87,23 +83,17 @@ export class RSAKey {
     const qs = B >> 1;
     this.e = Number.parseInt(E, 16);
     const ee = new BigInteger(E, 16);
-    // Audit fix H4: Miller-Rabin rounds for the outer prime-acceptance check.
-    // Legacy `isProbablePrime(10)` was halved to ~5 effective rounds (see C1+H4
-    // fix in big-integer.ts:millerRabin). FIPS 186-4 Table C.3 requires ≥40
-    // rounds for 1024-bit primes (n=2048-bit key) and ≥28 for ≥1536-bit primes.
-    // We pick rounds by half-modulus bit length.
+    // FIPS 186-4 Table C.3 Miller-Rabin minimums by half-modulus bit length.
     const mrRounds = B >= 4096 ? 16 : B >= 3072 ? 28 : 40;
-    // Audit fix H6: FIPS 186-4 §B.3.6 — require |p − q| > 2^(B/2 − 100) so the
-    // modulus is not vulnerable to Fermat factoring. With CSPRNG-generated
-    // primes the rejection rate is ≈ 2⁻¹⁰⁰ per pair (effectively never), but
-    // omitting the check is a compliance gap.
+    // FIPS 186-4 §B.3.6 Fermat-factoring defence: require |p − q| > 2^(B/2 − 100).
+    // With CSPRNG primes the rejection rate is ≈ 2⁻¹⁰⁰ per pair.
     const minPQDiff = BigInteger.ONE.shiftLeft((B >> 1) - 100);
     while (true) {
       while (true) {
-        // Inner loop: `BigInteger(bits, 1)` runs fromNumber's sequential prime
-        // search with certainty=1 (one MR round per candidate). Combined with
-        // trial-division by 168 small primes and the strong outer check below,
-        // this is a standard sieve-then-validate flow.
+        // `BigInteger(bits, 1)` is fromNumber's sequential prime search with
+        // one Miller-Rabin round per candidate — combined with trial division
+        // by 168 small primes, fast enough for the sieve. The outer
+        // isProbablePrime(mrRounds) below does the strong validation.
         this.p = new BigInteger(B - qs, 1);
         if (
           this.p.subtract(BigInteger.ONE).gcd(ee).compareTo(BigInteger.ONE) === 0 &&
@@ -126,7 +116,7 @@ export class RSAKey {
         this.p = this.q;
         this.q = t;
       }
-      // H6: regenerate the pair if p and q are too close.
+      // Regenerate the pair if p and q are too close (Fermat defence).
       if (this.p.subtract(this.q).compareTo(minPQDiff) < 0) continue;
       const p1 = this.p.subtract(BigInteger.ONE);
       const q1 = this.q.subtract(BigInteger.ONE);
@@ -185,13 +175,9 @@ export class RSAKey {
   }
 
   /**
-   * Audit fix H1: validate `e` after import. RFC 8017 §3.1 requires
-   * 1 < e < n with e odd. Accepting e=1 (ciphertext == plaintext), e=0,
-   * or even e (breaks RSA invertibility) leaves a downgrade vector open
-   * for malicious key imports.
-   *
-   * The e < n check is implicit for any realistic key (n ≥ 2^512 ≫ any
-   * JS-number-encodable e), so we only enforce e > 1 and oddness here.
+   * RFC 8017 §3.1 requires 1 < e < n with e odd. e=1 makes ciphertext ==
+   * plaintext; even e breaks RSA invertibility entirely. The e < n side
+   * is implicit (n ≥ 2^512 ≫ any JS-number-encodable e).
    */
   private validateExponent(): void {
     if (this.e <= 1) {
@@ -203,26 +189,12 @@ export class RSAKey {
   }
 
   /**
-   * Audit fix H3: validate private-key CRT parameter consistency on import.
-   *
-   * Without this check, a maliciously crafted PEM/PKCS#8/OpenSSH file can
-   * deliver components (p, q, dp, dq, qinv) that don't satisfy the RSA
-   * invariants. The danger isn't garbage decryption — that's caught at
-   * use time — but Boneh-DeMillo-Lipton fault-injection: with a corrupted
-   * private key, even one faulted signature gives the attacker
-   * gcd(s_correct − s_faulted, n), which factors n.
-   *
-   * Checks (skipped if CRT components weren't provided — basic n, e, d
-   * key still works, just without CRT):
-   *   1. n = p × q
-   *   2. dp = d mod (p − 1)
-   *   3. dq = d mod (q − 1)
-   *   4. q × coeff ≡ 1 (mod p)        (coeff = q⁻¹ mod p)
-   *   5. e × dp ≡ 1 (mod p − 1)       ⟹ e × d ≡ 1 (mod λ(n))
-   *   6. e × dq ≡ 1 (mod q − 1)
-   *
-   * Cost: a handful of multiplications + four mods — much less than one
-   * encrypt/decrypt. One-time on import.
+   * Cross-check CRT invariants for an imported private key. Inconsistent
+   * components (n ≠ p·q, mismatched dp/dq, bad coeff) don't just produce
+   * garbage on decrypt — they enable Boneh-DeMillo-Lipton fault attacks
+   * where a single faulted signature reveals gcd(s_correct − s_faulted, n)
+   * and factors n. Skipped when CRT components are absent (basic n, e, d
+   * key still works, just without CRT).
    */
   private validatePrivateConsistency(): void {
     if (!this.n || !this.d || !this.p || !this.q || !this.dmp1 || !this.dmq1 || !this.coeff) {
@@ -254,20 +226,18 @@ export class RSAKey {
   /** x^d mod n, using CRT if p/q are available, otherwise direct. */
   $doPrivate(x: BigInteger): BigInteger {
     if (!this.n || !this.d) throw new Error('No private key');
-    // Audit fix H2: RFC 8017 §5.1.2 / §3.2 require the RSA primitive input
-    // to lie in [0, n-1]. Without this check, `x.mod(n)` would silently
-    // accept x≥n (creating ciphertext malleability c → c+kn) and any
-    // negative intermediate would corrupt CRT recombination.
+    // RFC 8017 §5.1.2 / §3.2 mandate inputs in [0, n-1]. Without this
+    // check, ciphertext c and c+kn would decrypt the same (malleability)
+    // and negative intermediates would corrupt CRT recombination.
     if (x.signum() < 0 || x.compareTo(this.n) >= 0) {
       throw new Error('RSA: input out of range (must be 0 ≤ x < n)');
     }
 
-    // Audit fix C2: Base blinding (Kocher 1996). The variable-time `modPow`
-    // (C3) leaks bits of d/dmp1/dmq1 unless the input is masked from the
-    // attacker. We pre-multiply by r^e and post-multiply by r^-1, where r
-    // is freshly random and coprime to n. Math:
-    //   blindedX^d mod n = (x * r^e)^d mod n = x^d * r^(e*d) mod n = x^d * r mod n
-    //   result = (x^d * r) * r^-1 mod n = x^d mod n
+    // Base blinding (Kocher 1996): the variable-time modPow leaks d-bits
+    // unless its input is masked from the attacker. Pre-multiply by r^e,
+    // post-multiply by r^-1, with r ← random coprime to n:
+    //   (x · r^e)^d  =  x^d · r^(e·d)  =  x^d · r  (mod n)
+    //   then × r^-1 mod n = x^d mod n
     const blinding = this.makeBlinding();
     const inputX = blinding ? x.multiply(blinding.re).mod(this.n) : x;
 
@@ -277,11 +247,8 @@ export class RSAKey {
     } else {
       const xp = inputX.mod(this.p).modPow(this.dmp1, this.p);
       const xq = inputX.mod(this.q).modPow(this.dmq1, this.q);
-      // Audit fix H7: legacy `while (xp.compareTo(xq) < 0) xp = xp.add(this.p)`
-      // executed 0 or 1 iterations depending on secret-dependent (xp, xq)
-      // values, leaking the low bit of (xp - xq) via wall-clock. BigInteger.mod
-      // normalises any negative dividend to [0, modulus), so the difference
-      // can be computed directly — no branch, no data-dependent loop.
+      // Garner recombination without a data-dependent `while (xp < xq)`
+      // loop: BigInteger.mod normalises any negative dividend to [0, p).
       result = xp.subtract(xq).multiply(this.coeff).mod(this.p).multiply(this.q).add(xq);
     }
 
@@ -321,8 +288,8 @@ export class RSAKey {
   /** x^e mod n. */
   $doPublic(x: BigInteger): BigInteger {
     if (!this.n) throw new Error('No public key');
-    // Audit fix H2: same RFC 8017 §5.2.2 / §3.2 input-range requirement
-    // as $doPrivate. Rejects s ≥ n on verify and m ≥ n on encrypt.
+    // RFC 8017 §5.2.2 / §3.2 mandate inputs in [0, n-1]; rejects s ≥ n
+    // on verify and m ≥ n on encrypt.
     if (x.signum() < 0 || x.compareTo(this.n) >= 0) {
       throw new Error('RSA: input out of range (must be 0 ≤ x < n)');
     }

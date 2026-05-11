@@ -73,27 +73,16 @@ class Pkcs1Scheme implements EncryptionScheme, SignatureScheme {
   }
 
   /**
-   * Audit fix C5 (Bleichenbacher / ROBOT): the legacy decoder had three
-   * distinct `return null` paths (header byte wrong, no separator found,
-   * buffer-length overflow), each reached in different wall-clock time.
-   * Combined with engine.ts's single-message throw, this still left an
-   * exploitable internal-differential timing oracle that, given 10⁶-10⁹
-   * queries, recovers plaintext (Bleichenbacher 1998, ROBOT 2017).
+   * Constant-time PKCS#1 v1.5 decode per RFC 8017 §7.2.2: header byte,
+   * padding-type byte, PS validity, and minimum PS length all accumulate
+   * into a single bitwise `bad` flag with no early return; one `return
+   * null` for all failure modes.
    *
-   * Fix: constant-iteration scan over the entire buffer, accumulating all
-   * failure conditions (wrong header, wrong padding bytes, missing
-   * separator, PS shorter than 8 bytes per RFC 8017 §7.2.1) into a single
-   * bitwise `bad` flag. One `return null` for all failure modes.
-   *
-   * Limitation: a full Bleichenbacher fix requires *implicit rejection*
-   * (RFC 8017 §7.2.2 NOTE) — returning a deterministic synthetic plaintext
-   * instead of null on failure, so the caller cannot distinguish valid
-   * from invalid via the throw/no-throw binary oracle. That requires
-   * session-key plumbing and a public-API change (callers expect throw).
-   * This fix closes the *internal* differential-timing oracle (the only
-   * channel for Manger-style attacks); the surviving valid/invalid binary
-   * oracle is the standard PKCS#1 v1.5 limitation — README warns against
-   * using v1.5 encryption with untrusted ciphertexts; use OAEP instead.
+   * Full Bleichenbacher mitigation (RFC §7.2.2 NOTE — return synthetic
+   * plaintext instead of null) would require session-key plumbing and an
+   * API change (callers expect a throw). This closes only the internal
+   * differential timing oracle; the valid/invalid binary oracle inherent
+   * to PKCS#1 v1.5 remains — use OAEP for untrusted ciphertexts.
    */
   encUnPad(buffer: Uint8Array, opts?: { type?: number }): Uint8Array | null {
     const { type } = opts ?? {};
@@ -163,10 +152,9 @@ class Pkcs1Scheme implements EncryptionScheme, SignatureScheme {
     const hashAlgorithm = this.options.signingSchemeOptions.hash ?? DEFAULT_HASH;
     const hash = this.options.backend.digest(hashAlgorithm, buffer);
     const padded = this.pkcs1pad(hash, hashAlgorithm);
-    // RFC 8017 §8.2.2 step 2.b: if signature is out-of-range or the RSA
-    // primitive otherwise fails, output "invalid signature" — i.e. false,
-    // not a thrown error. $doPublic enforces the H2 bounds check by
-    // throwing; catch and translate.
+    // RFC 8017 §8.2.2 step 2.b: an out-of-range signature representative
+    // (or any other RSA-primitive failure) must yield "invalid signature",
+    // not a thrown error.
     let m: Uint8Array | null;
     try {
       m = this.key.$doPublic(new BigInteger(signature)).toBuffer();
