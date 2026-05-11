@@ -67,15 +67,22 @@ export class RSAKey {
     const qs = B >> 1;
     this.e = Number.parseInt(E, 16);
     const ee = new BigInteger(E, 16);
+    // Audit fix H4: Miller-Rabin rounds for the outer prime-acceptance check.
+    // Legacy `isProbablePrime(10)` was halved to ~5 effective rounds (see C1+H4
+    // fix in big-integer.ts:millerRabin). FIPS 186-4 Table C.3 requires ≥40
+    // rounds for 1024-bit primes (n=2048-bit key) and ≥28 for ≥1536-bit primes.
+    // We pick rounds by half-modulus bit length.
+    const mrRounds = B >= 4096 ? 16 : B >= 3072 ? 28 : 40;
     while (true) {
       while (true) {
-        // Second arg = Miller-Rabin certainty: BigInteger(bits, certainty)
-        // triggers sequential-probe-prime generation. Outer loop re-checks
-        // with the stronger isProbablePrime(10). Matches legacy v1.
+        // Inner loop: `BigInteger(bits, 1)` runs fromNumber's sequential prime
+        // search with certainty=1 (one MR round per candidate). Combined with
+        // trial-division by 168 small primes and the strong outer check below,
+        // this is a standard sieve-then-validate flow.
         this.p = new BigInteger(B - qs, 1);
         if (
           this.p.subtract(BigInteger.ONE).gcd(ee).compareTo(BigInteger.ONE) === 0 &&
-          this.p.isProbablePrime(10)
+          this.p.isProbablePrime(mrRounds)
         ) {
           break;
         }
@@ -84,7 +91,7 @@ export class RSAKey {
         this.q = new BigInteger(qs, 1);
         if (
           this.q.subtract(BigInteger.ONE).gcd(ee).compareTo(BigInteger.ONE) === 0 &&
-          this.q.isProbablePrime(10)
+          this.q.isProbablePrime(mrRounds)
         ) {
           break;
         }
