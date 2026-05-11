@@ -198,9 +198,13 @@ export class RSAKey {
     if (!this.p || !this.q || !this.dmp1 || !this.dmq1 || !this.coeff) {
       result = inputX.modPow(this.d, this.n);
     } else {
-      let xp = inputX.mod(this.p).modPow(this.dmp1, this.p);
+      const xp = inputX.mod(this.p).modPow(this.dmp1, this.p);
       const xq = inputX.mod(this.q).modPow(this.dmq1, this.q);
-      while (xp.compareTo(xq) < 0) xp = xp.add(this.p);
+      // Audit fix H7: legacy `while (xp.compareTo(xq) < 0) xp = xp.add(this.p)`
+      // executed 0 or 1 iterations depending on secret-dependent (xp, xq)
+      // values, leaking the low bit of (xp - xq) via wall-clock. BigInteger.mod
+      // normalises any negative dividend to [0, modulus), so the difference
+      // can be computed directly — no branch, no data-dependent loop.
       result = xp.subtract(xq).multiply(this.coeff).mod(this.p).multiply(this.q).add(xq);
     }
 
