@@ -126,7 +126,21 @@ export const opensshFormat: FormatProvider = {
     reader.readString(); // public e
     reader.readString(); // public n
 
-    reader.off += 12; // private length + 8 byte unused checksum
+    // Audit fix M5: validate the OpenSSH integrity check-ints. The private
+    // section starts with `length || checkint1 || checkint2 || keydata`
+    // where the two checkints MUST be identical (file corruption / wrong
+    // passphrase detector). Legacy code skipped all 12 bytes blindly,
+    // accepting corrupted keys until they failed deep in setPrivate.
+    reader.off += 4; // private section length (subsequent reads bounds-check)
+    const checkInt1 = readUInt32BE(reader.buf, reader.off);
+    reader.off += 4;
+    const checkInt2 = readUInt32BE(reader.buf, reader.off);
+    reader.off += 4;
+    if (checkInt1 !== checkInt2) {
+      throw new Error(
+        'OpenSSH private key: checksum mismatch (file may be corrupted or encrypted)',
+      );
+    }
     if (toUtf8(reader.readString()) !== 'ssh-rsa') throw new Error('Unsupported key type');
 
     const n = reader.readString();
@@ -223,6 +237,15 @@ class SshReader {
   constructor(readonly buf: Uint8Array) {}
   readString(): Uint8Array {
     const len = readUInt32BE(this.buf, this.off);
+    // Audit fix M4: Uint8Array.subarray silently truncates on OOB rather
+    // than throwing — without this bound check a malformed OpenSSH file
+    // with a forged length field would deliver a short Uint8Array deep
+    // into setPrivate, where the failure mode is opaque.
+    if (this.off + 4 + len > this.buf.length) {
+      throw new Error(
+        `OpenSSH: string length ${len} exceeds buffer (offset=${this.off}, buffer=${this.buf.length})`,
+      );
+    }
     this.off += 4;
     const out = this.buf.subarray(this.off, this.off + len);
     this.off += len;
