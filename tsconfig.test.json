@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
+  },
+  "include": ["src/**/*", "test/**/*", "vitest.config.ts", "vitest.workspace.ts", "tsup.config.ts"],
+  "exclude": ["node_modules", "dist", "src.legacy", ".tmp"]
+}

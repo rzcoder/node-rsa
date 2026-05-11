@@ -1,6 +1,13 @@
 .DS_Store
 .idea
 .tmp
-node_modules/
 .nyc_output
 nbproject/
+node_modules/
+examples/*/node_modules/
+examples/*/package-lock.json
+dist/
+coverage/
+*.log
+.env
+.env.local

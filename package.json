@@ -1,27 +1,59 @@
 {
   "name": "node-rsa",
-  "version": "1.1.1",
-  "description": "Node.js RSA library",
-  "main": "src/NodeRSA.js",
+  "version": "2.0.0",
+  "description": "RSA library for Node.js and browsers — pure-TS, no Buffer/crypto polyfills required in the browser",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./dist/index.node.cjs",
+  "module": "./dist/index.node.js",
+  "browser": "./dist/index.browser.js",
+  "types": "./dist/index.node.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.node.d.ts",
+      "browser": {
+        "import": "./dist/index.browser.js"
+      },
+      "node": {
+        "import": "./dist/index.node.js",
+        "require": "./dist/index.node.cjs"
+      },
+      "default": "./dist/index.browser.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "files": ["dist", "README.md", "CHANGELOG.md", "MIGRATION.md", "LICENSE"],
   "scripts": {
-    "test": "grunt test"
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run build && npm run check:bundle-size",
+    "check:bundle-size": "node scripts/check-bundle-size.mjs"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/rzcoder/node-rsa.git"
   },
   "keywords": [
-    "node",
     "rsa",
     "crypto",
-    "assymetric",
+    "asymmetric",
     "encryption",
     "decryption",
     "sign",
     "verify",
     "pkcs1",
     "oaep",
-    "pss"
+    "pss",
+    "typescript",
+    "browser"
   ],
   "author": "rzcoder",
   "license": "MIT",
@@ -29,16 +61,15 @@
     "url": "https://github.com/rzcoder/node-rsa/issues"
   },
   "homepage": "https://github.com/rzcoder/node-rsa",
-  "devDependencies": {
-    "chai": "^4.2.0",
-    "grunt": "^1.1.0",
-    "grunt-contrib-jshint": "^2.1.0",
-    "grunt-simple-mocha": "0.4.1",
-    "jit-grunt": "0.10.0",
-    "lodash": "^4.17.15",
-    "nyc": "^15.0.0"
-  },
   "dependencies": {
-    "asn1": "^0.2.4"
+    "@noble/hashes": "^1.5.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^20.17.0",
+    "chai": "^4.5.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.5"
   }
 }

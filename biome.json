@@ -1,0 +1,91 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignore": [
+      "dist",
+      "src.legacy",
+      "node_modules",
+      "coverage",
+      ".tmp",
+      ".nyc_output",
+      "package-lock.json",
+      "test/tests.js",
+      "test/keys"
+    ]
+  },
+  "organizeImports": {
+    "enabled": true
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "suspicious": {
+        "noExplicitAny": "error",
+        "noConsoleLog": "warn"
+      },
+      "style": {
+        "useImportType": "error",
+        "useNodejsImportProtocol": "error",
+        "useConst": "error",
+        "noNonNullAssertion": "warn"
+      },
+      "complexity": {
+        "noBannedTypes": "error"
+      }
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100,
+    "lineEnding": "lf"
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "jsxQuoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "all",
+      "arrowParentheses": "always",
+      "bracketSpacing": true
+    }
+  },
+  "json": {
+    "formatter": {
+      "indentWidth": 2
+    }
+  },
+  "overrides": [
+    {
+      "include": ["src/bigint/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noNonNullAssertion": "off",
+            "noParameterAssign": "off"
+          },
+          "suspicious": {
+            "noAssignInExpressions": "off"
+          }
+        }
+      }
+    },
+    {
+      "include": ["examples/**", "scripts/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsoleLog": "off"
+          }
+        }
+      }
+    }
+  ]
+}
