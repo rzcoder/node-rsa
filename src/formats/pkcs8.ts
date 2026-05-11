@@ -48,9 +48,7 @@ export const pkcs8Format: FormatProvider = {
     // PrivateKeyInfo / OneAsymmetricKey. Legacy code accepted any integer.
     const outerVersion = outer.readSmallInteger();
     if (outerVersion !== 0 && outerVersion !== 1) {
-      throw new Error(
-        `PKCS#8: unsupported version ${outerVersion} (RFC 5958 §2 requires 0 or 1)`,
-      );
+      throw new Error(`PKCS#8: unsupported version ${outerVersion} (RFC 5958 §2 requires 0 or 1)`);
     }
     const header = outer.readSequence();
     // Audit fix H8: distinguish rsaEncryption from scheme-specific RSA

@@ -4,8 +4,12 @@ import { resolve } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
 const root = resolve(import.meta.dirname, '..');
+// Budgets bumped after audit Tier 0 + Tier 1 security fixes (C1–C5, H1–H8,
+// M4–M8, S1): constant-time padding scans, RSA blinding, CRT-consistency
+// validation, OpenSSH/PKCS#8 hardening — all add real bytes that are not
+// candidates for trimming. Browser raw grew ~4 KB, node raw ~4 KB.
 const BUDGETS = {
-  'dist/index.browser.js': { raw: 100_000, gz: 30_000 },
+  'dist/index.browser.js': { raw: 105_000, gz: 30_000 },
   'dist/index.node.js': { raw: 120_000, gz: 35_000 },
   'dist/index.node.cjs': { raw: 120_000, gz: 35_000 },
 };
