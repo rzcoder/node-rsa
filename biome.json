@@ -61,5 +61,21 @@
     "formatter": {
       "indentWidth": 2
     }
-  }
+  },
+  "overrides": [
+    {
+      "include": ["src/bigint/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noNonNullAssertion": "off",
+            "noParameterAssign": "off"
+          },
+          "suspicious": {
+            "noAssignInExpressions": "off"
+          }
+        }
+      }
+    }
+  ]
 }
