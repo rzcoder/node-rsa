@@ -117,7 +117,7 @@ class Pkcs1Scheme implements EncryptionScheme, SignatureScheme {
     const expectedType = type === 1 ? 1 : 2;
 
     // From here on: all checks accumulate into `bad`; no branch on data.
-    let bad = buffer[0] as number;             // must be 0x00
+    let bad = buffer[0] as number; // must be 0x00
     bad |= (buffer[1] as number) ^ expectedType; // must match type
 
     let found = 0;
