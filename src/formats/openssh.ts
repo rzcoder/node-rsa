@@ -126,11 +126,9 @@ export const opensshFormat: FormatProvider = {
     reader.readString(); // public e
     reader.readString(); // public n
 
-    // Audit fix M5: validate the OpenSSH integrity check-ints. The private
-    // section starts with `length || checkint1 || checkint2 || keydata`
-    // where the two checkints MUST be identical (file corruption / wrong
-    // passphrase detector). Legacy code skipped all 12 bytes blindly,
-    // accepting corrupted keys until they failed deep in setPrivate.
+    // Private section: `length || checkint1 || checkint2 || keydata` —
+    // the two checkints MUST be identical (file corruption / wrong
+    // passphrase detector per the OpenSSH key format).
     reader.off += 4; // private section length (subsequent reads bounds-check)
     const checkInt1 = readUInt32BE(reader.buf, reader.off);
     reader.off += 4;
@@ -237,10 +235,9 @@ class SshReader {
   constructor(readonly buf: Uint8Array) {}
   readString(): Uint8Array {
     const len = readUInt32BE(this.buf, this.off);
-    // Audit fix M4: Uint8Array.subarray silently truncates on OOB rather
-    // than throwing — without this bound check a malformed OpenSSH file
-    // with a forged length field would deliver a short Uint8Array deep
-    // into setPrivate, where the failure mode is opaque.
+    // Uint8Array.subarray silently truncates on OOB rather than throwing,
+    // so a forged length field would deliver a short buffer deep into the
+    // key parser with an opaque failure mode. Bound-check explicitly.
     if (this.off + 4 + len > this.buf.length) {
       throw new Error(
         `OpenSSH: string length ${len} exceeds buffer (offset=${this.off}, buffer=${this.buf.length})`,

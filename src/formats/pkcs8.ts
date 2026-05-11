@@ -44,25 +44,19 @@ export const pkcs8Format: FormatProvider = {
   privateImport(key: RSAKey, data: Uint8Array | string, options: ImportOptions = {}): void {
     const buffer = resolveBytes(data, options, PRIVATE_OPENING, PRIVATE_CLOSING);
     const outer = new DerReader(buffer).readSequence();
-    // Audit fix M7: RFC 5958 §2 defines version ∈ {0, 1} for
-    // PrivateKeyInfo / OneAsymmetricKey. Legacy code accepted any integer.
+    // RFC 5958 §2: PrivateKeyInfo / OneAsymmetricKey version ∈ {0, 1}.
     const outerVersion = outer.readSmallInteger();
     if (outerVersion !== 0 && outerVersion !== 1) {
       throw new Error(`PKCS#8: unsupported version ${outerVersion} (RFC 5958 §2 requires 0 or 1)`);
     }
     const header = outer.readSequence();
-    // Audit fix H8: distinguish rsaEncryption from scheme-specific RSA
-    // OIDs that some implementations erroneously embed here. RFC 5958 §2
-    // and RFC 8017 require rsaEncryption (1.2.840.113549.1.1.1) for the
-    // PKCS#8 privateKeyAlgorithm field, not PSS/OAEP specifiers.
     const oid = header.readOid();
     if (oid !== OID.RSA_ENCRYPTION) {
       throw pkcs8OidError(oid, 'private');
     }
     header.readNull();
     const body = new DerReader(outer.readOctetString()).readSequence();
-    // PKCS#1 inner version: RFC 8017 §A.1.2 defines 0 = two-prime, 1 =
-    // multi-prime. We support only two-prime RSA.
+    // RFC 8017 §A.1.2: 0 = two-prime, 1 = multi-prime. Two-prime only.
     const innerVersion = body.readSmallInteger();
     if (innerVersion !== 0) {
       throw new Error(
@@ -106,7 +100,6 @@ export const pkcs8Format: FormatProvider = {
     const buffer = resolveBytes(data, options, PUBLIC_OPENING, PUBLIC_CLOSING);
     const outer = new DerReader(buffer).readSequence();
     const header = outer.readSequence();
-    // Audit fix H8: same OID-allowlist rationale as privateImport.
     const oid = header.readOid();
     if (oid !== OID.RSA_ENCRYPTION) {
       throw pkcs8OidError(oid, 'public');
@@ -146,7 +139,12 @@ export const pkcs8Format: FormatProvider = {
   },
 };
 
-/** Audit H8: clear diagnostics for non-rsaEncryption RSA-family OIDs. */
+/**
+ * RFC 5958 §2 and RFC 8017 require rsaEncryption (1.2.840.113549.1.1.1)
+ * in the PKCS#8 privateKeyAlgorithm field — not PSS/OAEP-specific OIDs.
+ * Some implementations get this wrong; surface a clear diagnostic instead
+ * of a generic "invalid format" that tempts maintainers to relax the check.
+ */
 function pkcs8OidError(oid: string, kind: 'private' | 'public'): Error {
   if (oid === '1.2.840.113549.1.1.10') {
     return new Error(

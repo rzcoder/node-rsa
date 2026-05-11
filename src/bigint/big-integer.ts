@@ -1133,14 +1133,11 @@ export class BigInteger {
     const k = n1.getLowestSetBit();
     if (k <= 0) return false;
     const r = n1.shiftRight(k);
-    // Audit fix H4: honour caller's requested round count fully — legacy code
-    // halved `t` (`t = (t+1) >> 1`) and capped at `lowprimes.length`, giving
-    // ~5 effective rounds for `isProbablePrime(10)` and silently below FIPS
-    // 186-4 Table C.3 minimums for adversarial input.
-    // Audit fix C1: witnesses are now drawn uniformly from [2, n-2] using the
-    // injected CSPRNG instead of `Math.random()` over the small `lowprimes`
-    // table. This closes the adversarial-pseudoprime construction path
-    // (Carmichael numbers tuned to fixed small witnesses).
+    // Witnesses must come from a CSPRNG over the full [2, n-2] range — not
+    // a small fixed table sampled with Math.random() — or an adversary can
+    // construct pseudoprimes tuned to the specific witnesses we'll pick.
+    // The caller's round count is honoured directly; see FIPS 186-4 Table
+    // C.3 for the minimums (40/28/16 rounds at 1024/1536/≥2048 bits).
     const two = nbv(2);
     const nMinus3 = n1.subtract(two); // n - 3 = range size for [2, n-2]
     const byteLen = ((this.bitLength() + 7) >> 3) + 1; // +1 byte to keep modulo bias < 2^-8
