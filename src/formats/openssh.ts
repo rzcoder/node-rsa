@@ -192,18 +192,24 @@ export const opensshFormat: FormatProvider = {
     key.setPublic(n, e);
   },
 
-  autoImport(key: RSAKey, data: string): boolean {
-    if (typeof data !== 'string') return false;
+  autoImport(key: RSAKey, data: unknown): boolean {
+    const text =
+      typeof data === 'string'
+        ? data
+        : data instanceof Uint8Array
+          ? new TextDecoder().decode(data)
+          : null;
+    if (text === null) return false;
     if (
       /^[\S\s]*-----BEGIN OPENSSH PRIVATE KEY-----\s*(?=(([A-Za-z0-9+/=]+\s*)+))\1-----END OPENSSH PRIVATE KEY-----[\S\s]*$/g.test(
-        data,
+        text,
       )
     ) {
-      opensshFormat.privateImport?.(key, data);
+      opensshFormat.privateImport?.(key, text);
       return true;
     }
-    if (/^[\S\s]*ssh-rsa \s*(?=(([A-Za-z0-9+/=]+\s*)+))\1[\S\s]*$/g.test(data)) {
-      opensshFormat.publicImport?.(key, data);
+    if (/^[\S\s]*ssh-rsa \s*(?=(([A-Za-z0-9+/=]+\s*)+))\1[\S\s]*$/g.test(text)) {
+      opensshFormat.publicImport?.(key, text);
       return true;
     }
     return false;

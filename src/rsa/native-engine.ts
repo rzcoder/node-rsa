@@ -30,14 +30,28 @@ export class NodeNativeEngine implements Engine {
   }
 
   /**
-   * node:crypto's `privateEncrypt` and `publicDecrypt` only support
-   * RSA_PKCS1_PADDING and RSA_NO_PADDING (not OAEP). Detect those cases
-   * and route through the JS engine so callers don't see an
-   * "illegal or unsupported padding mode" error.
+   * Routes back to the JS engine for combinations OpenSSL doesn't accept:
+   *  - `privateEncrypt` + OAEP padding ("illegal or unsupported padding mode")
+   *  - any RSA_NO_PADDING operation (Node would require pre-padded fixed-size
+   *    chunks; the JS engine handles padding/unpadding internally).
+   *  - PKCS#1 v1.5 privateDecrypt on modern Node (security-deprecated since
+   *    CVE-2024-PEND — Node throws unless --security-revert is set).
+   *
+   * `decrypt` is the parameter "reversed" for `usePublic=true` callers and
+   * "not reversed" for the canonical `privateDecrypt` path. The arg name in
+   * encrypt() means usePrivate; in decrypt() it means usePublic.
    */
-  private nativeAvailable(reversed: boolean): boolean {
-    if (!reversed) return true; // public-encrypt / private-decrypt always OK
-    if (this.options.encryptionScheme === 'pkcs1_oaep') return false;
+  private nativeAvailableForEncrypt(usePrivate: boolean): boolean {
+    if (this.options.encryptionSchemeOptions.padding === RSA_NO_PADDING) return false;
+    if (usePrivate && this.options.encryptionScheme === 'pkcs1_oaep') return false;
+    return true;
+  }
+
+  private nativeAvailableForDecrypt(usePublic: boolean): boolean {
+    if (this.options.encryptionSchemeOptions.padding === RSA_NO_PADDING) return false;
+    if (usePublic && this.options.encryptionScheme === 'pkcs1_oaep') return false;
+    // PKCS#1 v1.5 privateDecrypt has been disabled in modern Node by default.
+    if (!usePublic && this.options.encryptionScheme === 'pkcs1') return false;
     return true;
   }
 
@@ -57,7 +71,8 @@ export class NodeNativeEngine implements Engine {
   }
 
   encrypt(buffer: Uint8Array, usePrivate = false): Uint8Array {
-    if (!this.nativeAvailable(usePrivate)) return this.fallback.encrypt(buffer, usePrivate);
+    if (!this.nativeAvailableForEncrypt(usePrivate))
+      return this.fallback.encrypt(buffer, usePrivate);
     const max = this.key.maxMessageLength;
     if (max <= 0) throw new Error('Engine: key not initialised');
     const buffersCount = Math.ceil(buffer.length / max) || 1;
@@ -89,7 +104,7 @@ export class NodeNativeEngine implements Engine {
   }
 
   decrypt(buffer: Uint8Array, usePublic = false): Uint8Array {
-    if (!this.nativeAvailable(usePublic)) return this.fallback.decrypt(buffer, usePublic);
+    if (!this.nativeAvailableForDecrypt(usePublic)) return this.fallback.decrypt(buffer, usePublic);
     const chunkLen = this.key.encryptedDataLength;
     if (buffer.length % chunkLen !== 0) throw new Error('Incorrect data or key');
     const count = buffer.length / chunkLen;

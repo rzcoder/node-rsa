@@ -76,14 +76,15 @@ class Pkcs1Scheme implements EncryptionScheme, SignatureScheme {
     const { type } = opts ?? {};
 
     if (this.noPadding()) {
-      let cut = buffer.length;
+      // Strip leading zero pad — matches legacy lastIndexOf('\0') semantics.
+      let lastZero = -1;
       for (let j = buffer.length - 1; j >= 0; j--) {
         if (buffer[j] === 0) {
-          cut = j + 1;
+          lastZero = j;
           break;
         }
       }
-      return buffer.subarray(cut).slice();
+      return buffer.subarray(lastZero + 1).slice();
     }
 
     if (buffer.length < 4) return null;

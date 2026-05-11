@@ -63,22 +63,28 @@ export const pkcs1Format: FormatProvider = {
     key.setPublic(n, e);
   },
 
-  autoImport(key: RSAKey, data: string): boolean {
-    if (typeof data !== 'string') return false;
+  autoImport(key: RSAKey, data: unknown): boolean {
+    const text =
+      typeof data === 'string'
+        ? data
+        : data instanceof Uint8Array
+          ? new TextDecoder().decode(data)
+          : null;
+    if (text === null) return false;
     if (
       /^[\S\s]*-----BEGIN RSA PRIVATE KEY-----\s*(?=(([A-Za-z0-9+/=]+\s*)+))\1-----END RSA PRIVATE KEY-----[\S\s]*$/g.test(
-        data,
+        text,
       )
     ) {
-      pkcs1Format.privateImport?.(key, data);
+      pkcs1Format.privateImport?.(key, text);
       return true;
     }
     if (
       /^[\S\s]*-----BEGIN RSA PUBLIC KEY-----\s*(?=(([A-Za-z0-9+/=]+\s*)+))\1-----END RSA PUBLIC KEY-----[\S\s]*$/g.test(
-        data,
+        text,
       )
     ) {
-      pkcs1Format.publicImport?.(key, data);
+      pkcs1Format.publicImport?.(key, text);
       return true;
     }
     return false;
