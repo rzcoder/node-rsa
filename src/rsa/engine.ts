@@ -1,5 +1,7 @@
 import { BigInteger } from '../bigint/big-integer.js';
 import { concat } from '../crypto/bytes.js';
+import { pkcs1Scheme as pkcs1Provider } from '../schemes/pkcs1.js';
+import type { EncryptionScheme, SchemeOptions, SignatureScheme } from '../schemes/types.js';
 import type { RSAKey } from './key.js';
 
 /**
@@ -7,14 +9,17 @@ import type { RSAKey } from './key.js';
  * chunking, applying the encryption scheme's padding, and invoking the
  * RSA primitive (key.$doPublic / $doPrivate).
  *
+ * Type-1 path (encryptPrivate, decryptPublic) is *always* PKCS#1 v1.5,
+ * even when the configured encryptionScheme is OAEP — matches legacy
+ * v1's encryptEngines/js.js behaviour (it instantiated a dedicated
+ * pkcs1Scheme for the type-1 path).
+ *
  * Implementations:
  *  - JsEngine: always-available pure-JS path. Used in the browser bundle
  *    and as a fallback on Node when no native fast-path is wired (or when
  *    setOptions({environment:'browser'}) forces it).
- *  - NodeNativeEngine (added in Chapter 8): uses node:crypto's
- *    publicEncrypt / privateDecrypt / privateEncrypt / publicDecrypt for
- *    speed. Requires PEM-formatted keys, which depend on the formats
- *    module (Chapter 7).
+ *  - NodeNativeEngine: uses node:crypto.publicEncrypt / privateDecrypt /
+ *    privateEncrypt / publicDecrypt for speed.
  */
 export interface Engine {
   encrypt(buffer: Uint8Array, usePrivate?: boolean): Uint8Array;
@@ -22,7 +27,12 @@ export interface Engine {
 }
 
 export class JsEngine implements Engine {
-  constructor(private readonly key: RSAKey) {}
+  /** Always a PKCS#1 v1.5 scheme — used for usePrivate / usePublic paths. */
+  private readonly pkcs1: EncryptionScheme;
+
+  constructor(private readonly key: RSAKey) {
+    this.pkcs1 = pkcs1Provider.makeScheme(key, key.options) as EncryptionScheme & SignatureScheme;
+  }
 
   encrypt(buffer: Uint8Array, usePrivate = false): Uint8Array {
     const max = this.key.maxMessageLength;
@@ -41,8 +51,9 @@ export class JsEngine implements Engine {
 
     const out: Uint8Array[] = [];
     for (const chunk of chunks) {
-      const opts = usePrivate ? { type: 1 } : {};
-      const padded = this.key.encryptionScheme.encPad(chunk, opts);
+      const padded = usePrivate
+        ? this.pkcs1.encPad(chunk, { type: 1 })
+        : this.key.encryptionScheme.encPad(chunk);
       const bi = new BigInteger(padded);
       const result = usePrivate ? this.key.$doPrivate(bi) : this.key.$doPublic(bi);
       const bytes = result.toBuffer(this.key.encryptedDataLength);
@@ -67,11 +78,15 @@ export class JsEngine implements Engine {
       const result = usePublic ? this.key.$doPublic(bi) : this.key.$doPrivate(bi);
       const padded = result.toBuffer(chunkLen);
       if (!padded) throw new Error('Engine: RSA primitive returned oversize integer');
-      const opts = usePublic ? { type: 1 } : {};
-      const unpadded = this.key.encryptionScheme.encUnPad(padded, opts);
+      const unpadded = usePublic
+        ? this.pkcs1.encUnPad(padded, { type: 1 })
+        : this.key.encryptionScheme.encUnPad(padded);
       if (!unpadded) throw new Error('Decryption failed (invalid padding)');
       parts.push(unpadded);
     }
     return concat(...parts);
   }
 }
+
+// Re-export type for the SchemeOptions import that's used elsewhere
+export type { SchemeOptions };

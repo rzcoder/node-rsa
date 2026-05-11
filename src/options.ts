@@ -9,10 +9,31 @@ import type {
   SigningSchemeName,
 } from './types.js';
 
-export const SUPPORTED_HASH_ALGORITHMS: Record<Environment, ReadonlyArray<HashAlg>> = {
-  node: ['md4', 'md5', 'ripemd160', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'],
+const NODE_HASHES: ReadonlyArray<HashAlg> = [
+  'md4',
+  'md5',
+  'ripemd160',
+  'sha1',
+  'sha224',
+  'sha256',
+  'sha384',
+  'sha512',
+];
+
+// Legacy v1 exposed four environment values: 'node', 'browser', plus
+// 'node10' and 'iojs' as Node aliases (each retaining the same hash list).
+// v2 treats 'node10' and 'iojs' as 'node'-equivalents for the hash whitelist
+// so that any user setOptions({environment:'iojs'}) keeps working.
+export const SUPPORTED_HASH_ALGORITHMS: Record<string, ReadonlyArray<HashAlg>> = {
+  node: NODE_HASHES,
+  node10: NODE_HASHES,
+  iojs: NODE_HASHES,
   browser: ['md5', 'ripemd160', 'sha1', 'sha256', 'sha512'],
 };
+
+function allowedHashes(env: string): ReadonlyArray<HashAlg> {
+  return SUPPORTED_HASH_ALGORITHMS[env] ?? NODE_HASHES;
+}
 
 export const DEFAULT_ENCRYPTION_SCHEME: EncryptionSchemeName = 'pkcs1_oaep';
 export const DEFAULT_SIGNING_SCHEME: SigningSchemeName = 'pkcs1';
@@ -61,7 +82,7 @@ export function applyOptions(target: ResolvedOptions, options: NodeRSAOptions): 
     if (typeof options.signingScheme === 'string') {
       const parts = options.signingScheme.toLowerCase().split('-');
       if (parts.length === 1) {
-        if (SUPPORTED_HASH_ALGORITHMS.node.includes(parts[0] as HashAlg)) {
+        if (NODE_HASHES.includes(parts[0] as HashAlg)) {
           target.signingSchemeOptions = { hash: parts[0] as HashAlg };
           target.signingScheme = DEFAULT_SIGNING_SCHEME;
         } else {
@@ -84,7 +105,7 @@ export function applyOptions(target: ResolvedOptions, options: NodeRSAOptions): 
     }
     if (
       target.signingSchemeOptions.hash &&
-      !SUPPORTED_HASH_ALGORITHMS[target.environment].includes(target.signingSchemeOptions.hash)
+      !allowedHashes(target.environment).includes(target.signingSchemeOptions.hash)
     ) {
       throw new Error(`Unsupported hashing algorithm for ${target.environment} environment`);
     }
@@ -106,7 +127,7 @@ export function applyOptions(target: ResolvedOptions, options: NodeRSAOptions): 
     }
     if (
       target.encryptionSchemeOptions.hash &&
-      !SUPPORTED_HASH_ALGORITHMS[target.environment].includes(target.encryptionSchemeOptions.hash)
+      !allowedHashes(target.environment).includes(target.encryptionSchemeOptions.hash)
     ) {
       throw new Error(`Unsupported hashing algorithm for ${target.environment} environment`);
     }
