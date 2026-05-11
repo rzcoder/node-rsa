@@ -142,6 +142,7 @@ export class RSAKey {
       this.dmq1 = new BigInteger(DQ);
       this.coeff = new BigInteger(C);
     }
+    this.validateExponent();
     this.recalculateCache();
   }
 
@@ -151,12 +152,38 @@ export class RSAKey {
 
     this.n = new BigInteger(N);
     this.e = typeof E === 'number' ? E : readBigEndianUInt(E);
+    this.validateExponent();
     this.recalculateCache();
+  }
+
+  /**
+   * Audit fix H1: validate `e` after import. RFC 8017 §3.1 requires
+   * 1 < e < n with e odd. Accepting e=1 (ciphertext == plaintext), e=0,
+   * or even e (breaks RSA invertibility) leaves a downgrade vector open
+   * for malicious key imports.
+   *
+   * The e < n check is implicit for any realistic key (n ≥ 2^512 ≫ any
+   * JS-number-encodable e), so we only enforce e > 1 and oddness here.
+   */
+  private validateExponent(): void {
+    if (this.e <= 1) {
+      throw new Error('Invalid RSA exponent: e must be > 1');
+    }
+    if ((this.e & 1) === 0) {
+      throw new Error('Invalid RSA exponent: e must be odd');
+    }
   }
 
   /** x^d mod n, using CRT if p/q are available, otherwise direct. */
   $doPrivate(x: BigInteger): BigInteger {
     if (!this.n || !this.d) throw new Error('No private key');
+    // Audit fix H2: RFC 8017 §5.1.2 / §3.2 require the RSA primitive input
+    // to lie in [0, n-1]. Without this check, `x.mod(n)` would silently
+    // accept x≥n (creating ciphertext malleability c → c+kn) and any
+    // negative intermediate would corrupt CRT recombination.
+    if (x.signum() < 0 || x.compareTo(this.n) >= 0) {
+      throw new Error('RSA: input out of range (must be 0 ≤ x < n)');
+    }
     if (!this.p || !this.q || !this.dmp1 || !this.dmq1 || !this.coeff) {
       return x.modPow(this.d, this.n);
     }
@@ -169,6 +196,11 @@ export class RSAKey {
   /** x^e mod n. */
   $doPublic(x: BigInteger): BigInteger {
     if (!this.n) throw new Error('No public key');
+    // Audit fix H2: same RFC 8017 §5.2.2 / §3.2 input-range requirement
+    // as $doPrivate. Rejects s ≥ n on verify and m ≥ n on encrypt.
+    if (x.signum() < 0 || x.compareTo(this.n) >= 0) {
+      throw new Error('RSA: input out of range (must be 0 ≤ x < n)');
+    }
     return x.modPowInt(this.e, this.n);
   }
 
