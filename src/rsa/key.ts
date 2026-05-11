@@ -2,6 +2,10 @@ import { BigInteger } from '../bigint/big-integer.js';
 import type { CryptoBackend } from '../crypto/types.js';
 import type { EncryptionScheme, SchemeOptions, SignatureScheme } from '../schemes/types.js';
 
+// Audit fix H5: one-shot small-key warning. Module-level flag so repeated
+// calls during a test run (or legitimate small-key usage) don't spam stderr.
+let warnedSmallKey = false;
+
 /**
  * Asymmetric RSA key (public or private). Mirrors the v1 `RSAKey` shape so
  * the higher-level NodeRSA class can keep its surface unchanged.
@@ -64,6 +68,22 @@ export class RSAKey {
    * Matches v1's algorithm and RNG call pattern exactly.
    */
   generate(B: number, E: string): void {
+    // Audit fix H5: refuse cryptographically trivial sizes outright; emit a
+    // one-shot warning for sub-NIST sizes (below SP 800-56B §6.1.6.2's 2048-bit
+    // minimum for ≥112-bit symmetric strength). Tests / legacy compat may
+    // legitimately use 512–1024-bit keys; production code should not.
+    if (B < 512) {
+      throw new Error(
+        `Key size ${B} bits is cryptographically broken (< 512); refusing to generate`,
+      );
+    }
+    if (B < 2048 && !warnedSmallKey) {
+      warnedSmallKey = true;
+      // eslint-disable-next-line no-console
+      console.warn(
+        `node-rsa: generating ${B}-bit RSA key — below NIST SP 800-56B §6.1.6.2 minimum (2048 bits); not recommended for production`,
+      );
+    }
     const qs = B >> 1;
     this.e = Number.parseInt(E, 16);
     const ee = new BigInteger(E, 16);
@@ -73,6 +93,11 @@ export class RSAKey {
     // rounds for 1024-bit primes (n=2048-bit key) and ≥28 for ≥1536-bit primes.
     // We pick rounds by half-modulus bit length.
     const mrRounds = B >= 4096 ? 16 : B >= 3072 ? 28 : 40;
+    // Audit fix H6: FIPS 186-4 §B.3.6 — require |p − q| > 2^(B/2 − 100) so the
+    // modulus is not vulnerable to Fermat factoring. With CSPRNG-generated
+    // primes the rejection rate is ≈ 2⁻¹⁰⁰ per pair (effectively never), but
+    // omitting the check is a compliance gap.
+    const minPQDiff = BigInteger.ONE.shiftLeft((B >> 1) - 100);
     while (true) {
       while (true) {
         // Inner loop: `BigInteger(bits, 1)` runs fromNumber's sequential prime
@@ -101,6 +126,8 @@ export class RSAKey {
         this.p = this.q;
         this.q = t;
       }
+      // H6: regenerate the pair if p and q are too close.
+      if (this.p.subtract(this.q).compareTo(minPQDiff) < 0) continue;
       const p1 = this.p.subtract(BigInteger.ONE);
       const q1 = this.q.subtract(BigInteger.ONE);
       const phi = p1.multiply(q1);
