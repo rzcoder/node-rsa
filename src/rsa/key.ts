@@ -170,6 +170,7 @@ export class RSAKey {
       this.coeff = new BigInteger(C);
     }
     this.validateExponent();
+    this.validatePrivateConsistency();
     this.recalculateCache();
   }
 
@@ -198,6 +199,55 @@ export class RSAKey {
     }
     if ((this.e & 1) === 0) {
       throw new Error('Invalid RSA exponent: e must be odd');
+    }
+  }
+
+  /**
+   * Audit fix H3: validate private-key CRT parameter consistency on import.
+   *
+   * Without this check, a maliciously crafted PEM/PKCS#8/OpenSSH file can
+   * deliver components (p, q, dp, dq, qinv) that don't satisfy the RSA
+   * invariants. The danger isn't garbage decryption — that's caught at
+   * use time — but Boneh-DeMillo-Lipton fault-injection: with a corrupted
+   * private key, even one faulted signature gives the attacker
+   * gcd(s_correct − s_faulted, n), which factors n.
+   *
+   * Checks (skipped if CRT components weren't provided — basic n, e, d
+   * key still works, just without CRT):
+   *   1. n = p × q
+   *   2. dp = d mod (p − 1)
+   *   3. dq = d mod (q − 1)
+   *   4. q × coeff ≡ 1 (mod p)        (coeff = q⁻¹ mod p)
+   *   5. e × dp ≡ 1 (mod p − 1)       ⟹ e × d ≡ 1 (mod λ(n))
+   *   6. e × dq ≡ 1 (mod q − 1)
+   *
+   * Cost: a handful of multiplications + four mods — much less than one
+   * encrypt/decrypt. One-time on import.
+   */
+  private validatePrivateConsistency(): void {
+    if (!this.n || !this.d || !this.p || !this.q || !this.dmp1 || !this.dmq1 || !this.coeff) {
+      return;
+    }
+    if (this.p.multiply(this.q).compareTo(this.n) !== 0) {
+      throw new Error('RSA private key inconsistent: n ≠ p × q');
+    }
+    const p1 = this.p.subtract(BigInteger.ONE);
+    const q1 = this.q.subtract(BigInteger.ONE);
+    if (this.d.mod(p1).compareTo(this.dmp1) !== 0) {
+      throw new Error('RSA private key inconsistent: dp ≠ d mod (p − 1)');
+    }
+    if (this.d.mod(q1).compareTo(this.dmq1) !== 0) {
+      throw new Error('RSA private key inconsistent: dq ≠ d mod (q − 1)');
+    }
+    if (this.q.multiply(this.coeff).mod(this.p).compareTo(BigInteger.ONE) !== 0) {
+      throw new Error('RSA private key inconsistent: q × coeff ≢ 1 (mod p)');
+    }
+    const eBig = new BigInteger(this.e.toString(16), 16);
+    if (eBig.multiply(this.dmp1).mod(p1).compareTo(BigInteger.ONE) !== 0) {
+      throw new Error('RSA private key inconsistent: e × dp ≢ 1 (mod p − 1)');
+    }
+    if (eBig.multiply(this.dmq1).mod(q1).compareTo(BigInteger.ONE) !== 0) {
+      throw new Error('RSA private key inconsistent: e × dq ≢ 1 (mod q − 1)');
     }
   }
 
