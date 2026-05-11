@@ -1,0 +1,11 @@
+{
+  "name": "node-rsa-example-cjs",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node index.cjs"
+  },
+  "dependencies": {
+    "node-rsa": "file:../.."
+  }
+}

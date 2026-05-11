@@ -34,7 +34,8 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm run lint && npm run test && npm run build"
+    "check": "npm run typecheck && npm run lint && npm run test && npm run build && npm run check:bundle-size",
+    "check:bundle-size": "node scripts/check-bundle-size.mjs"
   },
   "repository": {
     "type": "git",

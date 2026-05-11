@@ -46,3 +46,12 @@ jobs:
             echo "::error::Browser bundle contains forbidden Node imports"
             exit 1
           fi
+
+      - name: Bundle size budget
+        run: npm run check:bundle-size
+
+      - name: Smoke test ESM example
+        run: cd examples/node-esm && npm install --no-package-lock && npm start
+
+      - name: Smoke test CJS example
+        run: cd examples/node-cjs && npm install --no-package-lock && npm start
