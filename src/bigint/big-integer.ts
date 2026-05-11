@@ -1101,7 +1101,11 @@ export class BigInteger {
     }
     if (v.compareTo(BigInteger.ONE) !== 0) return BigInteger.ZERO;
     if (d.compareTo(m) >= 0) return d.subtract(m);
+    // Normalize sign — extended Euclidean can leave d in (-m, m), or
+    // occasionally further negative; the legacy jsbn applies +m up to twice.
     if (d.signum() < 0) d.addTo(m, d);
+    else return d;
+    if (d.signum() < 0) return d.add(m);
     return d;
   }
 

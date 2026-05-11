@@ -606,19 +606,27 @@ describe('NodeRSA', () => {
     // ── Cross-environment compatibility ────────────────────────────────────
     // JsEngine (forced when env='browser') and NodeNativeEngine (env='node')
     // must produce interoperable ciphertexts for the same key.
+    //
+    // The legacy used `(function (i) { var key1, key2; it(...); it(...); })(i)`
+    // — an IIFE per data-bundle iteration — so each (encrypt, decrypt) pair
+    // had its own key1/key2. We get the same effect by declaring `let` bindings
+    // *inside* the for-of body: ES6 block scoping gives each iteration fresh
+    // bindings, and the encrypt/decrypt it() callbacks both close over the
+    // iteration-local pair. Without this, random key picking across iterations
+    // overwrites the shared variables and the decrypt test reads a key that
+    // doesn't match the ciphertext.
     describe('Compatibility of different environments', () => {
       for (const scheme of encryptSchemes) {
         const schemeLabel = typeof scheme === 'string' ? scheme : scheme.toString();
 
         // browser-encrypt → node-decrypt
-        const encryptedA: Record<string, Uint8Array> = {};
-        let key1A: NodeRSA;
-        let key2A: NodeRSA;
         for (const [name, suit] of Object.entries(dataBundle)) {
+          let key2A: NodeRSA;
+          let encryptedA: Uint8Array;
           it(`Encryption scheme: ${schemeLabel} \`encrypt()\` by browser ${name}`, () => {
             const idx = Math.floor(Math.random() * generatedKeys.length);
             const sourceKey = (generatedKeys[idx] as NodeRSA).exportKey();
-            key1A = new NodeRSA(sourceKey, {
+            const key1 = new NodeRSA(sourceKey, {
               environment: 'browser',
               encryptionScheme: scheme as 'pkcs1',
             });
@@ -626,14 +634,14 @@ describe('NodeRSA', () => {
               environment: 'node',
               encryptionScheme: scheme as 'pkcs1',
             });
-            encryptedA[name] = key1A.encrypt(suit.data) as Uint8Array;
-            assert(encryptedA[name] instanceof Uint8Array);
-            assert((encryptedA[name] as Uint8Array).length > 0);
+            encryptedA = key1.encrypt(suit.data) as Uint8Array;
+            assert(encryptedA instanceof Uint8Array);
+            assert(encryptedA.length > 0);
           });
 
           it(`Encryption scheme: ${schemeLabel} \`decrypt()\` by node ${name}`, () => {
             const enc = Array.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding;
-            const dec = key2A.decrypt(encryptedA[name] as Uint8Array, enc);
+            const dec = key2A.decrypt(encryptedA, enc);
             if (dec instanceof Uint8Array) {
               assert.equal(asHex(suit.data), asHex(dec));
             } else {
@@ -643,14 +651,13 @@ describe('NodeRSA', () => {
         }
 
         // node-encrypt → browser-decrypt
-        const encryptedB: Record<string, Uint8Array> = {};
-        let key1B: NodeRSA;
-        let key2B: NodeRSA;
         for (const [name, suit] of Object.entries(dataBundle)) {
+          let key2B: NodeRSA;
+          let encryptedB: Uint8Array;
           it(`Encryption scheme: ${schemeLabel} \`encrypt()\` by node ${name}. Scheme`, () => {
             const idx = Math.floor(Math.random() * generatedKeys.length);
             const sourceKey = (generatedKeys[idx] as NodeRSA).exportKey();
-            key1B = new NodeRSA(sourceKey, {
+            const key1 = new NodeRSA(sourceKey, {
               environment: 'node',
               encryptionScheme: scheme as 'pkcs1',
             });
@@ -658,14 +665,14 @@ describe('NodeRSA', () => {
               environment: 'browser',
               encryptionScheme: scheme as 'pkcs1',
             });
-            encryptedB[name] = key1B.encrypt(suit.data) as Uint8Array;
-            assert(encryptedB[name] instanceof Uint8Array);
-            assert((encryptedB[name] as Uint8Array).length > 0);
+            encryptedB = key1.encrypt(suit.data) as Uint8Array;
+            assert(encryptedB instanceof Uint8Array);
+            assert(encryptedB.length > 0);
           });
 
           it(`Encryption scheme: ${schemeLabel} \`decrypt()\` by browser ${name}`, () => {
             const enc = Array.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding;
-            const dec = key2B.decrypt(encryptedB[name] as Uint8Array, enc);
+            const dec = key2B.decrypt(encryptedB, enc);
             if (dec instanceof Uint8Array) {
               assert.equal(asHex(suit.data), asHex(dec));
             } else {
@@ -677,23 +684,22 @@ describe('NodeRSA', () => {
 
       describe('encryptPrivate & decryptPublic', () => {
         // browser-encryptPrivate → node-decryptPublic
-        const encryptedC: Record<string, Uint8Array> = {};
-        let key1C: NodeRSA;
-        let key2C: NodeRSA;
         for (const [name, suit] of Object.entries(dataBundle)) {
+          let key2C: NodeRSA;
+          let encryptedC: Uint8Array;
           it(`\`encryptPrivate()\` by browser ${name}`, () => {
             const idx = Math.floor(Math.random() * generatedKeys.length);
             const sourceKey = (generatedKeys[idx] as NodeRSA).exportKey();
-            key1C = new NodeRSA(sourceKey, { environment: 'browser' });
+            const key1 = new NodeRSA(sourceKey, { environment: 'browser' });
             key2C = new NodeRSA(sourceKey, { environment: 'node' });
-            encryptedC[name] = key1C.encryptPrivate(suit.data) as Uint8Array;
-            assert(encryptedC[name] instanceof Uint8Array);
-            assert((encryptedC[name] as Uint8Array).length > 0);
+            encryptedC = key1.encryptPrivate(suit.data) as Uint8Array;
+            assert(encryptedC instanceof Uint8Array);
+            assert(encryptedC.length > 0);
           });
 
           it(`\`decryptPublic()\` by node ${name}`, () => {
             const enc = Array.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding;
-            const dec = key2C.decryptPublic(encryptedC[name] as Uint8Array, enc);
+            const dec = key2C.decryptPublic(encryptedC, enc);
             if (dec instanceof Uint8Array) {
               assert.equal(asHex(suit.data), asHex(dec));
             } else {
@@ -703,25 +709,24 @@ describe('NodeRSA', () => {
         }
 
         // node-encryptPrivate → browser-decryptPublic
-        const encryptedD: Record<string, Uint8Array> = {};
-        let key1D: NodeRSA;
-        let key2D: NodeRSA;
         for (const [name, suit] of Object.entries(dataBundle)) {
+          let key2D: NodeRSA;
+          let encryptedD: Uint8Array;
           it(`\`encryptPrivate()\` by node ${name}`, () => {
             const idx = Math.floor(Math.random() * generatedKeys.length);
             const sourceKey = (generatedKeys[idx] as NodeRSA).exportKey();
-            // Note: legacy uses 'browser' for key1 here too (looks like a bug
-            // in v1's test, but porting verbatim).
-            key1D = new NodeRSA(sourceKey, { environment: 'browser' });
+            // Note: legacy uses environment:'browser' for key1 in this loop
+            // too — looks like a v1 test bug; porting verbatim.
+            const key1 = new NodeRSA(sourceKey, { environment: 'browser' });
             key2D = new NodeRSA(sourceKey, { environment: 'node' });
-            encryptedD[name] = key1D.encryptPrivate(suit.data) as Uint8Array;
-            assert(encryptedD[name] instanceof Uint8Array);
-            assert((encryptedD[name] as Uint8Array).length > 0);
+            encryptedD = key1.encryptPrivate(suit.data) as Uint8Array;
+            assert(encryptedD instanceof Uint8Array);
+            assert(encryptedD.length > 0);
           });
 
           it(`\`decryptPublic()\` by browser ${name}`, () => {
             const enc = Array.isArray(suit.encoding) ? suit.encoding[0] : suit.encoding;
-            const dec = key2D.decryptPublic(encryptedD[name] as Uint8Array, enc);
+            const dec = key2D.decryptPublic(encryptedD, enc);
             if (dec instanceof Uint8Array) {
               assert.equal(asHex(suit.data), asHex(dec));
             } else {
