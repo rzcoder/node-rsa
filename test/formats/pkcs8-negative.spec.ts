@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { DerWriter, OID } from '../../src/asn1/index.js';
-import { BigInteger, setBigIntegerBackend } from '../../src/bigint/big-integer.js';
+import { type BigInteger, setBigIntegerBackend } from '../../src/bigint/big-integer.js';
 import { nodeBackend } from '../../src/crypto/backend.node.js';
 import { encodePem } from '../../src/formats/pem.js';
 import NodeRSA from '../../src/index.node.js';
