@@ -175,9 +175,13 @@ describe('H5 — minimum key size guard on generate', () => {
     expect(() => new NodeRSA({ b: 504 })).toThrow(/cryptographically broken/);
   });
 
-  it('accepts B = 512 (legal but warned)', () => {
+  it('accepts B = 512 (legal but warned) and actually produces a usable key', () => {
     // 512-bit keys emit a one-shot console.warn but are not rejected; the
-    // legacy test suite uses them for speed.
-    expect(() => new NodeRSA({ b: 512 })).not.toThrow();
+    // legacy test suite uses them for speed. Verify the key is actually
+    // produced (not just that no error was thrown).
+    const k = new NodeRSA({ b: 512 });
+    expect(k.keyPair.n).not.toBeNull();
+    expect(k.keyPair.n!.bitLength()).toBe(512);
+    expect(k.isPrivate()).toBe(true);
   });
 });

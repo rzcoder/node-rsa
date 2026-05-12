@@ -28,13 +28,22 @@ beforeAll(() => {
 /**
  * Cross-validation suite. node-rsa and OpenSSL (via node:crypto) must agree
  * for every supported scheme × hash combination. This file is .node-only:
- * the browser-emulated workspace doesn't have node:crypto and the JS engine
- * is exercised independently by the regular spec files.
+ * the browser-emulated workspace doesn't have node:crypto.
  *
- * Each describe block runs N random message+key trials; with the fixture
- * 1024-bit key the suite is fast enough to keep in CI. Each iteration
- * exercises both directions (node-rsa produces → node:crypto consumes,
- * then reversed) where the scheme allows it.
+ * Engine routing caveat: on Node, encrypt/decrypt for OAEP and PKCS#1 v1.5
+ * route through NodeNativeEngine (OpenSSL) — NOT through the JS engine
+ * where the C4/C5/C2 constant-time fixes live. So the OAEP and PKCS#1
+ * encrypt/decrypt cases below validate INTEROP (round-trip correctness),
+ * not the JS-engine security paths. The dedicated JS-engine coverage lives
+ * in test/schemes/js-engine-security.spec.ts (which forces JsEngine via
+ * `environment: 'browser'` and runs in both workspaces).
+ *
+ * Sign/verify paths for both PKCS#1 v1.5 and PSS *do* run through the JS
+ * engine on Node — no native-engine equivalent exists — so those tests
+ * exercise pkcs1Scheme/pssScheme directly.
+ *
+ * Each describe block runs N random message trials; with the fixture
+ * 1024-bit key the suite is fast enough to keep in CI.
  */
 
 const ITERATIONS = 20;
