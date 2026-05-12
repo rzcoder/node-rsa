@@ -65,7 +65,7 @@ function parseHexNibble(c: number): number {
   if (c >= 0x30 && c <= 0x39) return c - 0x30;
   if (c >= 0x61 && c <= 0x66) return c - 0x61 + 10;
   if (c >= 0x41 && c <= 0x46) return c - 0x41 + 10;
-  throw new Error(`Invalid hex character: ${String.fromCharCode(c)}`);
+  throw new Error(`Invalid hex character: 0x${c.toString(16).padStart(2, '0')}`);
 }
 
 export function toBase64(bytes: Uint8Array): string {

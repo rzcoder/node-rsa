@@ -1,5 +1,5 @@
 import { BigInteger } from '../bigint/big-integer.js';
-import { concat, equals, fromHex } from '../crypto/bytes.js';
+import { concat, constantTimeEqual, fromHex } from '../crypto/bytes.js';
 import type { HashAlg } from '../crypto/types.js';
 import type { RSAKey } from '../rsa/key.js';
 import type { EncryptionScheme, SchemeOptions, SignatureScheme } from './types.js';
@@ -162,7 +162,7 @@ class Pkcs1Scheme implements EncryptionScheme, SignatureScheme {
       return false;
     }
     if (!m) return false;
-    return equals(m, padded);
+    return constantTimeEqual(m, padded);
   }
 
   pkcs1pad(hashBuf: Uint8Array, hashAlgorithm: HashAlg): Uint8Array {
