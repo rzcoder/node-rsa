@@ -1,4 +1,5 @@
 import { BigInteger } from '../bigint/big-integer.js';
+import { constantTimeEqual } from '../crypto/bytes.js';
 import { DIGEST_LENGTH } from '../crypto/digest-length.js';
 import type { HashAlg } from '../crypto/types.js';
 import type { RSAKey } from '../rsa/key.js';
@@ -96,7 +97,14 @@ class PssScheme implements SignatureScheme {
     return EM;
   }
 
-  /** EMSA-PSS-VERIFY — RFC 3447 §9.1.2 */
+  /**
+   * EMSA-PSS-VERIFY per RFC 8017 §9.1.2. All input-dependent checks
+   * (trailer byte, leftmost-bits zero, PS-zeros, separator 0x01, H == H')
+   * accumulate into a single `bad` flag with one `return bad === 0` at the
+   * end. PSS verify operates on public data, so this is hygiene rather
+   * than a tight side-channel requirement — but RFC step 11 mandates
+   * evaluating all checks before deciding.
+   */
   private emsaPssVerify(mHash: Uint8Array, EM: Uint8Array, emBits: number): boolean {
     const hash = this.hash();
     const mgf = this.mgf();
@@ -104,34 +112,52 @@ class PssScheme implements SignatureScheme {
     const hLen = DIGEST_LENGTH[hash];
     const emLen = Math.ceil(emBits / 8);
 
-    if (emLen < hLen + sLen + 2 || EM[EM.length - 1] !== 0xbc) return false;
+    // Geometry preconditions: configured by the caller, not derived from
+    // attacker input — early return is safe.
+    if (emLen < hLen + sLen + 2) return false;
+    if (EM.length !== emLen) return false;
+
+    let bad = 0;
+
+    // RFC step 4: trailer byte must be 0xbc.
+    bad |= (EM[EM.length - 1] as number) ^ 0xbc;
 
     const DB = EM.slice(0, emLen - hLen - 1);
-    let mask = 0;
     const bits = 8 * emLen - emBits;
-    for (let i = 0; i < bits; i++) mask |= 1 << (7 - i);
-    if (((DB[0] as number) & mask) !== 0) return false;
+
+    // RFC step 6: leftmost (8*emLen - emBits) bits of maskedDB[0] must be 0.
+    let topMask = 0;
+    for (let i = 0; i < bits; i++) topMask |= 1 << (7 - i);
+    bad |= (DB[0] as number) & topMask;
 
     const H = EM.subarray(emLen - hLen - 1, emLen - 1);
     const dbMask = mgf(H, DB.length, hash);
     for (let i = 0; i < DB.length; i++) DB[i] = (DB[i] as number) ^ (dbMask[i] as number);
 
+    // RFC step 9: zero the masked top bits of DB[0] after unmasking.
     const adjustedMask = 0xff ^ (((0xff >> (8 - bits)) << (8 - bits)) & 0xff);
     DB[0] = (DB[0] as number) & adjustedMask;
 
-    let i = 0;
-    while (i < DB.length && DB[i] === 0) i++;
-    if (DB[i] !== 1) return false;
+    // RFC step 10: DB = PS (all zeros) || 0x01 || salt, where
+    // |PS| = emLen - hLen - sLen - 2, so 0x01 sits at index |PS| of DB.
+    const sepIdx = emLen - hLen - sLen - 2;
+    for (let i = 0; i < DB.length; i++) {
+      const b = DB[i] as number;
+      if (i < sepIdx) bad |= b; // must be 0x00
+      else if (i === sepIdx) bad |= b ^ 0x01; // must be 0x01
+      // i > sepIdx: salt, no check (validated via H' below)
+    }
 
+    // RFC steps 12-13: recompute H' = Hash(0x00⁸ || mHash || salt) and compare.
     const salt = DB.subarray(DB.length - sLen);
     const mPrime = new Uint8Array(8 + hLen + sLen);
     mPrime.set(mHash, 8);
     mPrime.set(salt, 8 + mHash.length);
     const HPrime = this.options.backend.digest(hash, mPrime);
 
-    if (H.length !== HPrime.length) return false;
-    for (let j = 0; j < H.length; j++) if (H[j] !== HPrime[j]) return false;
-    return true;
+    bad |= constantTimeEqual(H, HPrime) ? 0 : 1;
+
+    return bad === 0;
   }
 }
 
