@@ -150,9 +150,7 @@ describe('H3 — private key CRT consistency validation', () => {
   it('accepts the unmodified valid key', () => {
     const c = loadComponents();
     const k = new RSAKey();
-    expect(() =>
-      k.setPrivate(c.n, c.e, c.d, c.p, c.q, c.dmp1, c.dmq1, c.coeff),
-    ).not.toThrow();
+    expect(() => k.setPrivate(c.n, c.e, c.d, c.p, c.q, c.dmp1, c.dmq1, c.coeff)).not.toThrow();
   });
 
   it('skips CRT validation when CRT components are absent', () => {

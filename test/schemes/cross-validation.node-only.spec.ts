@@ -1,10 +1,10 @@
 import {
   constants as cryptoConstants,
+  sign as nodeSign,
+  verify as nodeVerify,
   privateDecrypt,
   publicEncrypt,
   randomBytes,
-  sign as nodeSign,
-  verify as nodeVerify,
 } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -97,11 +97,16 @@ describe('PSS sign / verify ↔ node:crypto', () => {
       for (let i = 0; i < ITERATIONS; i++) {
         const msg = randomBytes(50 + Math.floor(Math.random() * 200));
         const sig = key.sign(msg) as Uint8Array;
-        const ok = nodeVerify(NODE_HASH[hash], msg, {
-          key: pem,
-          padding: cryptoConstants.RSA_PKCS1_PSS_PADDING,
-          saltLength: 20, // matches DEFAULT_SALT_LENGTH in src/schemes/pss.ts
-        }, sig);
+        const ok = nodeVerify(
+          NODE_HASH[hash],
+          msg,
+          {
+            key: pem,
+            padding: cryptoConstants.RSA_PKCS1_PSS_PADDING,
+            saltLength: 20, // matches DEFAULT_SALT_LENGTH in src/schemes/pss.ts
+          },
+          sig,
+        );
         expect(ok, `node:crypto failed to verify PSS-${hash} signature #${i}`).toBe(true);
       }
     });
