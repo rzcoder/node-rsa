@@ -64,7 +64,19 @@ export class DerReader {
       if (this.pos >= this.bytes.length) {
         throw new Error('DerReader: truncated length');
       }
-      len = (len << 8) | (this.bytes[this.pos++] as number);
+      const b = this.bytes[this.pos++] as number;
+      // X.690 §10.1: long-form length octets must be the minimum number
+      // necessary — no leading zeros.
+      if (i === 0 && b === 0 && numBytes > 1) {
+        throw new Error('DerReader: non-canonical length (leading zero in long-form)');
+      }
+      len = (len << 8) | b;
+    }
+    // X.690 §10.1: short-form is required when the value is < 128.
+    if (len < 128) {
+      throw new Error(
+        `DerReader: non-canonical length (long-form used for length ${len} < 128)`,
+      );
     }
     return len;
   }
@@ -76,7 +88,21 @@ export class DerReader {
 
   /** Read an INTEGER and return its raw value bytes (DER content). */
   readInteger(): Uint8Array {
-    return this.readTlv(Tag.INTEGER).value;
+    const bytes = this.readTlv(Tag.INTEGER).value;
+    if (bytes.length === 0) {
+      throw new Error('DerReader: INTEGER must have at least one content octet');
+    }
+    // X.690 §8.3.2: a leading 0x00 is allowed only when the next byte's MSB
+    // is set (sign-bit padding); a leading 0xff only when it's clear.
+    if (bytes.length >= 2) {
+      if (bytes[0] === 0x00 && (bytes[1]! & 0x80) === 0) {
+        throw new Error('DerReader: non-canonical INTEGER (redundant leading 0x00)');
+      }
+      if (bytes[0] === 0xff && (bytes[1]! & 0x80) !== 0) {
+        throw new Error('DerReader: non-canonical INTEGER (redundant leading 0xff)');
+      }
+    }
+    return bytes;
   }
 
   /**
