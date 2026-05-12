@@ -58,14 +58,27 @@ function findSecondSshRsa(bytes: Uint8Array): number {
 }
 
 describe('OpenSSH — M5 checkint validation', () => {
-  it('rejects OpenSSH private key with checkint mismatch', () => {
+  it('rejects checkint2 with a single-byte flip', () => {
     const validPem = readStr('id_rsa');
     const bytes = decodeOpenSshPem(validPem);
     const sshRsaPos = findSecondSshRsa(bytes);
-    // checkint2 occupies bytes [sshRsaPos - 4 .. sshRsaPos]. Flip the
-    // last byte so checkint2 != checkint1.
     const mutated = new Uint8Array(bytes);
-    mutated[sshRsaPos - 1] = (mutated[sshRsaPos - 1] as number) ^ 0xff;
+    // checkint2 occupies bytes [sshRsaPos - 4 .. sshRsaPos]. Flip the LSB.
+    mutated[sshRsaPos - 1] = (mutated[sshRsaPos - 1] as number) ^ 0x01;
+    const badPem = encodeOpenSshPem(mutated);
+    expect(() => new NodeRSA(badPem)).toThrow(/checksum mismatch/);
+  });
+
+  it('rejects checkint2 wholly replaced with a different value', () => {
+    const validPem = readStr('id_rsa');
+    const bytes = decodeOpenSshPem(validPem);
+    const sshRsaPos = findSecondSshRsa(bytes);
+    const mutated = new Uint8Array(bytes);
+    // Replace all 4 bytes of checkint2 — confirms the comparison covers the
+    // whole field, not just one byte.
+    for (let i = 0; i < 4; i++) {
+      mutated[sshRsaPos - 4 + i] = (mutated[sshRsaPos - 4 + i] as number) ^ 0xff;
+    }
     const badPem = encodeOpenSshPem(mutated);
     expect(() => new NodeRSA(badPem)).toThrow(/checksum mismatch/);
   });
@@ -93,13 +106,15 @@ describe('OpenSSH — M4 SshReader bounds-check', () => {
     expect(() => new NodeRSA(badPem)).toThrow(/exceeds buffer/);
   });
 
-  it('rejects OpenSSH key truncated mid-string', () => {
+  it('rejects OpenSSH key truncated mid-string with a bounds-check error', () => {
     const validPem = readStr('id_rsa');
     const bytes = decodeOpenSshPem(validPem);
-    // Truncate to first 100 bytes — the private section read will overrun.
+    // Truncate to first 100 bytes — the next length-prefixed read will see
+    // a length that exceeds the remaining buffer. The bounds check in
+    // SshReader.readString surfaces an "exceeds buffer" error.
     const truncated = bytes.subarray(0, 100);
     const badPem = encodeOpenSshPem(truncated);
-    expect(() => new NodeRSA(badPem)).toThrow();
+    expect(() => new NodeRSA(badPem)).toThrow(/exceeds buffer/);
   });
 });
 
