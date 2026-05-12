@@ -74,9 +74,7 @@ export class DerReader {
     }
     // X.690 §10.1: short-form is required when the value is < 128.
     if (len < 128) {
-      throw new Error(
-        `DerReader: non-canonical length (long-form used for length ${len} < 128)`,
-      );
+      throw new Error(`DerReader: non-canonical length (long-form used for length ${len} < 128)`);
     }
     return len;
   }
