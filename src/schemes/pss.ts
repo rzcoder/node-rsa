@@ -143,8 +143,11 @@ class PssScheme implements SignatureScheme {
     const sepIdx = emLen - hLen - sLen - 2;
     for (let i = 0; i < DB.length; i++) {
       const b = DB[i] as number;
-      if (i < sepIdx) bad |= b; // must be 0x00
-      else if (i === sepIdx) bad |= b ^ 0x01; // must be 0x01
+      if (i < sepIdx) {
+        bad |= b; // must be 0x00
+      } else if (i === sepIdx) {
+        bad |= b ^ 0x01; // must be 0x01
+      }
       // i > sepIdx: salt, no check (validated via H' below)
     }
 

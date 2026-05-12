@@ -96,12 +96,31 @@ import NodeRSA from 'node-rsa/dist/index.browser.js';
 
 ## Schemes & hash algorithms
 
-* **Encryption**: `pkcs1` (v1.5), `pkcs1_oaep` (default), or `pkcs1` with
-  `padding: 3` for RSA_NO_PADDING.
-* **Signing**: `pkcs1` (default, hash sha256), `pss` (default hash sha1).
+* **Encryption**: `pkcs1` (v1.5 — see security note below), `pkcs1_oaep`
+  (default), or `pkcs1` with `padding: 3` for RSA_NO_PADDING.
+* **Signing**: `pss` (default, hash sha256), `pkcs1` (PKCS#1 v1.5, hash
+  sha256). The default was `pkcs1` in v1 and v2.0; v2.1 switched it to
+  `pss` — see CHANGELOG and MIGRATION for details.
 * **Hashes (Node)**: md5, ripemd160, sha1, sha224, sha256, sha384, sha512.
-  MD4 is supported only if OpenSSL's legacy provider is loaded.
+  MD4 is supported only if OpenSSL's legacy provider is loaded
+  (`node --openssl-legacy-provider`) and is unavailable in the browser
+  bundle entirely.
 * **Hashes (browser)**: md5, ripemd160, sha1, sha256, sha384, sha512.
+
+## Security notes
+
+* **PKCS#1 v1.5 encryption** (`encryptionScheme: 'pkcs1'`) is vulnerable to
+  Bleichenbacher-style padding-oracle attacks if used to decrypt untrusted
+  ciphertexts. The library closes the internal differential timing leak but
+  cannot eliminate the binary valid/invalid oracle inherent to the scheme.
+  Use `pkcs1_oaep` (the default) for new code and any path that handles
+  attacker-controlled ciphertexts.
+* **Private operations are blinded** (Kocher 1996 defence) to mask the
+  variable-time `modPow` from timing attackers. In Node, the native engine
+  also routes through OpenSSL's constant-time path where available. In the
+  browser, the pure-JS `modPow` is not strictly constant-time even with
+  blinding — avoid this library for long-lived server keys exposed to
+  shared-CPU attackers.
 
 ## Versioning
 
