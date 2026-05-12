@@ -14,8 +14,17 @@ export function trimSurroundingText(data: string, opening: string, closing: stri
   let start = 0;
   let end = data.length;
   const openIdx = data.indexOf(opening);
+  const closeIdx = openIdx >= 0 ? data.indexOf(closing, openIdx) : -1;
+  // Reject ambiguous multi-block input: a second BEGIN marker after the
+  // first END means the file contains more than one key block. RFC 7468
+  // §3 best practice is one block per file; ambiguity invites tampering.
+  if (openIdx >= 0 && closeIdx >= 0) {
+    const secondOpen = data.indexOf(opening, closeIdx + closing.length);
+    if (secondOpen >= 0) {
+      throw new Error(`PEM: multiple ${opening} blocks — refusing ambiguous input`);
+    }
+  }
   if (openIdx >= 0) start = openIdx + opening.length;
-  const closeIdx = data.indexOf(closing, openIdx);
   if (closeIdx >= 0) end = closeIdx;
   return data.substring(start, end);
 }
