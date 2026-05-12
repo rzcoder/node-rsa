@@ -1,13 +1,54 @@
-# Migrating from node-rsa v1 to v2
+# Migrating from node-rsa v1 / v2.0 to v2.1+
 
 ## TL;DR
 
-For most Node.js consumers, **change nothing**. The public API is the same.
-Make sure your Node runtime is ≥ 20 and rebuild.
+* **v1 → v2.0**: bump Node to ≥ 20; everything else below in Steps 1–7.
+* **v2.0 → v2.1**: one source-level change — the default signing scheme
+  switched from PKCS#1 v1.5 to RSASSA-PSS. If you rely on the default
+  (i.e. call `key.sign(...)` without an explicit `signingScheme`),
+  either accept the switch (recommended — PSS is modern best practice)
+  or pin to v1.5 explicitly. See [v2.0 → v2.1](#v20--v21-default-signing-scheme).
 
 For browser bundlers (Vite, Webpack 5, Rollup, esbuild, Parcel), **delete
 any Buffer/crypto/process shims** you set up for v1 — they're no longer
 needed and may interfere.
+
+## v2.0 → v2.1: default signing scheme
+
+`DEFAULT_SIGNING_SCHEME` changed from `'pkcs1'` to `'pss'` in 2.1. This
+matters in two cases:
+
+1. **You call `key.sign()` without an explicit scheme and someone else
+   verifies the signature.** They'll be expecting PSS, not PKCS#1 v1.5.
+   Either coordinate the switch or pin explicitly:
+
+   ```ts
+   const key = new NodeRSA(pem, { signingScheme: 'pkcs1' });
+   //                              ^^^^^^^^^^^^^^^^^^^^^^^^
+   //         keeps v2.0 default; remove this line to accept the v2.1 default
+   ```
+
+2. **You used the bare-hash shorthand** `signingScheme: 'sha256'`. The
+   shorthand maps to "default scheme + that hash", so before 2.1 it meant
+   `pkcs1-sha256`; now it means `pss-sha256`. Spell out the scheme
+   to keep behaviour:
+
+   ```ts
+   new NodeRSA(null, { signingScheme: 'pkcs1-sha256' });
+   ```
+
+Round-trip in-process (`key.sign()` then `key.verify()` on the same
+`NodeRSA` instance, no `setOptions` between them) is unaffected — both
+sides see the same default and round-trip cleanly. Cross-version
+verification (sign in 2.0, verify in 2.1, or vice versa) requires an
+explicit scheme on at least one side.
+
+There are no other source-level changes between 2.0 and 2.1. The rest of
+this document is the original v1 → v2.0 migration.
+
+---
+
+# Migrating from node-rsa v1 to v2.0
 
 ## Step 1: bump Node
 

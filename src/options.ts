@@ -36,7 +36,11 @@ function allowedHashes(env: string): ReadonlyArray<HashAlg> {
 }
 
 export const DEFAULT_ENCRYPTION_SCHEME: EncryptionSchemeName = 'pkcs1_oaep';
-export const DEFAULT_SIGNING_SCHEME: SigningSchemeName = 'pkcs1';
+// v2.1: switched from 'pkcs1' (PKCS#1 v1.5) to 'pss' (RSASSA-PSS). PSS is
+// the modern best-practice signing scheme — probabilistic, with provable
+// security reduction. Callers wanting the legacy default should set
+// `signingScheme: 'pkcs1'` explicitly.
+export const DEFAULT_SIGNING_SCHEME: SigningSchemeName = 'pss';
 
 export const EXPORT_FORMAT_ALIASES: Record<string, string> = {
   private: 'pkcs1-private-pem',

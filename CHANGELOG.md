@@ -1,5 +1,83 @@
 # Changelog
 
+## 2.1.0 — Security audit fixes
+
+A multi-agent security audit (cryptography, exploitability, RFC/FIPS
+compliance) was run against v2.0.0 and produced a list of findings; this
+release closes all Tier 0 (critical / high) and Tier 1 (defence-in-depth)
+items. No public-API breakage other than the default-signing-scheme
+switch noted below.
+
+### Breaking change
+
+- **Default signing scheme switched from `pkcs1` (PKCS#1 v1.5) to `pss`
+  (RSASSA-PSS).** PSS is the modern best-practice signing scheme — it
+  has a tighter security reduction and is preferred by RFC 8017 / NIST
+  for new code. Existing signatures produced under the v1.5 default
+  remain verifiable by passing `signingScheme: 'pkcs1'` explicitly.
+
+  ```ts
+  // v2.0 behaviour (sign with PKCS#1 v1.5 by default):
+  const key = new NodeRSA();        // default = pkcs1
+  const sig = key.sign('msg');
+
+  // v2.1 reproduction:
+  const key = new NodeRSA(null, { signingScheme: 'pkcs1' });
+  const sig = key.sign('msg');
+  ```
+
+  The bare-hash shorthand `setOptions({ signingScheme: 'sha256' })`
+  also now resolves to `pss-sha256` (was `pkcs1-sha256`). Set
+  `signingScheme: 'pkcs1-sha256'` explicitly to keep v2.0 behaviour.
+
+### Security fixes (no API change)
+
+- **OAEP decode is now constant-time** (RFC 8017 §7.1.2). Closes a Manger-
+  style padding-oracle (~10⁵ queries to recover plaintext given a timing
+  oracle). Includes a missing `Y == 0x00` check on the leading byte and a
+  post-decode message-length bound.
+- **PKCS#1 v1.5 decode is now constant-time** internally (RFC 8017 §7.2.2,
+  Bleichenbacher / ROBOT). Closes the internal differential timing oracle;
+  the valid/invalid binary oracle inherent to PKCS#1 v1.5 remains — use
+  OAEP for untrusted ciphertexts (the README has a security note).
+- **PSS verify is now constant-time** (RFC 8017 §9.1.2 step 11).
+- **Private-key operations are blinded** (Kocher 1996 / Brumley-Boneh
+  2003 defence). Fresh `r ← random coprime to n` masks the variable-time
+  `modPow` from any timing leak on `d`, `dmp1`, or `dmq1`.
+- **Miller-Rabin uses CSPRNG witnesses** in [2, n-2] (was `Math.random()`
+  over a 168-element fixed table — adversarial-pseudoprime risk) and now
+  honours the caller's full round count (was silently halved). Keygen
+  picks adaptive rounds by bit length per FIPS 186-4 Table C.3.
+- **Public exponent validated on import**: `1 < e` with e odd
+  (RFC 8017 §3.1).
+- **RSA primitive bounds-check**: `0 ≤ x < n` enforced in both
+  `$doPrivate` and `$doPublic` (RFC 8017 §3.2). `verify()` translates
+  the resulting out-of-range error to "invalid signature" per §8.x.
+- **Imported private keys are CRT-consistency-checked**: `n = p·q`,
+  `dp ≡ d mod (p−1)`, `dq ≡ d mod (q−1)`, `q·coeff ≡ 1 mod p`,
+  `e·dp ≡ 1 mod (p−1)`, `e·dq ≡ 1 mod (q−1)`. Closes a Boneh-DeMillo-
+  Lipton fault-injection vector on crafted PEM/PKCS#8/OpenSSH files.
+- **`generate(B)` refuses `B < 512`** (cryptographically broken) and
+  emits a one-shot `console.warn` for `B < 2048` (below NIST SP 800-56B
+  §6.1.6.2 minimum).
+- **Fermat-distance defence**: keygen rejects p, q pairs with
+  `|p − q| < 2^(B/2 − 100)` (FIPS 186-4 §B.3.6).
+- **CRT recombination is branch-free**: removed the data-dependent
+  `while (xp < xq) xp += p` loop.
+- **OpenSSH parser hardening**: `SshReader.readString` bounds-checks
+  before `subarray`; the two private-section checkints (`checkint1`,
+  `checkint2`) are now validated for equality.
+- **PKCS#8 parser hardening**: outer version validated against
+  {0, 1} (RFC 5958 §2); inner PKCS#1 version restricted to two-prime
+  (RFC 8017 §A.1.2); algorithm OID whitelist with clear diagnostics for
+  PSS-only (1.2.840.113549.1.1.10) and OAEP-only (.1.1.7) misuse.
+
+### Audit document
+
+The full audit, peer review, and remediation plan live at
+[`docs/security-audit-v2.1.md`](docs/security-audit-v2.1.md) (TBD —
+to be moved into the repo before tagging).
+
 ## 2.0.0 — TypeScript rewrite
 
 Full rewrite of the v1 library in TypeScript with the same public API.

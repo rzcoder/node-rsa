@@ -137,7 +137,8 @@ describe('NodeRSA', () => {
     it('should make empty key pair with default options', () => {
       const key = new NodeRSA(null);
       assert.equal(key.isEmpty(), true);
-      assert.equal(key.$options.signingScheme, 'pkcs1');
+      // v2.1: default signing scheme switched from 'pkcs1' to 'pss'.
+      assert.equal(key.$options.signingScheme, 'pss');
       assert.equal(key.$options.signingSchemeOptions.hash, 'sha256');
       assert.equal(key.$options.signingSchemeOptions.saltLength, undefined);
 
@@ -146,9 +147,11 @@ describe('NodeRSA', () => {
       assert.equal(key.$options.encryptionSchemeOptions.label, undefined);
     });
 
-    it('should make key pair with pkcs1-md5 signing scheme', () => {
+    it('should make key pair with pss-md5 signing scheme via bare-hash shorthand', () => {
+      // Bare `'md5'` parses as "default scheme + md5 hash"; default switched
+      // from 'pkcs1' to 'pss' in v2.1.
       const key = new NodeRSA(null, { signingScheme: 'md5' });
-      assert.equal(key.$options.signingScheme, 'pkcs1');
+      assert.equal(key.$options.signingScheme, 'pss');
       assert.equal(key.$options.signingSchemeOptions.hash, 'md5');
     });
 
@@ -202,7 +205,7 @@ describe('NodeRSA', () => {
     it("should throw 'unsupported hashing algorithm' exception", () => {
       const key = new NodeRSA(null);
       assert.equal(key.isEmpty(), true);
-      assert.equal(key.$options.signingScheme, 'pkcs1');
+      assert.equal(key.$options.signingScheme, 'pss');
       assert.equal(key.$options.signingSchemeOptions.hash, 'sha256');
       assert.throws(() => {
         key.setOptions({ environment: 'browser', signingScheme: 'md4' });
