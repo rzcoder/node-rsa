@@ -1,35 +1,8 @@
-import { fromBase64, fromUtf8, toBase64, toUtf8 } from '../crypto/bytes.js';
+import { fromBase64, toBase64 } from '../crypto/bytes.js';
+import { linebrk, trimSurroundingText } from '../utils/text-utils.js';
+import type { ImportOptions } from './types.js';
 
-export function linebrk(str: string, maxLen: number): string {
-  let out = '';
-  let i = 0;
-  while (i + maxLen < str.length) {
-    out += `${str.substring(i, i + maxLen)}\n`;
-    i += maxLen;
-  }
-  return out + str.substring(i);
-}
-
-export function trimSurroundingText(data: string, opening: string, closing: string): string {
-  let start = 0;
-  let end = data.length;
-  const openIdx = data.indexOf(opening);
-  const closeIdx = openIdx >= 0 ? data.indexOf(closing, openIdx) : -1;
-  // Reject ambiguous multi-block input: a second BEGIN marker after the
-  // first END means the file contains more than one key block. RFC 7468
-  // §3 best practice is one block per file; ambiguity invites tampering.
-  if (openIdx >= 0 && closeIdx >= 0) {
-    const secondOpen = data.indexOf(opening, closeIdx + closing.length);
-    if (secondOpen >= 0) {
-      throw new Error(`PEM: multiple ${opening} blocks — refusing ambiguous input`);
-    }
-  }
-  if (openIdx >= 0) start = openIdx + opening.length;
-  if (closeIdx >= 0) end = closeIdx;
-  return data.substring(start, end);
-}
-
-/** Wrap raw DER bytes in a PEM container. */
+/** Wrap raw DER bytes in a PEM container (base64 body line-wrapped at `lineLength`, default 64). */
 export function encodePem(
   body: Uint8Array,
   opening: string,
@@ -48,10 +21,26 @@ export function decodePem(text: string, opening: string, closing: string): Uint8
   return fromBase64(trimmed);
 }
 
-export function bytesToUtf8(bytes: Uint8Array): string {
-  return toUtf8(bytes);
-}
-
-export function utf8ToBytes(s: string): Uint8Array {
-  return fromUtf8(s);
+/**
+ * Normalize import input to raw bytes. `options.type === 'der'` requires
+ * a `Uint8Array`; otherwise the input is treated as PEM text (string or
+ * UTF-8-decoded bytes) and routed through {@link decodePem}.
+ */
+export function resolveBytes(
+  data: Uint8Array | string,
+  options: ImportOptions,
+  opening: string,
+  closing: string,
+): Uint8Array {
+  if (options.type === 'der') {
+    if (data instanceof Uint8Array) return data;
+    throw new Error('Unsupported key format');
+  }
+  if (data instanceof Uint8Array) {
+    return decodePem(new TextDecoder().decode(data), opening, closing);
+  }
+  if (typeof data === 'string') {
+    return decodePem(data, opening, closing);
+  }
+  throw new Error('Unsupported key format');
 }

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { setBigIntegerBackend } from '../../src/bigint/big-integer.js';
 import { nodeBackend } from '../../src/crypto/backend.node.js';
-import { decodePem, trimSurroundingText } from '../../src/formats/pem.js';
+import { decodePem } from '../../src/formats/pem.js';
 import NodeRSAClass from '../../src/index.node.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -102,24 +102,5 @@ describe('PEM — header / footer mismatches', () => {
     // Importing private fixture with a public BEGIN: detectors prefer
     // public route → eventually the body fails to parse as a SubjectPublicKeyInfo.
     expect(() => new NodeRSAClass(body)).toThrow();
-  });
-});
-
-describe('trimSurroundingText — boundary conditions', () => {
-  it('extracts content between first BEGIN and first END', () => {
-    const text = `prefix${OPEN}body${CLOSE}suffix`;
-    expect(trimSurroundingText(text, OPEN, CLOSE)).toBe('body');
-  });
-
-  it('extracts entire content when neither marker present', () => {
-    expect(trimSurroundingText('no markers here', OPEN, CLOSE)).toBe('no markers here');
-  });
-
-  it('extracts trailing content when only BEGIN is present', () => {
-    expect(trimSurroundingText(`prefix${OPEN}tail`, OPEN, CLOSE)).toBe('tail');
-  });
-
-  it('extracts leading content when only END is present', () => {
-    expect(trimSurroundingText(`head${CLOSE}suffix`, OPEN, CLOSE)).toBe(`head${CLOSE}suffix`);
   });
 });
