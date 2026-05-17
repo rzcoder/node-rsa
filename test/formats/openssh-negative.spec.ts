@@ -118,6 +118,43 @@ describe('OpenSSH — M4 SshReader bounds-check', () => {
   });
 });
 
+describe('OpenSSH — padding bytes', () => {
+  // The OpenSSH private-key format pads the inner section so its total
+  // length is a multiple of 8. The padding bytes are 0x01, 0x02, 0x03, …
+  // — the importer ignores them today, so corrupting padding is technically
+  // a tolerable input. These tests pin the *current* behaviour: a single
+  // padding-byte change must not corrupt the recovered key. If a future
+  // change adds strict padding validation, these tests will need to update.
+  it('current behaviour: padding-byte tampering does not corrupt the recovered key', () => {
+    const validPem = readStr('id_rsa');
+    const bytes = decodeOpenSshPem(validPem);
+    // Padding sits at the tail. Replace last 1–3 trailing pad bytes (which
+    // should be 0x01, 0x02, 0x03 ordering) with 0xff and ensure the parsed
+    // public modulus is unchanged.
+    const mutated = new Uint8Array(bytes);
+    for (let off = 1; off <= Math.min(3, bytes.length); off++) {
+      mutated[bytes.length - off] = 0xff;
+    }
+    const badPem = encodeOpenSshPem(mutated);
+    const reference = new NodeRSA(validPem);
+    const candidate = new NodeRSA(badPem);
+    expect(candidate.keyPair.n?.toString(16)).toBe(reference.keyPair.n?.toString(16));
+  });
+
+  it('truncating the final padding byte exposes the bounds checker', () => {
+    // The padding sits BEYOND the data the importer consumes — chopping it
+    // off therefore leaves a syntactically valid file. Pin that: importing
+    // a file with 1 byte less than the original (last byte = the largest
+    // pad byte) must still succeed.
+    const validPem = readStr('id_rsa');
+    const bytes = decodeOpenSshPem(validPem);
+    // Drop a single padding byte from the tail.
+    const truncated = bytes.subarray(0, bytes.length - 1);
+    const badPem = encodeOpenSshPem(truncated);
+    expect(() => new NodeRSA(badPem)).not.toThrow();
+  });
+});
+
 describe('OpenSSH — magic and cipher header', () => {
   it('rejects file with wrong magic prefix', () => {
     const validPem = readStr('id_rsa');

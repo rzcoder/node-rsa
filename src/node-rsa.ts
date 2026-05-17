@@ -15,11 +15,30 @@ import type {
   ResolvedOptions,
 } from './types.js';
 
+interface SchemeProviderLike {
+  isEncryption: boolean;
+  isSignature: boolean;
+  makeScheme(key: RSAKey, options: SchemeOptions): unknown;
+}
+
 interface NodeRSAInternal {
   environment: Environment;
   backend: CryptoBackend;
   /** Optional engine factory (e.g. NodeNativeEngine). Falls back to JsEngine. */
   engineFor?: (key: RSAKey, options: ResolvedOptions) => Engine;
+  /**
+   * Optional native key generator (e.g. node:crypto.generateKeyPairSync).
+   * If absent, NodeRSA.generateKeyPair falls back to the pure-JS
+   * RSAKey.generate path.
+   */
+  keygenFor?: (key: RSAKey, bits: number, expHex: string) => void;
+  /**
+   * Optional override of the default SCHEMES registry. The node bundle
+   * passes a map with PKCS1 + PSS replaced by node:crypto-backed wrappers.
+   * Bypassed when the user forces environment:'browser' at runtime so
+   * setOptions can route back to the JS implementations.
+   */
+  schemes?: Record<string, SchemeProviderLike>;
 }
 
 let internal: NodeRSAInternal | undefined;
@@ -65,6 +84,14 @@ export class NodeRSA {
     this.$options = makeDefaultOptions(env);
     this.keyPair = new RSAKey();
 
+    // Apply user options BEFORE touching BigInteger so settings like
+    // `bigIntImpl` take effect during importKey/generateKeyPair. The keyPair
+    // is still empty here, so rewireScheme is a no-op-ish wire-up and safe.
+    if (opts) {
+      applyOptions(this.$options, opts);
+      this.rewireScheme();
+    }
+
     if (key instanceof Uint8Array || typeof key === 'string') {
       this.importKey(key, fmt);
     } else if (key && typeof key === 'object') {
@@ -72,11 +99,21 @@ export class NodeRSA {
       this.generateKeyPair(gen.b, gen.e);
     }
 
-    if (opts) this.setOptions(opts);
-    else this.rewireScheme();
+    if (!opts && !key) this.rewireScheme();
   }
 
   setOptions(options: NodeRSAOptions): this {
+    if (
+      options.bigIntImpl &&
+      options.bigIntImpl !== this.$options.bigIntImpl &&
+      this.keyPair.n != null
+    ) {
+      // Existing BigInteger components carry the old impl's class identity.
+      // Switching now would mix impls inside one key — broken arithmetic.
+      throw new Error(
+        'NodeRSA: bigIntImpl can only be set on a fresh instance (before importKey / generateKeyPair). Pass it in the constructor options, or set it before importing.',
+      );
+    }
     applyOptions(this.$options, options);
     this.rewireScheme();
     return this;
@@ -84,7 +121,16 @@ export class NodeRSA {
 
   generateKeyPair(bits = 2048, exp = 65537): this {
     if (bits % 8 !== 0) throw new Error('Key size must be a multiple of 8.');
-    this.keyPair.generate(bits, exp.toString(16));
+    const cfg = getInternal();
+    const expHex = exp.toString(16);
+    // Native fast-path (node bundle wires keygenFor → node:crypto.generateKeyPairSync,
+    // ~20–50× faster than RSAKey.generate for keys ≥ 2048 bits). The browser bundle
+    // doesn't wire it and falls back to the pure-JS path.
+    if (cfg.keygenFor && this.$options.environment !== 'browser') {
+      cfg.keygenFor(this.keyPair, bits, expHex);
+    } else {
+      this.keyPair.generate(bits, expHex);
+    }
     this.$cache = {};
     this.rewireScheme();
     return this;
@@ -224,15 +270,22 @@ export class NodeRSA {
   }
 
   private rewireScheme(): void {
+    const cfg = getInternal();
     const opts: SchemeOptions = {
       signingScheme: this.$options.signingScheme,
       encryptionScheme: this.$options.encryptionScheme,
       signingSchemeOptions: this.$options.signingSchemeOptions,
       encryptionSchemeOptions: this.$options.encryptionSchemeOptions,
       environment: this.$options.environment,
-      backend: getInternal().backend,
+      backend: cfg.backend,
     };
-    this.keyPair.setOptions(opts, SCHEMES);
+    // When the user forces environment:'browser' on the node bundle, revert
+    // to the pure-JS SCHEMES so signing also goes through the JS path —
+    // otherwise sign/verify would still use node:crypto while the engine
+    // uses JsEngine, defeating the override.
+    const forcedJs = this.$options.environment === 'browser';
+    const schemes = forcedJs ? SCHEMES : (cfg.schemes ?? SCHEMES);
+    this.keyPair.setOptions(opts, schemes);
     this.engine = null;
   }
 

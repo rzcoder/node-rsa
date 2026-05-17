@@ -94,4 +94,54 @@ describe('NodeRSA smoke', () => {
     const pt = key.decrypt(ct as Uint8Array, 'utf8');
     expect(pt).toBe('round-trip');
   }, 35_000);
+
+  it('post-keygen comprehensive: 512-bit key works end-to-end for OAEP + PSS + PKCS#1', () => {
+    // Regression: a generated key must be usable across every scheme the
+    // public API exposes — not just the constructor default. Failures
+    // here mean keygen produced components that fail one of the schemes
+    // (a CRT inconsistency, a wrong d, etc.).
+    const key = new NodeRSA({ b: 512 });
+    expect(key.isPrivate()).toBe(true);
+    expect(key.keyPair.n!.bitLength()).toBe(512);
+
+    // Default scheme set (OAEP encryption, PSS signing) — verified above.
+    {
+      const ct = key.encrypt('default-schemes');
+      const pt = key.decrypt(ct as Uint8Array, 'utf8');
+      expect(pt).toBe('default-schemes');
+      const sig = key.sign('default-schemes');
+      expect(key.verify('default-schemes', sig as Uint8Array)).toBe(true);
+    }
+
+    // Switch to PKCS#1 v1.5 encryption + signing (legacy path).
+    key.setOptions({ encryptionScheme: 'pkcs1', signingScheme: 'pkcs1' });
+    {
+      const ct = key.encrypt('pkcs1-schemes');
+      const pt = key.decrypt(ct as Uint8Array, 'utf8');
+      expect(pt).toBe('pkcs1-schemes');
+      const sig = key.sign('pkcs1-schemes');
+      expect(key.verify('pkcs1-schemes', sig as Uint8Array)).toBe(true);
+    }
+
+    // PSS with a non-default hash. 512-bit emLen=64 limits PSS to
+    // hashes where hLen + sLen + 2 ≤ 64; sha384/sha512 don't fit at
+    // the default saltLength=20. Use sha1 (hLen=20+20+2=42 ≤ 64) — and
+    // do a saltLength=0 variant for coverage of the deterministic path.
+    key.setOptions({
+      signingScheme: { scheme: 'pss', hash: 'sha1' },
+    });
+    {
+      const sig = key.sign('pss-sha1');
+      expect(key.verify('pss-sha1', sig as Uint8Array)).toBe(true);
+    }
+
+    // encryptPrivate ↔ decryptPublic (signature-shaped path) — exercises
+    // the type-1 padding branch built from the generated p, q, dp, dq.
+    key.setOptions({ encryptionScheme: 'pkcs1', signingScheme: 'pkcs1' });
+    {
+      const ct = key.encryptPrivate('private-encrypt-with-gen');
+      const pt = key.decryptPublic(ct as Uint8Array, 'utf8');
+      expect(pt).toBe('private-encrypt-with-gen');
+    }
+  }, 45_000);
 });

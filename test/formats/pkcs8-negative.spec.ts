@@ -149,3 +149,43 @@ describe('PKCS#8 — M7 version validation', () => {
     expect(() => new NodeRSA(pem)).not.toThrow();
   });
 });
+
+describe('PKCS#8 — encrypted PrivateKeyInfo rejection', () => {
+  // RFC 5958 §3 defines EncryptedPrivateKeyInfo as a separate ASN.1
+  // structure wrapped in `-----BEGIN ENCRYPTED PRIVATE KEY-----`. We
+  // don't support encrypted PEMs (no passphrase API); importing one
+  // should fail cleanly rather than half-parse an OctetString that's
+  // actually ciphertext.
+  it('rejects -----BEGIN ENCRYPTED PRIVATE KEY----- wrapper', () => {
+    // We don't need a real OpenSSL-encrypted body — the PEM header alone
+    // should put detectAndImport on a path that yields no match.
+    const body = readStr('private_pkcs8.pem')
+      .replace('BEGIN PRIVATE KEY', 'BEGIN ENCRYPTED PRIVATE KEY')
+      .replace('END PRIVATE KEY', 'END ENCRYPTED PRIVATE KEY');
+    expect(() => new NodeRSA(body)).toThrow();
+  });
+
+  it('rejects an EncryptedPrivateKeyInfo PEM body even if header looks normal', () => {
+    // Build a fake EncryptedPrivateKeyInfo: SEQUENCE { algId(pbes2-OID), OCTET STRING garbage }.
+    // Wrap with the regular -----BEGIN PRIVATE KEY----- header so the
+    // detector tries pkcs8Format.privateImport — which should reject
+    // because the OID is not rsaEncryption.
+    const PBES2_OID = '1.2.840.113549.1.5.13'; // PBES2 (encrypted-key OID family)
+    const w = new DerWriter();
+    w.startSequence();
+    w.startSequence();
+    w.writeOid(PBES2_OID);
+    w.writeNull();
+    w.endSequence();
+    w.writeOctetString(new Uint8Array([0xde, 0xad, 0xbe, 0xef]));
+    w.endSequence();
+    const fakePem = encodePem(
+      w.toBytes(),
+      '-----BEGIN PRIVATE KEY-----',
+      '-----END PRIVATE KEY-----',
+    );
+    // The pkcs8 importer reads outerVersion first, but we omitted it — so it
+    // will throw on the version read. Either error is acceptable; assert throw.
+    expect(() => new NodeRSA(fakePem)).toThrow();
+  });
+});

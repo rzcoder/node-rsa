@@ -1,3 +1,4 @@
+import { setBigIntegerImpl } from './bigint/big-integer.js';
 import type { HashAlg } from './crypto/types.js';
 import { SCHEMES } from './schemes/index.js';
 import type { EncryptionSchemeOptions, SigningSchemeOptions } from './schemes/types.js';
@@ -56,6 +57,11 @@ export function makeDefaultOptions(environment: Environment): ResolvedOptions {
     encryptionScheme: DEFAULT_ENCRYPTION_SCHEME,
     encryptionSchemeOptions: { hash: 'sha1' },
     environment,
+    // Mirrors the per-bundle default flipped by the entry module
+    // (index.browser.ts switches to 'native' at load; index.node.ts leaves
+    // 'jsbn'). Stored on ResolvedOptions so callers can read the active
+    // setting back off the NodeRSA instance.
+    bigIntImpl: environment === 'browser' ? 'native' : 'jsbn',
   };
 }
 
@@ -71,6 +77,13 @@ let warnedEnvironment = false;
  *  - { scheme, hash, ... } → object form, scheme defaults to default
  */
 export function applyOptions(target: ResolvedOptions, options: NodeRSAOptions): void {
+  if (options.bigIntImpl) {
+    // Side effect: globally swap the BigInteger implementation. The selector
+    // module guards the fallback for runtimes without globalThis.BigInt.
+    setBigIntegerImpl(options.bigIntImpl);
+    target.bigIntImpl = options.bigIntImpl;
+  }
+
   if (options.environment) {
     if (options.environment !== target.environment && !warnedEnvironment) {
       // eslint-disable-next-line no-console
