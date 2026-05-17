@@ -63,7 +63,6 @@ describe('PKCS#8 SPKI BIT STRING audit', () => {
     const innerDer = (() => {
       const w = new DerWriter();
       w.startSequence();
-      // biome-ignore lint/style/noNonNullAssertion: fixture key has n/e.
       w.writeInteger(validKey.keyPair.n!.toBuffer() as Uint8Array);
       w.writeInteger(validKey.keyPair.e);
       w.endSequence();

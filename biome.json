@@ -86,6 +86,16 @@
           }
         }
       }
+    },
+    {
+      "include": ["test/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noNonNullAssertion": "off"
+          }
+        }
+      }
     }
   ]
 }

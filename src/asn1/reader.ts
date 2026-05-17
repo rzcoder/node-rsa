@@ -93,11 +93,15 @@ export class DerReader {
     // X.690 §8.3.2: a leading 0x00 is allowed only when the next byte's MSB
     // is set (sign-bit padding); a leading 0xff only when it's clear.
     if (bytes.length >= 2) {
-      if (bytes[0] === 0x00 && (bytes[1]! & 0x80) === 0) {
-        throw new Error('DerReader: non-canonical INTEGER (redundant leading 0x00)');
-      }
-      if (bytes[0] === 0xff && (bytes[1]! & 0x80) !== 0) {
-        throw new Error('DerReader: non-canonical INTEGER (redundant leading 0xff)');
+      const b0 = bytes[0];
+      const b1 = bytes[1];
+      if (b1 !== undefined) {
+        if (b0 === 0x00 && (b1 & 0x80) === 0) {
+          throw new Error('DerReader: non-canonical INTEGER (redundant leading 0x00)');
+        }
+        if (b0 === 0xff && (b1 & 0x80) !== 0) {
+          throw new Error('DerReader: non-canonical INTEGER (redundant leading 0xff)');
+        }
       }
     }
     return bytes;
