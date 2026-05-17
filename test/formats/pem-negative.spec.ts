@@ -5,6 +5,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { setBigIntegerBackend } from '../../src/bigint/big-integer.js';
 import { nodeBackend } from '../../src/crypto/backend.node.js';
 import { decodePem, trimSurroundingText } from '../../src/formats/pem.js';
+import NodeRSAClass from '../../src/index.node.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const keysDir = resolve(here, '../keys');
@@ -68,6 +69,39 @@ describe('PEM — robustness against malformed input', () => {
     // the fallback fromBase64 either succeeds (raw base64 mode) or throws
     // on garbage. Document the success branch.
     expect(decodePem('AAAA', OPEN, CLOSE)).toEqual(new Uint8Array([0, 0, 0]));
+  });
+});
+
+describe('PEM — header / footer mismatches', () => {
+  // decodePem uses trimSurroundingText with the caller's `opening`/`closing`
+  // strings — if the closing marker isn't present, trimSurroundingText
+  // falls back to the entire remainder of the input. That's normally
+  // fine because pkcs1/pkcs8 importers pin their own marker pairs, but
+  // we should pin the behaviour for swap-on-input cases so a future
+  // refactor that loosens the pair doesn't silently accept a corrupted
+  // file.
+  it('rejects body when BEGIN/END markers swapped or replaced with a different pair', () => {
+    const body = readStr('private_pkcs1.pem').trim();
+    // BEGIN matches RSA PRIVATE KEY, but END is PUBLIC KEY → closing not
+    // found at the caller's expected position. Everything from BEGIN onward
+    // (including the "END PUBLIC KEY" line) is fed to fromBase64, which
+    // bails out on the dashes / words. Either failure is acceptable as
+    // long as the call throws (rather than returning a truncated key).
+    const swapped = body.replace('-----END RSA PRIVATE KEY-----', '-----END RSA PUBLIC KEY-----');
+    expect(() => decodePem(swapped, OPEN, CLOSE)).toThrow();
+  });
+
+  it('importing a PKCS#1 PEM where the body says PUBLIC fails through NodeRSA', () => {
+    // End-to-end: the high-level importer should reject obvious
+    // header-tampering rather than half-parse a body. Uses the public
+    // surface (NodeRSA constructor) so a regression that loosened the
+    // PEM detector would be caught here too.
+    const body = readStr('private_pkcs1.pem')
+      .trim()
+      .replace('-----BEGIN RSA PRIVATE KEY-----', '-----BEGIN RSA PUBLIC KEY-----');
+    // Importing private fixture with a public BEGIN: detectors prefer
+    // public route → eventually the body fails to parse as a SubjectPublicKeyInfo.
+    expect(() => new NodeRSAClass(body)).toThrow();
   });
 });
 

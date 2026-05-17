@@ -68,7 +68,7 @@ const NODE_HASH: Record<string, string> = {
 };
 
 describe('PKCS#1 v1.5 sign / verify ↔ node:crypto', () => {
-  for (const hash of ['sha256', 'sha512'] as const) {
+  for (const hash of ['sha1', 'sha256', 'sha384', 'sha512'] as const) {
     it(`bit-identical signatures: pkcs1-${hash} (${ITERATIONS} trials)`, () => {
       const key = makeNodeRsa(`pkcs1-${hash}`);
       const pem = readStr('private_pkcs1.pem');
@@ -97,7 +97,7 @@ describe('PKCS#1 v1.5 sign / verify ↔ node:crypto', () => {
 });
 
 describe('PSS sign / verify ↔ node:crypto', () => {
-  for (const hash of ['sha256', 'sha512'] as const) {
+  for (const hash of ['sha1', 'sha256', 'sha384', 'sha512'] as const) {
     it(`node-rsa signs, node:crypto verifies: pss-${hash}`, () => {
       // PSS uses a random salt so signatures aren't bit-identical, but
       // they must verify in both directions.
@@ -168,6 +168,48 @@ describe('OAEP encrypt / decrypt ↔ node:crypto', () => {
       expect(Buffer.from(pt).equals(Buffer.from(msg)), `OAEP reverse round-trip #${i}`).toBe(true);
     }
   });
+});
+
+describe('OAEP cross-validation with non-default hash', () => {
+  // OAEP with SHA-1 is the existing happy-path. node:crypto exposes oaepHash
+  // to align with our encryptionSchemeOptions.hash. Skip sha512 — it doesn't
+  // fit on a 1024-bit key (k=128 < 2·64+2). sha384 only just fits (max 30 B).
+  for (const hash of ['sha256', 'sha384'] as const) {
+    const maxByHash: Record<string, number> = { sha256: 62, sha384: 30 };
+    it(`node-rsa encrypts, node:crypto decrypts: oaepHash=${hash}`, () => {
+      const pem = readStr('private_pkcs1.pem');
+      const key = new NodeRSA(pem, {
+        encryptionScheme: { scheme: 'pkcs1_oaep', hash },
+      });
+      const limit = maxByHash[hash] as number;
+      for (let i = 0; i < ITERATIONS; i++) {
+        const msg = randomBytes(1 + Math.floor(Math.random() * limit));
+        const ct = key.encrypt(msg) as Uint8Array;
+        const pt = privateDecrypt(
+          { key: pem, padding: cryptoConstants.RSA_PKCS1_OAEP_PADDING, oaepHash: hash },
+          Buffer.from(ct),
+        );
+        expect(Buffer.from(pt).equals(Buffer.from(msg)), `${hash} round-trip #${i}`).toBe(true);
+      }
+    });
+
+    it(`node:crypto encrypts, node-rsa decrypts: oaepHash=${hash}`, () => {
+      const pem = readStr('private_pkcs1.pem');
+      const key = new NodeRSA(pem, {
+        encryptionScheme: { scheme: 'pkcs1_oaep', hash },
+      });
+      const limit = maxByHash[hash] as number;
+      for (let i = 0; i < ITERATIONS; i++) {
+        const msg = randomBytes(1 + Math.floor(Math.random() * limit));
+        const ct = publicEncrypt(
+          { key: pem, padding: cryptoConstants.RSA_PKCS1_OAEP_PADDING, oaepHash: hash },
+          Buffer.from(msg),
+        );
+        const pt = key.decrypt(new Uint8Array(ct)) as Uint8Array;
+        expect(Buffer.from(pt).equals(Buffer.from(msg)), `${hash} reverse #${i}`).toBe(true);
+      }
+    });
+  }
 });
 
 describe('Negative interop: tampered ciphertext / signature is rejected', () => {

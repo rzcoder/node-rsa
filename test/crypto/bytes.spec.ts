@@ -96,6 +96,29 @@ describe('bytes.toBase64 / fromBase64', () => {
     expect(round.length).toBe(data.length);
     expect(round[99_999]).toBe(99_999 & 0xff);
   });
+
+  it('rejects malformed base64 input with characters outside the alphabet', () => {
+    // The library wraps `atob`, which throws on illegal characters. Pin
+    // the throwing behaviour so a future refactor doesn't silently swap to
+    // a permissive decoder (which would let key fixtures with garbage in
+    // them decode to wrong bytes).
+    for (const bad of ['====', '!!!!', 'AB$D', '@@@@']) {
+      expect(() => fromBase64(bad), `input "${bad}"`).toThrow();
+    }
+  });
+
+  it('round-trips empty input through base64', () => {
+    expect(toBase64(new Uint8Array(0))).toBe('');
+    expect(Array.from(fromBase64(''))).toEqual([]);
+  });
+
+  it('round-trips length-1 / length-2 inputs (padding-edge cases)', () => {
+    // Single-byte → "XX==", two-byte → "XXX=" canonical padding shapes.
+    const one = new Uint8Array([0xab]);
+    const two = new Uint8Array([0xab, 0xcd]);
+    expect(Array.from(fromBase64(toBase64(one)))).toEqual([0xab]);
+    expect(Array.from(fromBase64(toBase64(two)))).toEqual([0xab, 0xcd]);
+  });
 });
 
 describe('bytes.fromUtf8 / toUtf8', () => {

@@ -42,6 +42,18 @@ export class RSAKey {
   /** OpenSSH key comment field (preserved across import/export). */
   sshcomment?: string;
 
+  /**
+   * BigInteger constructor that owns this key's components. Read off
+   * `n.constructor` so a later `setBigIntegerImpl()` swap by another
+   * NodeRSA instance can't corrupt operations on this key — fresh
+   * BigIntegers spawned during sign/encrypt/blinding stay the same class
+   * as `n`, `d`, `p`, `q` etc.
+   */
+  get BI(): typeof BigInteger {
+    if (!this.n) throw new Error('RSAKey: no key components');
+    return this.n.constructor as typeof BigInteger;
+  }
+
   setOptions(
     options: SchemeOptions,
     schemes: Record<string, { makeScheme(key: RSAKey, opts: SchemeOptions): unknown }>,
@@ -270,13 +282,14 @@ export class RSAKey {
   private makeBlinding(): { re: BigInteger; rInv: BigInteger } | null {
     if (!this.n || !this.options) return null;
     const n = this.n;
+    const BI = this.BI;
     const byteLen = ((n.bitLength() + 7) >> 3) + 1;
-    const two = new BigInteger(Uint8Array.of(2));
-    const nMinus3 = n.subtract(BigInteger.ONE).subtract(two); // range size for [2, n-2]
+    const two = new BI(Uint8Array.of(2));
+    const nMinus3 = n.subtract(BI.ONE).subtract(two); // range size for [2, n-2]
 
     for (let attempt = 0; attempt < 10; attempt++) {
       const rb = this.options.backend.randomBytes(byteLen);
-      const r = new BigInteger(rb).mod(nMinus3).add(two);
+      const r = new BI(rb).mod(nMinus3).add(two);
       const rInv = r.modInverse(n);
       if (rInv.signum() === 0) continue; // gcd(r, n) ≠ 1; retry
       const re = r.modPowInt(this.e, n);

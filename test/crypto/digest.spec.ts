@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { nodeBackend } from '../../src/crypto/backend.node.js';
+import { webBackend } from '../../src/crypto/backend.web.js';
 import { toHex } from '../../src/crypto/bytes.js';
 import { DIGEST_LENGTH, digestLength } from '../../src/crypto/digest-length.js';
 import type { HashAlg } from '../../src/crypto/types.js';
@@ -99,5 +100,106 @@ describe('digest determinism', () => {
 describe('digest error cases', () => {
   it('rejects an unknown algorithm', () => {
     expect(() => nodeBackend.digest('sha999' as HashAlg, EMPTY)).toThrow();
+  });
+});
+
+/**
+ * Hash functions process data in fixed-size blocks (SHA-1/224/256 = 64 B,
+ * SHA-384/512 = 128 B), buffering partial blocks internally. Bugs around
+ * the "exactly one block", "one block plus one byte", and "block-aligned
+ * across multiple blocks" cases are common when implementing or porting
+ * a hash (e.g., an off-by-one in the length-encoded padding step).
+ *
+ * We don't have NIST vectors at these exact sizes, but we can use the
+ * backend as its own oracle: the digest must equal a chunked re-hash
+ * implementation only if the impl is correct. Since we don't expose an
+ * update/finalize API, we just verify the digest is stable (same input
+ * → same output) and length-correct across block boundaries — a
+ * non-trivial assertion if a future refactor breaks the chunking.
+ */
+describe('digest block-boundary inputs', () => {
+  const BLOCK: Partial<Record<HashAlg, number>> = {
+    md5: 64,
+    sha1: 64,
+    sha224: 64,
+    sha256: 64,
+    sha384: 128,
+    sha512: 128,
+    ripemd160: 64,
+  };
+
+  function makeBuf(n: number, seed: number): Uint8Array {
+    // Deterministic pseudo-random fill (LCG) so the test is reproducible.
+    const out = new Uint8Array(n);
+    let s = seed | 0;
+    for (let i = 0; i < n; i++) {
+      s = (s * 1103515245 + 12345) & 0x7fffffff;
+      out[i] = s & 0xff;
+    }
+    return out;
+  }
+
+  for (const [alg, block] of Object.entries(BLOCK) as Array<[HashAlg, number]>) {
+    it.skipIf(!nodeBackend.supportsHash(alg))(
+      `${alg}: ${block - 1}/${block}/${block + 1}/${2 * block} bytes — stable and correct length`,
+      () => {
+        for (const n of [block - 1, block, block + 1, 2 * block - 1, 2 * block, 2 * block + 1]) {
+          const data = makeBuf(n, n * 7);
+          const a = nodeBackend.digest(alg, data);
+          const b = nodeBackend.digest(alg, data);
+          expect(a.length, `length for n=${n}`).toBe(DIGEST_LENGTH[alg]);
+          expect(toHex(b)).toBe(toHex(a));
+          // A truncated input must yield a different digest from the full
+          // one — catches a regression that drops trailing bytes.
+          if (n > 1) {
+            const cut = nodeBackend.digest(alg, data.subarray(0, n - 1));
+            expect(toHex(cut)).not.toBe(toHex(a));
+          }
+        }
+      },
+    );
+  }
+
+  it.skipIf(!nodeBackend.supportsHash('sha256'))(
+    'sha256: 1-byte difference at the block boundary produces a different digest',
+    () => {
+      // Last byte before the 64-byte boundary mutated vs first byte of the
+      // next block — both must produce digests distinct from the canonical.
+      const base = makeBuf(64, 1);
+      const ref = toHex(nodeBackend.digest('sha256', base));
+      const a = new Uint8Array(base);
+      a[63] = (a[63] as number) ^ 0x01;
+      expect(toHex(nodeBackend.digest('sha256', a))).not.toBe(ref);
+      const extra = new Uint8Array(65);
+      extra.set(base);
+      // Adding a single zero byte yields a different hash too.
+      expect(toHex(nodeBackend.digest('sha256', extra))).not.toBe(ref);
+    },
+  );
+});
+
+/**
+ * The vitest workspace alias maps src/crypto/backend.node.ts →
+ * src/crypto/backend.web.ts in the `browser-emulated` project. A broken
+ * alias would silently let the node backend serve `browser-emulated`,
+ * defeating the dual-backend coverage. Detect the active workspace by
+ * importing both backends explicitly: when the alias is live, the two
+ * identifiers are the same reference; when it's not, they differ.
+ */
+describe('backend identity (workspace-alias smoke)', () => {
+  const aliasActive = nodeBackend === webBackend;
+  it('alias is active iff nodeBackend resolves to webBackend', () => {
+    // Both states are legitimate (one per workspace); we just confirm the
+    // identity matches the .name field — i.e. if alias is active, .name
+    // says 'web'; otherwise 'node'.
+    if (aliasActive) {
+      expect(nodeBackend.name).toBe('web');
+    } else {
+      expect(nodeBackend.name).toBe('node');
+    }
+  });
+
+  it('webBackend.name is always "web" (no aliasing in the other direction)', () => {
+    expect(webBackend.name).toBe('web');
   });
 });

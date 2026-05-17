@@ -152,6 +152,88 @@ describe('components format', () => {
     const key = new RSAKey();
     expect(() => componentsFormat.privateImport?.(key, { n: new Uint8Array([1, 2]) })).toThrow();
   });
+
+  it('round-trips a public key through { n, e }', () => {
+    const src = new RSAKey();
+    pkcs1Format.publicImport?.(src, readBin('public_pkcs1.der'), { type: 'der' });
+    expect(src.isPublic()).toBe(true);
+    const components = componentsFormat.publicExport?.(src) as Record<string, unknown>;
+    expect(components).toHaveProperty('n');
+    expect(components).toHaveProperty('e');
+    const dst = new RSAKey();
+    componentsFormat.publicImport?.(dst, components);
+    expect(dst.isPublic()).toBe(true);
+    expect(dst.isPrivate()).toBe(false);
+    expect(equals(dst.n?.toBuffer() as Uint8Array, src.n?.toBuffer() as Uint8Array)).toBe(true);
+    expect(dst.e).toBe(src.e);
+  });
+
+  it('rejects missing public fields (no n)', () => {
+    const key = new RSAKey();
+    expect(() => componentsFormat.publicImport?.(key, { e: 65537 })).toThrow();
+  });
+});
+
+describe('cross-format equivalence — same key parsed three ways yields identical components', () => {
+  // The PKCS#1, PKCS#8, and OpenSSH fixtures in test/keys/ are all
+  // serialisations of the same RSA key. A parse mismatch (a renamed CRT
+  // field, an off-by-one in OpenSSH's component order — which is
+  // n,e,d,coeff,p,q not n,e,d,p,q,coeff — etc.) would silently let one
+  // format diverge while the others keep round-tripping. This test pins
+  // the invariant directly.
+  it('PKCS#1 DER ≡ PKCS#8 DER ≡ OpenSSH (n,e,d,p,q,dmp1,dmq1,coeff)', () => {
+    const fromPkcs1 = new RSAKey();
+    pkcs1Format.privateImport?.(fromPkcs1, readBin('private_pkcs1.der'), { type: 'der' });
+
+    const fromPkcs8 = new RSAKey();
+    pkcs8Format.privateImport?.(fromPkcs8, readBin('private_pkcs8.der'), { type: 'der' });
+
+    const fromOpenssh = new RSAKey();
+    opensshFormat.privateImport?.(fromOpenssh, readStr('id_rsa'));
+
+    const fields: Array<'n' | 'd' | 'p' | 'q' | 'dmp1' | 'dmq1' | 'coeff'> = [
+      'n',
+      'd',
+      'p',
+      'q',
+      'dmp1',
+      'dmq1',
+      'coeff',
+    ];
+    for (const f of fields) {
+      const a = fromPkcs1[f]?.toBuffer() as Uint8Array;
+      const b = fromPkcs8[f]?.toBuffer() as Uint8Array;
+      const c = fromOpenssh[f]?.toBuffer() as Uint8Array;
+      expect(toHex(b), `PKCS#1 vs PKCS#8: ${f}`).toBe(toHex(a));
+      expect(toHex(c), `PKCS#1 vs OpenSSH: ${f}`).toBe(toHex(a));
+    }
+    expect(fromPkcs8.e).toBe(fromPkcs1.e);
+    expect(fromOpenssh.e).toBe(fromPkcs1.e);
+  });
+
+  it('public PKCS#1 DER ≡ public PKCS#8 DER (n, e)', () => {
+    const fromPkcs1 = new RSAKey();
+    pkcs1Format.publicImport?.(fromPkcs1, readBin('public_pkcs1.der'), { type: 'der' });
+    const fromPkcs8 = new RSAKey();
+    pkcs8Format.publicImport?.(fromPkcs8, readBin('public_pkcs8.der'), { type: 'der' });
+    expect(toHex(fromPkcs8.n?.toBuffer() as Uint8Array)).toBe(
+      toHex(fromPkcs1.n?.toBuffer() as Uint8Array),
+    );
+    expect(fromPkcs8.e).toBe(fromPkcs1.e);
+  });
+
+  it('id_rsa_comment.pub preserves a non-empty SSH comment', () => {
+    // id_rsa_comment.pub carries a non-empty trailing comment that gets
+    // routed into key.sshcomment. Lets us round-trip through publicExport
+    // and confirm the comment survives.
+    const key = new RSAKey();
+    opensshFormat.publicImport?.(key, readStr('id_rsa_comment.pub'));
+    expect(key.sshcomment).toBeDefined();
+    expect((key.sshcomment as string).length).toBeGreaterThan(0);
+    const re = opensshFormat.publicExport?.(key) as string;
+    // Export format: "ssh-rsa <b64> <comment>\n" — comment must appear.
+    expect(re).toContain(key.sshcomment as string);
+  });
 });
 
 describe('detectAndImport / detectAndExport', () => {

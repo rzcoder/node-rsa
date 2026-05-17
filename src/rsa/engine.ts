@@ -1,4 +1,3 @@
-import { BigInteger } from '../bigint/big-integer.js';
 import { concat } from '../crypto/bytes.js';
 import { pkcs1Scheme as pkcs1Provider } from '../schemes/pkcs1.js';
 import type { EncryptionScheme, SchemeOptions, SignatureScheme } from '../schemes/types.js';
@@ -54,7 +53,7 @@ export class JsEngine implements Engine {
       const padded = usePrivate
         ? this.pkcs1.encPad(chunk, { type: 1 })
         : this.key.encryptionScheme.encPad(chunk);
-      const bi = new BigInteger(padded);
+      const bi = new this.key.BI(padded);
       const result = usePrivate ? this.key.$doPrivate(bi) : this.key.$doPublic(bi);
       const bytes = result.toBuffer(this.key.encryptedDataLength);
       if (!bytes) throw new Error('Engine: RSA primitive returned oversize integer');
@@ -74,7 +73,7 @@ export class JsEngine implements Engine {
     for (let i = 0; i < count; i++) {
       const off = i * chunkLen;
       const ct = buffer.subarray(off, off + chunkLen);
-      const bi = new BigInteger(ct);
+      const bi = new this.key.BI(ct);
       const result = usePublic ? this.key.$doPublic(bi) : this.key.$doPrivate(bi);
       const padded = result.toBuffer(chunkLen);
       if (!padded) throw new Error('Engine: RSA primitive returned oversize integer');

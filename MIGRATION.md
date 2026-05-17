@@ -13,6 +13,36 @@ For browser bundlers (Vite, Webpack 5, Rollup, esbuild, Parcel), **delete
 any Buffer/crypto/process shims** you set up for v1 — they're no longer
 needed and may interfere.
 
+## v2.0 → v2.1: node bundle uses `node:crypto` natively
+
+Starting in 2.1, the node bundle routes RSA keygen, sign, and verify
+through `node:crypto.{generateKeyPairSync, sign, verify}` whenever
+possible — order-of-magnitude faster than the pure-JS path for keys ≥ 2048
+bits. The browser bundle is unchanged (no `node:crypto`).
+
+In normal use you don't need to do anything. Two configurations now
+throw where 2.0 silently fell back to JS:
+
+1. **Custom MGF for PSS.** `node:crypto` supports only MGF1 with hash =
+   signing hash. If you pass `signingScheme: { scheme: 'pss', mgf: ... }`
+   on Node, scheme construction throws. To keep a custom MGF, opt back
+   into the pure-JS path:
+
+   ```ts
+   key.setOptions({ environment: 'browser' });   // forces JsEngine + JS schemes
+   ```
+
+2. **Hash algorithms not supported by your local OpenSSL build.** Most
+   commonly this affects `md4` (and sometimes `ripemd160`) when the
+   OpenSSL 3 legacy provider isn't loaded. Both `nodeBackend.digest` and
+   `crypto.sign` reject the hash; sign/verify throw with a clear error.
+   The previous behaviour was identical (the JS scheme delegated to
+   `nodeBackend.digest` which also threw) — only the error wording and
+   call-site differ.
+
+If you forced `environment: 'browser'` at runtime, sign/verify revert to
+the pure-JS schemes alongside the engine — that path is unchanged.
+
 ## v2.0 → v2.1: default signing scheme
 
 `DEFAULT_SIGNING_SCHEME` changed from `'pkcs1'` to `'pss'` in 2.1. This

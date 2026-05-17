@@ -1,14 +1,46 @@
 # Changelog
 
-## 2.1.0 — Security audit fixes
+## 2.1.0 — Native node:crypto fast paths + security audit fixes
 
 A multi-agent security audit (cryptography, exploitability, RFC/FIPS
 compliance) was run against v2.0.0 and produced a list of findings; this
 release closes all Tier 0 (critical / high) and Tier 1 (defence-in-depth)
-items. No public-API breakage other than the default-signing-scheme
-switch noted below.
+items. It also rewires the node bundle to use `node:crypto` for the RSA
+primitives that previously went through pure-JS BigInteger.
 
-### Breaking change
+### Performance — node bundle now uses `node:crypto` natively
+
+- **Keygen** uses `crypto.generateKeyPairSync`. 2048-bit drops from ~2.3 s
+  to ~50 ms (~45× faster) on modern hardware; 1024-bit from ~240 ms to
+  ~10 ms.
+- **PKCS#1 v1.5 and PSS sign/verify** use `crypto.sign` / `crypto.verify`.
+  PSS-SHA256 sign on 2048-bit drops from ~17 ms to sub-millisecond.
+- OAEP encrypt / PKCS#1 v1.5 encrypt are unchanged — already native via
+  `NodeNativeEngine` since 2.0.0.
+
+### Performance — browser bundle defaults to native `BigInt`
+
+A second, drop-in BigInteger implementation lives at
+[src/bigint/big-integer-native.ts](src/bigint/big-integer-native.ts) and
+uses ES2020's native `BigInt`. The browser bundle picks it at load time;
+the node bundle stays on the audited jsbn implementation. Round-trips
+identically through every API; switch back to jsbn with
+`new NodeRSA(key, { bigIntImpl: 'jsbn' })` if you ever need to.
+
+| 2048-bit, JS path | jsbn | native | speedup |
+|---|---|---|---|
+| PSS-SHA256 sign | ~16 ms | ~4 ms | **~4×** |
+| PSS-SHA256 verify | ~0.4 ms | ~0.08 ms | **~5×** |
+
+The `bigIntImpl` option (also accepted by `setOptions`) must be set
+BEFORE the key is imported or generated; switching it on an instance
+that already has key components throws, since the two implementations
+produce incompatible BigInteger instances.
+
+The browser bundle silently falls back to jsbn on runtimes without
+`globalThis.BigInt` (i.e. pre-2020 environments). No user action needed.
+
+### Breaking changes
 
 - **Default signing scheme switched from `pkcs1` (PKCS#1 v1.5) to `pss`
   (RSASSA-PSS).** PSS is the modern best-practice signing scheme — it
@@ -29,6 +61,15 @@ switch noted below.
   The bare-hash shorthand `setOptions({ signingScheme: 'sha256' })`
   also now resolves to `pss-sha256` (was `pkcs1-sha256`). Set
   `signingScheme: 'pkcs1-sha256'` explicitly to keep v2.0 behaviour.
+
+- **Custom MGF for PSS now throws on the node bundle.** `node:crypto`
+  only supports MGF1 with hash equal to the signing hash. If you need a
+  non-default MGF, force the pure-JS path with
+  `setOptions({ environment: 'browser' })`.
+- **Hash algorithms unsupported by the local OpenSSL build now throw at
+  sign/verify time on the node bundle.** Functionally equivalent to
+  2.0.0 (the JS scheme delegated to `nodeBackend.digest` which also
+  threw) — only the error wording and call-site changed.
 
 ### Security fixes (no API change)
 

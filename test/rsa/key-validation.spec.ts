@@ -160,6 +160,43 @@ describe('H3 — private key CRT consistency validation', () => {
     const k = new RSAKey();
     expect(() => k.setPrivate(c.n, c.e, c.d)).not.toThrow();
   });
+
+  it('rejects a key claiming p == q (fixture n ≠ p²)', () => {
+    // RFC 8017 implicitly requires distinct primes (p ≠ q): if they're
+    // equal, n factors trivially via square-root. The current consistency
+    // check catches this in two ways:
+    //   1. Trivially: fixture n ≠ p², so the `n ≠ p × q` test fires when
+    //      we pass q = p.
+    //   2. Even with a forged n = p², modInverse(p, p) = 0, so the
+    //      coeff check (q × coeff ≢ 1 mod p) fails.
+    // The first form is the one a user-typed degenerate key would hit.
+    const c = loadComponents();
+    const k = new RSAKey();
+    expect(() =>
+      k.setPrivate(c.n, c.e, c.d, c.p, c.p /* q := p */, c.dmp1, c.dmq1, c.coeff),
+    ).toThrow();
+  });
+
+  it('rejects a key with p == q and matching n = p² via the coeff check', () => {
+    // Forge n = p² so that the n ≠ p × q check doesn't fire — and confirm
+    // the coeff-consistency check rejects the degenerate key.
+    const c = loadComponents();
+    const p = new BigInteger(c.p);
+    const nPP = p.multiply(p);
+    const k = new RSAKey();
+    expect(() =>
+      k.setPrivate(
+        nPP.toBuffer() as Uint8Array,
+        c.e,
+        c.d,
+        c.p,
+        c.p,
+        c.dmp1,
+        c.dmq1,
+        c.coeff, // coeff was computed for the real (p, q ≠ p); won't match
+      ),
+    ).toThrow();
+  });
 });
 
 describe('H5 — minimum key size guard on generate', () => {

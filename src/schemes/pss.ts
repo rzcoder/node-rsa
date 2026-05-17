@@ -1,4 +1,3 @@
-import { BigInteger } from '../bigint/big-integer.js';
 import { constantTimeEqual } from '../crypto/bytes.js';
 import { DIGEST_LENGTH } from '../crypto/digest-length.js';
 import type { HashAlg } from '../crypto/types.js';
@@ -34,7 +33,7 @@ class PssScheme implements SignatureScheme {
     const hash = this.hash();
     const mHash = this.options.backend.digest(hash, buffer);
     const encoded = this.emsaPssEncode(mHash, this.key.keySize - 1);
-    const signed = this.key.$doPrivate(new BigInteger(encoded));
+    const signed = this.key.$doPrivate(new this.key.BI(encoded));
     const out = signed.toBuffer(this.key.encryptedDataLength);
     if (!out) throw new Error('PSS sign: output overflow');
     return out;
@@ -48,7 +47,7 @@ class PssScheme implements SignatureScheme {
     // not a thrown error.
     let m: Uint8Array | null;
     try {
-      m = this.key.$doPublic(new BigInteger(signature)).toBuffer(emLen);
+      m = this.key.$doPublic(new this.key.BI(signature)).toBuffer(emLen);
     } catch {
       return false;
     }

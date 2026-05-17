@@ -1,4 +1,3 @@
-import { BigInteger } from '../bigint/big-integer.js';
 import { concat, constantTimeEqual, fromHex } from '../crypto/bytes.js';
 import type { HashAlg } from '../crypto/types.js';
 import type { RSAKey } from '../rsa/key.js';
@@ -141,7 +140,7 @@ class Pkcs1Scheme implements EncryptionScheme, SignatureScheme {
     const hashAlgorithm = this.options.signingSchemeOptions.hash ?? DEFAULT_HASH;
     const hash = this.options.backend.digest(hashAlgorithm, buffer);
     const padded = this.pkcs1pad(hash, hashAlgorithm);
-    const signed = this.key.$doPrivate(new BigInteger(padded));
+    const signed = this.key.$doPrivate(new this.key.BI(padded));
     const out = signed.toBuffer(this.key.encryptedDataLength);
     if (!out) throw new Error('PKCS#1 sign: output overflow');
     return out;
@@ -157,7 +156,7 @@ class Pkcs1Scheme implements EncryptionScheme, SignatureScheme {
     // not a thrown error.
     let m: Uint8Array | null;
     try {
-      m = this.key.$doPublic(new BigInteger(signature)).toBuffer();
+      m = this.key.$doPublic(new this.key.BI(signature)).toBuffer();
     } catch {
       return false;
     }

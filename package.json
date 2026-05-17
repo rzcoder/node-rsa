@@ -30,6 +30,7 @@
     "build": "tsup",
     "test": "vitest run",
     "test:watch": "vitest",
+    "bench": "vitest bench --run --workspace=vitest.bench.workspace.ts",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
