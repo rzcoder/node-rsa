@@ -1,0 +1,23 @@
+{
+  "name": "node-rsa-example-vite-browser",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Real-browser end-to-end test for node-rsa: Vite dev server + Playwright drives a page that exercises keygen / encrypt+decrypt / sign+verify against the browser bundle, with native BigInt as the default impl.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "playwright:install": "playwright install chromium"
+  },
+  "dependencies": {
+    "node-rsa": "file:../.."
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0"
+  }
+}
