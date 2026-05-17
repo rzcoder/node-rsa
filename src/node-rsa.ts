@@ -1,5 +1,13 @@
 import { setBigIntegerBackend } from './bigint/big-integer.js';
-import { fromBase64, fromUtf8, toBase64, toHex, toUtf8 } from './crypto/bytes.js';
+import {
+  fromBase64,
+  fromLatin1,
+  fromUtf8,
+  toBase64,
+  toHex,
+  toLatin1,
+  toUtf8,
+} from './crypto/bytes.js';
 import type { CryptoBackend } from './crypto/types.js';
 import { detectAndExport, detectAndImport } from './formats/index.js';
 import { EXPORT_FORMAT_ALIASES, applyOptions, makeDefaultOptions } from './options.js';
@@ -353,10 +361,12 @@ function encodeBytes(bytes: Uint8Array, encoding: string): string {
     case 'base64':
       return toBase64(bytes);
     case 'utf8':
-    case 'binary':
       return toUtf8(bytes);
+    case 'binary':
+    case 'latin1':
+      return toLatin1(bytes);
     default:
-      // Best-effort: treat as base64 fallback to match v1 behaviour for unknown encodings
+      // Best-effort: treat as base64 fallback
       return toBase64(bytes);
   }
 }
@@ -371,8 +381,10 @@ function decodeBytes(s: string, encoding?: string): Uint8Array {
       return out;
     }
     case 'utf8':
-    case 'binary':
       return fromUtf8(s);
+    case 'binary':
+    case 'latin1':
+      return fromLatin1(s);
     case undefined:
     case null:
     case 'buffer':
