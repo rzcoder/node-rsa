@@ -2,12 +2,12 @@ import type { RSAKey } from '../rsa/key.js';
 import { oaepScheme } from './oaep.js';
 import { RSA_NO_PADDING, pkcs1Scheme } from './pkcs1.js';
 import { pssScheme } from './pss.js';
-import type { SchemeOptions } from './types.js';
+import type { EncryptionSchemeImpl, SchemeOptions, SignatureScheme } from './types.js';
 
 export interface SchemeProvider {
   isEncryption: boolean;
   isSignature: boolean;
-  makeScheme(key: RSAKey, options: SchemeOptions): unknown;
+  makeScheme(key: RSAKey, options: SchemeOptions): EncryptionSchemeImpl | SignatureScheme;
 }
 
 export const SCHEMES: Record<string, SchemeProvider> = {

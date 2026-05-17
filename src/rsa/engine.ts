@@ -71,6 +71,7 @@ export class JsEngine implements Engine {
     }
     const count = buffer.length / chunkLen;
     const parts: Uint8Array[] = [];
+    let bad = 0;
 
     for (let i = 0; i < count; i++) {
       const off = i * chunkLen;
@@ -82,9 +83,12 @@ export class JsEngine implements Engine {
       const unpadded = usePublic
         ? this.pkcs1.encUnPad(padded, { type: 1 })
         : this.key.encryptionScheme.encUnPad(padded);
-      if (!unpadded) throw new Error('Decryption failed (invalid padding)');
-      parts.push(unpadded);
+      // Always perform equivalent work regardless of padding validity
+      // to prevent timing side-channels (Bleichenbacher-style attacks).
+      parts.push(unpadded ?? padded.subarray(0, 0));
+      bad |= unpadded ? 0 : 1;
     }
+    if (bad) throw new Error('Decryption failed');
     return concat(...parts);
   }
 }

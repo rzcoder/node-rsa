@@ -14,7 +14,7 @@ import { EXPORT_FORMAT_ALIASES, applyOptions, makeDefaultOptions } from './optio
 import { type Engine, JsEngine } from './rsa/engine.js';
 import { RSAKey } from './rsa/key.js';
 import { SCHEMES } from './schemes/index.js';
-import type { SchemeOptions } from './schemes/types.js';
+import type { EncryptionSchemeImpl, SchemeOptions, SignatureScheme } from './schemes/types.js';
 import type {
   Data,
   Encoding,
@@ -36,7 +36,7 @@ import type {
 interface SchemeProviderLike {
   isEncryption: boolean;
   isSignature: boolean;
-  makeScheme(key: RSAKey, options: SchemeOptions): unknown;
+  makeScheme(key: RSAKey, options: SchemeOptions): EncryptionSchemeImpl | SignatureScheme;
 }
 
 interface NodeRSAInternal {
@@ -284,7 +284,7 @@ export class NodeRSA {
       const res = this.ensureEngine().encrypt(data, usePrivate);
       return encoding && encoding !== 'buffer' ? encodeBytes(res, encoding) : res;
     } catch (e) {
-      throw new Error(`Error during encryption. Original error: ${(e as Error).message}`);
+      throw new Error('Error during encryption');
     }
   }
 
@@ -298,9 +298,7 @@ export class NodeRSA {
       const res = this.ensureEngine().decrypt(bytes, usePublic);
       return this.$getDecryptedData(res, encoding);
     } catch (e) {
-      throw new Error(
-        `Error during decryption (probably incorrect key). Original error: ${(e as Error).message}`,
-      );
+      throw new Error('Error during decryption');
     }
   }
 
