@@ -5,7 +5,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { DerReader } from '../../src/asn1/index.js';
 import { BigInteger, setBigIntegerBackend } from '../../src/bigint/big-integer.js';
 import { nodeBackend } from '../../src/crypto/backend.node.js';
-import { equals, fromUtf8 } from '../../src/crypto/bytes.js';
+import { fromUtf8 } from '../../src/crypto/bytes.js';
 import { RSAKey } from '../../src/rsa/key.js';
 import { SCHEMES, oaepScheme, pkcs1Scheme, pssScheme } from '../../src/schemes/index.js';
 import type { SchemeOptions } from '../../src/schemes/types.js';
@@ -92,7 +92,7 @@ describe('PKCS#1 v1.5 encrypt → decrypt round-trip', () => {
       expect(dec).not.toBeNull();
       const unpadded = key.encryptionScheme.encUnPad(dec as Uint8Array);
       expect(unpadded).not.toBeNull();
-      expect(equals(unpadded as Uint8Array, msg)).toBe(true);
+      expect(unpadded as Uint8Array).toEqual(msg);
     });
   }
 });
@@ -109,7 +109,7 @@ describe('OAEP encrypt → decrypt round-trip', () => {
     const ct = key.$doPublic(new BigInteger(padded)).toBuffer(key.encryptedDataLength);
     const dec = key.$doPrivate(new BigInteger(ct as Uint8Array)).toBuffer(key.encryptedDataLength);
     const unpadded = key.encryptionScheme.encUnPad(dec as Uint8Array);
-    expect(equals(unpadded as Uint8Array, msg)).toBe(true);
+    expect(unpadded as Uint8Array).toEqual(msg);
   });
 
   // 1024-bit key supports OAEP up to: k - 2*hLen - 2.
@@ -130,7 +130,7 @@ describe('OAEP encrypt → decrypt round-trip', () => {
     const ct = key.$doPublic(new BigInteger(padded)).toBuffer(key.encryptedDataLength);
     const dec = key.$doPrivate(new BigInteger(ct as Uint8Array)).toBuffer(key.encryptedDataLength);
     const unpadded = key.encryptionScheme.encUnPad(dec as Uint8Array);
-    expect(equals(unpadded as Uint8Array, msg)).toBe(true);
+    expect(unpadded as Uint8Array).toEqual(msg);
   });
 
   it('OAEP/sha512 refuses to pad on 1024-bit key (k=128 < 2·64+2)', () => {
@@ -159,7 +159,7 @@ describe('OAEP encrypt → decrypt round-trip', () => {
     const ct = key.$doPublic(new BigInteger(padded)).toBuffer(key.encryptedDataLength);
     const dec = key.$doPrivate(new BigInteger(ct as Uint8Array)).toBuffer(key.encryptedDataLength);
     const unpadded = key.encryptionScheme.encUnPad(dec as Uint8Array);
-    expect(equals(unpadded as Uint8Array, msg)).toBe(true);
+    expect(unpadded as Uint8Array).toEqual(msg);
   });
 });
 
@@ -206,7 +206,7 @@ describe('PSS sign → verify round-trip', () => {
     const msg = fromUtf8('zero-salt');
     const sig1 = key.signingScheme.sign(msg);
     const sig2 = key.signingScheme.sign(msg);
-    expect(equals(sig1, sig2)).toBe(true);
+    expect(sig1).toEqual(sig2);
     expect(key.signingScheme.verify(msg, sig1)).toBe(true);
   });
 

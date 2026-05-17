@@ -1,9 +1,9 @@
 import { createHash, randomBytes as nodeRandomBytes } from 'node:crypto';
-import type { CryptoBackend, HashAlg } from './types.js';
+import type { CryptoBackend, HashingAlgorithm } from './types.js';
 
 // MD4 lives in OpenSSL's legacy provider, which is not loaded by default in
 // OpenSSL 3 (Node 17+). Probe once at module load to decide if it's usable.
-const CANDIDATE: readonly HashAlg[] = [
+const CANDIDATE: readonly HashingAlgorithm[] = [
   'md4',
   'md5',
   'ripemd160',
@@ -14,8 +14,8 @@ const CANDIDATE: readonly HashAlg[] = [
   'sha512',
 ];
 
-const SUPPORTED: ReadonlySet<HashAlg> = (() => {
-  const set = new Set<HashAlg>();
+const SUPPORTED: ReadonlySet<HashingAlgorithm> = (() => {
+  const set = new Set<HashingAlgorithm>();
   for (const alg of CANDIDATE) {
     try {
       createHash(alg);

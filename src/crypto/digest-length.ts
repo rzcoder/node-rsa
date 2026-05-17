@@ -1,6 +1,6 @@
-import type { HashAlg } from './types.js';
+import type { HashingAlgorithm } from './types.js';
 
-export const DIGEST_LENGTH: Readonly<Record<HashAlg, number>> = Object.freeze({
+export const DIGEST_LENGTH: Readonly<Record<HashingAlgorithm, number>> = Object.freeze({
   md4: 16,
   md5: 16,
   ripemd160: 20,
@@ -10,7 +10,3 @@ export const DIGEST_LENGTH: Readonly<Record<HashAlg, number>> = Object.freeze({
   sha384: 48,
   sha512: 64,
 });
-
-export function digestLength(alg: HashAlg): number {
-  return DIGEST_LENGTH[alg];
-}

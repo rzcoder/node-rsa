@@ -1,6 +1,6 @@
 import { concat } from '../crypto/bytes.js';
 import { pkcs1Scheme as pkcs1Provider } from '../schemes/pkcs1.js';
-import type { EncryptionScheme, SchemeOptions, SignatureScheme } from '../schemes/types.js';
+import type { EncryptionSchemeImpl, SchemeOptions, SignatureScheme } from '../schemes/types.js';
 import type { RSAKey } from './key.js';
 
 /**
@@ -9,28 +9,30 @@ import type { RSAKey } from './key.js';
  * RSA primitive (key.$doPublic / $doPrivate).
  *
  * Type-1 path (encryptPrivate, decryptPublic) is *always* PKCS#1 v1.5,
- * even when the configured encryptionScheme is OAEP — matches legacy
- * v1's encryptEngines/js.js behaviour (it instantiated a dedicated
- * pkcs1Scheme for the type-1 path).
- *
- * Implementations:
- *  - JsEngine: always-available pure-JS path. Used in the browser bundle
- *    and as a fallback on Node when no native fast-path is wired (or when
- *    setOptions({environment:'browser'}) forces it).
- *  - NodeNativeEngine: uses node:crypto.publicEncrypt / privateDecrypt /
- *    privateEncrypt / publicDecrypt for speed.
+ * even when the configured encryptionScheme is OAEP.
  */
 export interface Engine {
+  /**
+   * Pad and encrypt `buffer`, splitting into key-size chunks as needed.
+   * `usePrivate=true` selects the "sign-with-PKCS#1-type-1" path (always
+   * PKCS#1 v1.5, regardless of the configured encryption scheme).
+   */
   encrypt(buffer: Uint8Array, usePrivate?: boolean): Uint8Array;
+  /**
+   * Decrypt and unpad. `usePublic=true` mirrors `encrypt`'s type-1 path —
+   * verifies a public-decryptable PKCS#1 v1.5 message. Throws on length
+   * mismatch or invalid padding.
+   */
   decrypt(buffer: Uint8Array, usePublic?: boolean): Uint8Array;
 }
 
+/** Pure-JS RSA encrypt/decrypt — runs the primitive via `RSAKey.$doPublic`/`$doPrivate`. */
 export class JsEngine implements Engine {
   /** Always a PKCS#1 v1.5 scheme — used for usePrivate / usePublic paths. */
-  private readonly pkcs1: EncryptionScheme;
+  private readonly pkcs1: EncryptionSchemeImpl;
 
   constructor(private readonly key: RSAKey) {
-    this.pkcs1 = pkcs1Provider.makeScheme(key, key.options) as EncryptionScheme & SignatureScheme;
+    this.pkcs1 = pkcs1Provider.makeScheme(key, key.options) as EncryptionSchemeImpl & SignatureScheme;
   }
 
   encrypt(buffer: Uint8Array, usePrivate = false): Uint8Array {

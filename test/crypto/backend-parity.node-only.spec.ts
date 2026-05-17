@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { nodeBackend } from '../../src/crypto/backend.node.js';
 import { webBackend } from '../../src/crypto/backend.web.js';
 import { toHex } from '../../src/crypto/bytes.js';
-import type { HashAlg } from '../../src/crypto/types.js';
+import type { HashingAlgorithm } from '../../src/crypto/types.js';
 
 // Only runs in the 'node' workspace project. The 'browser-emulated' project
 // excludes *.node-only.spec.ts because its alias substitutes backend.node
 // with backend.web, which would make the comparison trivial.
 
-const CROSS_PLATFORM_HASHES: HashAlg[] = [
+const CROSS_PLATFORM_HASHES: HashingAlgorithm[] = [
   'md5',
   'ripemd160',
   'sha1',

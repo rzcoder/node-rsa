@@ -7,7 +7,7 @@ import { nodeBackend } from '../src/crypto/backend.node.js';
 import { fromBase64, toHex } from '../src/crypto/bytes.js';
 import { DIGEST_LENGTH } from '../src/crypto/digest-length.js';
 import NodeRSA from '../src/index.node.js';
-import type { HashAlg } from '../src/types.js';
+import type { HashingAlgorithm } from '../src/types.js';
 // 1-to-1 port of v1's test/tests.js (mocha+chai → vitest+chai). Structure,
 // describe/it titles, and assertions match the legacy file. Buffer-specific
 // uses are translated to Uint8Array equivalents; deprecated environment
@@ -23,10 +23,6 @@ function readFile(name: string): Uint8Array {
 
 function readStr(name: string): string {
   return readFileSync(resolve(keysFolder, name), 'utf8');
-}
-
-function bytesFromBase64(s: string): Uint8Array {
-  return fromBase64(s);
 }
 
 function asHex(x: unknown): string {
@@ -133,7 +129,7 @@ describe('NodeRSA', () => {
     it('should make empty key pair with default options', () => {
       const key = new NodeRSA(null);
       assert.equal(key.isEmpty(), true);
-      // v2.1: default signing scheme switched from 'pkcs1' to 'pss'.
+      // Default signing scheme is 'pss' (was 'pkcs1' in v1).
       assert.equal(key.$options.signingScheme, 'pss');
       assert.equal(key.$options.signingSchemeOptions.hash, 'sha256');
       assert.equal(key.$options.signingSchemeOptions.saltLength, undefined);
@@ -144,8 +140,7 @@ describe('NodeRSA', () => {
     });
 
     it('should make key pair with pss-md5 signing scheme via bare-hash shorthand', () => {
-      // Bare `'md5'` parses as "default scheme + md5 hash"; default switched
-      // from 'pkcs1' to 'pss' in v2.1.
+      // Bare `'md5'` parses as "default scheme + md5 hash"; default scheme is 'pss'.
       const key = new NodeRSA(null, { signingScheme: 'md5' });
       assert.equal(key.$options.signingScheme, 'pss');
       assert.equal(key.$options.signingSchemeOptions.hash, 'md5');
@@ -782,7 +777,7 @@ describe('NodeRSA', () => {
                 it.skipIf(shouldSkip(alg))(
                   `signing with custom algorithm (${alg}) with max salt length`,
                   () => {
-                    const a = alg.toLowerCase() as HashAlg;
+                    const a = alg.toLowerCase() as HashingAlgorithm;
                     const sourceKey = generatedKeys[generatedKeys.length - 1] as NodeRSA;
                     const key = new NodeRSA(sourceKey.exportKey(), {
                       signingScheme: { scheme: scheme, hash: a, saltLength: DIGEST_LENGTH[a] },
@@ -910,6 +905,3 @@ describe('NodeRSA', () => {
 function stripWs(s: string): string {
   return s.replace(/\s+/g, '');
 }
-
-// Suppress unused import warning
-void bytesFromBase64;

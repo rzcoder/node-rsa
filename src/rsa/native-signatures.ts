@@ -6,22 +6,17 @@ import {
   sign as nodeSign,
   verify as nodeVerify,
 } from 'node:crypto';
-import type { HashAlg } from '../crypto/types.js';
+import type { HashingAlgorithm } from '../crypto/types.js';
 import { pkcs1Format } from '../formats/pkcs1.js';
+import type { SchemeProvider } from '../schemes/index.js';
 import { oaepScheme } from '../schemes/oaep.js';
 import { pkcs1Scheme } from '../schemes/pkcs1.js';
-import type { EncryptionScheme, SchemeOptions, SignatureScheme } from '../schemes/types.js';
+import type { EncryptionSchemeImpl, SchemeOptions, SignatureScheme } from '../schemes/types.js';
 import type { RSAKey } from './key.js';
 
-const DEFAULT_PKCS1_HASH: HashAlg = 'sha256';
-const DEFAULT_PSS_HASH: HashAlg = 'sha1';
+const DEFAULT_PKCS1_HASH: HashingAlgorithm = 'sha256';
+const DEFAULT_PSS_HASH: HashingAlgorithm = 'sha1';
 const DEFAULT_PSS_SALT = 20;
-
-interface SchemeProvider {
-  isEncryption: boolean;
-  isSignature: boolean;
-  makeScheme(key: RSAKey, options: SchemeOptions): unknown;
-}
 
 function bufferToU8(buf: Buffer): Uint8Array {
   return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
@@ -39,7 +34,7 @@ function publicKeyObjectFor(key: RSAKey): KeyObject {
   return createPublicKey({ key: pem, format: 'pem', type: 'pkcs1' });
 }
 
-function assertHashSupported(backend: SchemeOptions['backend'], hash: HashAlg): void {
+function assertHashSupported(backend: SchemeOptions['backend'], hash: HashingAlgorithm): void {
   if (!backend.supportsHash(hash)) {
     throw new Error(
       `node-rsa: hash "${hash}" not available in node:crypto on this build (OpenSSL 3 may need the legacy provider for md4/ripemd160). Use setOptions({environment:"browser"}) to force the pure-JS path.`,
@@ -54,12 +49,12 @@ function assertHashSupported(backend: SchemeOptions['backend'], hash: HashAlg): 
  * (which is what we override here) is the only thing still going through
  * BigInteger.modPow today.
  */
-class NodeNativePkcs1Scheme implements EncryptionScheme, SignatureScheme {
+class NodeNativePkcs1Scheme implements EncryptionSchemeImpl, SignatureScheme {
   private privateKeyObj?: KeyObject;
   private publicKeyObj?: KeyObject;
 
   constructor(
-    private readonly inner: EncryptionScheme & SignatureScheme,
+    private readonly inner: EncryptionSchemeImpl & SignatureScheme,
     private readonly key: RSAKey,
     private readonly options: SchemeOptions,
   ) {}
@@ -167,15 +162,18 @@ class NodeNativePssScheme implements SignatureScheme {
 }
 
 /**
- * Drop-in replacement for the default SCHEMES map: pkcs1 + pss go native,
- * pkcs1_oaep is unchanged (encryption already routes through NodeNativeEngine).
+ * Drop-in replacement for the default `SCHEMES` map used by the Node bundle:
+ * pkcs1 + pss sign/verify go through `node:crypto` (faster, FIPS-friendly);
+ * pkcs1_oaep is unchanged because OAEP encryption already routes through
+ * NodeNativeEngine. Constructing a PSS scheme with a custom MGF throws —
+ * see `NodeNativePssScheme`.
  */
 export const nodeNativeSchemes: Record<string, SchemeProvider> = {
   pkcs1: {
     isEncryption: true,
     isSignature: true,
-    makeScheme(key: RSAKey, options: SchemeOptions): EncryptionScheme & SignatureScheme {
-      const inner = pkcs1Scheme.makeScheme(key, options) as EncryptionScheme & SignatureScheme;
+    makeScheme(key: RSAKey, options: SchemeOptions): EncryptionSchemeImpl & SignatureScheme {
+      const inner = pkcs1Scheme.makeScheme(key, options) as EncryptionSchemeImpl & SignatureScheme;
       return new NodeNativePkcs1Scheme(inner, key, options);
     },
   },

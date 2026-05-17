@@ -1,11 +1,11 @@
 import { constantTimeEqual } from '../crypto/bytes.js';
 import { DIGEST_LENGTH } from '../crypto/digest-length.js';
-import type { HashAlg } from '../crypto/types.js';
+import type { HashingAlgorithm } from '../crypto/types.js';
 import type { RSAKey } from '../rsa/key.js';
 import { mgf1 } from './oaep.js';
 import type { MaskGenerationFunction, SchemeOptions, SignatureScheme } from './types.js';
 
-const DEFAULT_HASH: HashAlg = 'sha1';
+const DEFAULT_HASH: HashingAlgorithm = 'sha1';
 const DEFAULT_SALT_LENGTH = 20;
 
 class PssScheme implements SignatureScheme {
@@ -14,7 +14,7 @@ class PssScheme implements SignatureScheme {
     private readonly options: SchemeOptions,
   ) {}
 
-  private hash(): HashAlg {
+  private hash(): HashingAlgorithm {
     return this.options.signingSchemeOptions.hash ?? DEFAULT_HASH;
   }
 
