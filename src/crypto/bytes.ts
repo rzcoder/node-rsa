@@ -2,12 +2,6 @@ const HEX_CHARS = '0123456789abcdef';
 const utf8Encoder = new TextEncoder();
 const utf8Decoder = new TextDecoder('utf-8', { fatal: false });
 
-export function alloc(n: number, fill = 0): Uint8Array {
-  const out = new Uint8Array(n);
-  if (fill !== 0) out.fill(fill);
-  return out;
-}
-
 export function concat(...arrays: readonly Uint8Array[]): Uint8Array {
   let total = 0;
   for (const a of arrays) total += a.length;
@@ -20,14 +14,9 @@ export function concat(...arrays: readonly Uint8Array[]): Uint8Array {
   return out;
 }
 
-export function equals(a: Uint8Array, b: Uint8Array): boolean {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
-}
-
+// Length is treated as public: callers (OAEP lHash, PSS H/H', PKCS#1 padded
+// block) compare buffers whose size is derived from public modulus/hash
+// parameters, not from secret data. Do not use on variable-length secrets.
 export function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
   if (a.length !== b.length) return false;
   let diff = 0;
@@ -95,6 +84,25 @@ export function toUtf8(bytes: Uint8Array): string {
   return utf8Decoder.decode(bytes);
 }
 
+// latin1 (a.k.a. legacy Node "binary") — 1:1 mapping between byte 0x00-0xFF
+// and code points U+0000-U+00FF. Use for raw-byte string transport, never for
+// human-readable text.
+export function fromLatin1(s: string): Uint8Array {
+  const out = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i) & 0xff;
+  return out;
+}
+
+export function toLatin1(bytes: Uint8Array): string {
+  let out = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    const slice = bytes.subarray(i, Math.min(i + chunk, bytes.length));
+    out += String.fromCharCode(...slice);
+  }
+  return out;
+}
+
 export function readUInt32BE(bytes: Uint8Array, offset = 0): number {
   if (offset + 4 > bytes.length) {
     throw new RangeError(`readUInt32BE: out of range (offset=${offset}, length=${bytes.length})`);
@@ -116,8 +124,4 @@ export function writeUInt32BE(value: number, target: Uint8Array, offset = 0): vo
   target[offset + 1] = (value >>> 16) & 0xff;
   target[offset + 2] = (value >>> 8) & 0xff;
   target[offset + 3] = value & 0xff;
-}
-
-export function asUint8Array(buf: Uint8Array | ArrayBuffer): Uint8Array {
-  return buf instanceof Uint8Array ? buf : new Uint8Array(buf);
 }

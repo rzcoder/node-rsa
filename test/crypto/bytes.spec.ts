@@ -1,32 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import {
-  alloc,
-  asUint8Array,
   concat,
   constantTimeEqual,
-  equals,
   fromBase64,
   fromHex,
+  fromLatin1,
   fromUtf8,
   readUInt32BE,
   toBase64,
   toHex,
+  toLatin1,
   toUtf8,
   writeUInt32BE,
 } from '../../src/crypto/bytes.js';
-
-describe('bytes.alloc', () => {
-  it('returns zero-filled Uint8Array', () => {
-    const a = alloc(5);
-    expect(a).toBeInstanceOf(Uint8Array);
-    expect(a.length).toBe(5);
-    expect(Array.from(a)).toEqual([0, 0, 0, 0, 0]);
-  });
-
-  it('supports a fill value', () => {
-    expect(Array.from(alloc(3, 0xff))).toEqual([0xff, 0xff, 0xff]);
-  });
-});
 
 describe('bytes.concat', () => {
   it('concatenates multiple arrays', () => {
@@ -42,18 +28,13 @@ describe('bytes.concat', () => {
   });
 });
 
-describe('bytes.equals / constantTimeEqual', () => {
+describe('bytes.constantTimeEqual', () => {
   it('returns true for identical content', () => {
-    const a = new Uint8Array([1, 2, 3]);
-    const b = new Uint8Array([1, 2, 3]);
-    expect(equals(a, b)).toBe(true);
-    expect(constantTimeEqual(a, b)).toBe(true);
+    expect(constantTimeEqual(new Uint8Array([1, 2, 3]), new Uint8Array([1, 2, 3]))).toBe(true);
   });
 
   it('returns false for different content or length', () => {
-    expect(equals(new Uint8Array([1, 2]), new Uint8Array([1, 2, 3]))).toBe(false);
     expect(constantTimeEqual(new Uint8Array([1, 2]), new Uint8Array([1, 2, 3]))).toBe(false);
-    expect(equals(new Uint8Array([1, 2, 3]), new Uint8Array([1, 2, 4]))).toBe(false);
     expect(constantTimeEqual(new Uint8Array([1, 2, 3]), new Uint8Array([1, 2, 4]))).toBe(false);
   });
 });
@@ -127,8 +108,33 @@ describe('bytes.fromUtf8 / toUtf8', () => {
   });
 
   it('round-trips multibyte unicode', () => {
-    const s = 'тест 测试 🚀';
+    const s = 'テスト　тест 测试 🚀';
     expect(toUtf8(fromUtf8(s))).toBe(s);
+  });
+});
+
+describe('bytes.fromLatin1 / toLatin1', () => {
+  it('round-trips every byte 0x00-0xFF without corruption', () => {
+    // The whole point of latin1 (vs UTF-8) is bytes ≥0x80 survive verbatim:
+    // through TextDecoder they would expand to multi-byte sequences or hit
+    // U+FFFD replacement on invalid runs. This is the regression guard for
+    // the legacy `'binary'` Node-RSA encoding.
+    const all = new Uint8Array(256);
+    for (let i = 0; i < 256; i++) all[i] = i;
+    const s = toLatin1(all);
+    expect(s.length).toBe(256);
+    expect(Array.from(fromLatin1(s))).toEqual(Array.from(all));
+  });
+
+  it('handles chunk boundary at 0x8000', () => {
+    const big = new Uint8Array(0x8000 + 17);
+    for (let i = 0; i < big.length; i++) big[i] = (i * 31 + 7) & 0xff;
+    expect(Array.from(fromLatin1(toLatin1(big)))).toEqual(Array.from(big));
+  });
+
+  it('round-trips empty input', () => {
+    expect(toLatin1(new Uint8Array(0))).toBe('');
+    expect(Array.from(fromLatin1(''))).toEqual([]);
   });
 });
 
@@ -156,20 +162,5 @@ describe('bytes.readUInt32BE / writeUInt32BE', () => {
   it('throws on out-of-range offsets', () => {
     expect(() => readUInt32BE(new Uint8Array(4), 1)).toThrow(/out of range/);
     expect(() => writeUInt32BE(1, new Uint8Array(4), 1)).toThrow(/out of range/);
-  });
-});
-
-describe('bytes.asUint8Array', () => {
-  it('returns Uint8Array views unchanged', () => {
-    const u = new Uint8Array([1, 2, 3]);
-    expect(asUint8Array(u)).toBe(u);
-  });
-
-  it('wraps a raw ArrayBuffer', () => {
-    const ab = new ArrayBuffer(4);
-    new Uint8Array(ab).set([9, 8, 7, 6]);
-    const out = asUint8Array(ab);
-    expect(out).toBeInstanceOf(Uint8Array);
-    expect(Array.from(out)).toEqual([9, 8, 7, 6]);
   });
 });

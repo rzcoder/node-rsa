@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { setBigIntegerBackend } from '../../src/bigint/big-integer.js';
 import { nodeBackend } from '../../src/crypto/backend.node.js';
-import { equals, toHex, toUtf8 } from '../../src/crypto/bytes.js';
+import { toHex, toUtf8 } from '../../src/crypto/bytes.js';
 import {
   componentsFormat,
   detectAndExport,
@@ -143,9 +143,9 @@ describe('components format', () => {
     const components = componentsFormat.privateExport?.(src) as Record<string, unknown>;
     const dst = new RSAKey();
     componentsFormat.privateImport?.(dst, components);
-    expect(equals(dst.n?.toBuffer() as Uint8Array, src.n?.toBuffer() as Uint8Array)).toBe(true);
+    expect(dst.n?.toBuffer() as Uint8Array).toEqual(src.n?.toBuffer() as Uint8Array);
     expect(dst.e).toBe(src.e);
-    expect(equals(dst.d?.toBuffer() as Uint8Array, src.d?.toBuffer() as Uint8Array)).toBe(true);
+    expect(dst.d?.toBuffer() as Uint8Array).toEqual(src.d?.toBuffer() as Uint8Array);
   });
 
   it('rejects missing private fields', () => {
@@ -164,7 +164,7 @@ describe('components format', () => {
     componentsFormat.publicImport?.(dst, components);
     expect(dst.isPublic()).toBe(true);
     expect(dst.isPrivate()).toBe(false);
-    expect(equals(dst.n?.toBuffer() as Uint8Array, src.n?.toBuffer() as Uint8Array)).toBe(true);
+    expect(dst.n?.toBuffer() as Uint8Array).toEqual(src.n?.toBuffer() as Uint8Array);
     expect(dst.e).toBe(src.e);
   });
 

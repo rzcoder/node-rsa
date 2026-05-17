@@ -76,6 +76,24 @@ describe('NodeRSA smoke', () => {
     expect(pt).toBe('private-encrypted');
   });
 
+  it("round-trips bytes ≥0x80 through encoding: 'binary' (latin1)", () => {
+    // Regression: legacy node-rsa v1 treats 'binary' as latin1 (1:1 byte↔char
+    // over 0x00-0xFF). Routing it through UTF-8 corrupts any byte ≥0x80 —
+    // either by re-encoding it as a 2-byte sequence on the way in or by
+    // substituting U+FFFD on the way out. Use a string whose every charcode
+    // is in U+0080-U+00FF so the failure mode is unambiguous. Exercise both
+    // legs (input via sourceEncoding='binary'; output via encoding='binary').
+    const key = new NodeRSA(readStr('private_pkcs1.pem'));
+    const highBytes = new Uint8Array([0x80, 0xc3, 0xff, 0xa9, 0xde, 0xad, 0xbe, 0xef]);
+    const asLatin1 = String.fromCharCode(...highBytes);
+    const ct = key.encrypt(asLatin1, undefined, 'binary') as Uint8Array;
+    const pt = key.decrypt(ct, 'binary') as string;
+    expect(pt.length).toBe(highBytes.length);
+    for (let i = 0; i < highBytes.length; i++) {
+      expect(pt.charCodeAt(i)).toBe(highBytes[i]);
+    }
+  });
+
   it('throws on import of empty key', () => {
     expect(() => new NodeRSA('')).toThrow(/Empty key/);
   });
