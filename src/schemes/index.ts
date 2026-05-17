@@ -16,19 +16,10 @@ export const SCHEMES: Record<string, SchemeProvider> = {
   pss: pssScheme,
 };
 
-export function isEncryption(scheme: string): boolean {
-  return !!SCHEMES[scheme]?.isEncryption;
-}
-
-export function isSignature(scheme: string): boolean {
-  return !!SCHEMES[scheme]?.isSignature;
-}
-
 export { RSA_NO_PADDING };
 export { oaepScheme, pkcs1Scheme, pssScheme };
-export { mgf1 } from './oaep.js';
 export type {
-  EncryptionScheme,
+  EncryptionSchemeImpl,
   EncryptionSchemeOptions,
   MaskGenerationFunction,
   SchemeOptions,

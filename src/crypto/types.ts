@@ -1,4 +1,4 @@
-export type HashAlg =
+export type HashingAlgorithm =
   | 'md4'
   | 'md5'
   | 'ripemd160'
@@ -13,7 +13,7 @@ export interface CryptoBackend {
 
   randomBytes(n: number): Uint8Array;
 
-  digest(alg: HashAlg, data: Uint8Array): Uint8Array;
+  digest(alg: HashingAlgorithm, data: Uint8Array): Uint8Array;
 
-  supportsHash(alg: HashAlg): boolean;
+  supportsHash(alg: HashingAlgorithm): boolean;
 }

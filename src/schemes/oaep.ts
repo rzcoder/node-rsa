@@ -1,16 +1,16 @@
 import { concat, constantTimeEqual, writeUInt32BE } from '../crypto/bytes.js';
 import { DIGEST_LENGTH } from '../crypto/digest-length.js';
-import type { CryptoBackend, HashAlg } from '../crypto/types.js';
+import type { CryptoBackend, HashingAlgorithm } from '../crypto/types.js';
 import type { RSAKey } from '../rsa/key.js';
-import type { EncryptionScheme, MaskGenerationFunction, SchemeOptions } from './types.js';
+import type { EncryptionSchemeImpl, MaskGenerationFunction, SchemeOptions } from './types.js';
 
-const DEFAULT_HASH: HashAlg = 'sha1';
+const DEFAULT_HASH: HashingAlgorithm = 'sha1';
 
 /** Default MGF1 implementation bound to a backend. */
 export function mgf1(
   seed: Uint8Array,
   maskLength: number,
-  hash: HashAlg,
+  hash: HashingAlgorithm,
   backend: CryptoBackend,
 ): Uint8Array {
   const hLen = DIGEST_LENGTH[hash];
@@ -25,13 +25,13 @@ export function mgf1(
   return out.subarray(0, maskLength);
 }
 
-class OaepScheme implements EncryptionScheme {
+class OaepScheme implements EncryptionSchemeImpl {
   constructor(
     private readonly key: RSAKey,
     private readonly options: SchemeOptions,
   ) {}
 
-  private hash(): HashAlg {
+  private hash(): HashingAlgorithm {
     return this.options.encryptionSchemeOptions.hash ?? DEFAULT_HASH;
   }
 
@@ -148,9 +148,7 @@ class OaepScheme implements EncryptionScheme {
 export const oaepScheme = {
   isEncryption: true as const,
   isSignature: false as const,
-  digestLength: DIGEST_LENGTH,
-  mgf1,
-  makeScheme(key: RSAKey, options: SchemeOptions): EncryptionScheme {
+  makeScheme(key: RSAKey, options: SchemeOptions): EncryptionSchemeImpl {
     return new OaepScheme(key, options);
   },
 };

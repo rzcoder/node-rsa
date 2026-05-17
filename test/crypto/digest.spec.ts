@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { nodeBackend } from '../../src/crypto/backend.node.js';
 import { webBackend } from '../../src/crypto/backend.web.js';
 import { toHex } from '../../src/crypto/bytes.js';
-import { DIGEST_LENGTH, digestLength } from '../../src/crypto/digest-length.js';
-import type { HashAlg } from '../../src/crypto/types.js';
+import { DIGEST_LENGTH } from '../../src/crypto/digest-length.js';
+import type { HashingAlgorithm } from '../../src/crypto/types.js';
 
 // The vitest workspace aliases backend.node → backend.web in the
 // browser-emulated project, so `nodeBackend` here resolves to whichever
@@ -14,7 +14,7 @@ const ABC = new TextEncoder().encode('abc');
 const QUICK = new TextEncoder().encode('The quick brown fox jumps over the lazy dog');
 
 // Known test vectors from RFCs / FIPS publications.
-const VECTORS: Partial<Record<HashAlg, { empty: string; abc: string; quick: string }>> = {
+const VECTORS: Partial<Record<HashingAlgorithm, { empty: string; abc: string; quick: string }>> = {
   md5: {
     empty: 'd41d8cd98f00b204e9800998ecf8427e',
     abc: '900150983cd24fb0d6963f7d28e17f72',
@@ -58,7 +58,7 @@ const VECTORS: Partial<Record<HashAlg, { empty: string; abc: string; quick: stri
 
 describe('digest test vectors', () => {
   for (const [alg, vec] of Object.entries(VECTORS) as Array<
-    [HashAlg, NonNullable<(typeof VECTORS)[HashAlg]>]
+    [HashingAlgorithm, NonNullable<(typeof VECTORS)[HashingAlgorithm]>]
   >) {
     describe(alg, () => {
       it.skipIf(!nodeBackend.supportsHash(alg))(`empty: ${vec.empty.slice(0, 16)}…`, () => {
@@ -81,10 +81,10 @@ describe('digest test vectors', () => {
 });
 
 describe('digest output length', () => {
-  for (const alg of Object.keys(DIGEST_LENGTH) as HashAlg[]) {
-    it.skipIf(!nodeBackend.supportsHash(alg))(`${alg} → ${digestLength(alg)} bytes`, () => {
+  for (const alg of Object.keys(DIGEST_LENGTH) as HashingAlgorithm[]) {
+    it.skipIf(!nodeBackend.supportsHash(alg))(`${alg} → ${DIGEST_LENGTH[alg]} bytes`, () => {
       const out = nodeBackend.digest(alg, new Uint8Array([1, 2, 3, 4, 5]));
-      expect(out.length).toBe(digestLength(alg));
+      expect(out.length).toBe(DIGEST_LENGTH[alg]);
     });
   }
 });
@@ -99,7 +99,7 @@ describe('digest determinism', () => {
 
 describe('digest error cases', () => {
   it('rejects an unknown algorithm', () => {
-    expect(() => nodeBackend.digest('sha999' as HashAlg, EMPTY)).toThrow();
+    expect(() => nodeBackend.digest('sha999' as HashingAlgorithm, EMPTY)).toThrow();
   });
 });
 
@@ -118,7 +118,7 @@ describe('digest error cases', () => {
  * non-trivial assertion if a future refactor breaks the chunking.
  */
 describe('digest block-boundary inputs', () => {
-  const BLOCK: Partial<Record<HashAlg, number>> = {
+  const BLOCK: Partial<Record<HashingAlgorithm, number>> = {
     md5: 64,
     sha1: 64,
     sha224: 64,
@@ -139,7 +139,7 @@ describe('digest block-boundary inputs', () => {
     return out;
   }
 
-  for (const [alg, block] of Object.entries(BLOCK) as Array<[HashAlg, number]>) {
+  for (const [alg, block] of Object.entries(BLOCK) as Array<[HashingAlgorithm, number]>) {
     it.skipIf(!nodeBackend.supportsHash(alg))(
       `${alg}: ${block - 1}/${block}/${block + 1}/${2 * block} bytes — stable and correct length`,
       () => {

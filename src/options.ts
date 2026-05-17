@@ -1,16 +1,16 @@
 import { setBigIntegerImpl } from './bigint/big-integer.js';
-import type { HashAlg } from './crypto/types.js';
+import type { HashingAlgorithm } from './crypto/types.js';
 import { SCHEMES } from './schemes/index.js';
 import type { EncryptionSchemeOptions, SigningSchemeOptions } from './schemes/types.js';
 import type {
-  EncryptionSchemeName,
+  EncryptionScheme,
   Environment,
   NodeRSAOptions,
   ResolvedOptions,
-  SigningSchemeName,
+  SigningScheme,
 } from './types.js';
 
-const NODE_HASHES: ReadonlyArray<HashAlg> = [
+const NODE_HASHES: ReadonlyArray<HashingAlgorithm> = [
   'md4',
   'md5',
   'ripemd160',
@@ -25,23 +25,22 @@ const NODE_HASHES: ReadonlyArray<HashAlg> = [
 // 'node10' and 'iojs' as Node aliases (each retaining the same hash list).
 // v2 treats 'node10' and 'iojs' as 'node'-equivalents for the hash whitelist
 // so that any user setOptions({environment:'iojs'}) keeps working.
-export const SUPPORTED_HASH_ALGORITHMS: Record<string, ReadonlyArray<HashAlg>> = {
+export const SUPPORTED_HASH_ALGORITHMS: Record<string, ReadonlyArray<HashingAlgorithm>> = {
   node: NODE_HASHES,
   node10: NODE_HASHES,
   iojs: NODE_HASHES,
   browser: ['md5', 'ripemd160', 'sha1', 'sha256', 'sha512'],
 };
 
-function allowedHashes(env: string): ReadonlyArray<HashAlg> {
+function allowedHashes(env: string): ReadonlyArray<HashingAlgorithm> {
   return SUPPORTED_HASH_ALGORITHMS[env] ?? NODE_HASHES;
 }
 
-export const DEFAULT_ENCRYPTION_SCHEME: EncryptionSchemeName = 'pkcs1_oaep';
-// v2.1: switched from 'pkcs1' (PKCS#1 v1.5) to 'pss' (RSASSA-PSS). PSS is
-// the modern best-practice signing scheme — probabilistic, with provable
-// security reduction. Callers wanting the legacy default should set
-// `signingScheme: 'pkcs1'` explicitly.
-export const DEFAULT_SIGNING_SCHEME: SigningSchemeName = 'pss';
+export const DEFAULT_ENCRYPTION_SCHEME: EncryptionScheme = 'pkcs1_oaep';
+// PSS (RSASSA-PSS) is the modern best-practice signing scheme —
+// probabilistic, with a provable security reduction. Callers needing the
+// v1-era PKCS#1 v1.5 default must set `signingScheme: 'pkcs1'` explicitly.
+export const DEFAULT_SIGNING_SCHEME: SigningScheme = 'pss';
 
 export const EXPORT_FORMAT_ALIASES: Record<string, string> = {
   private: 'pkcs1-private-pem',
@@ -99,20 +98,20 @@ export function applyOptions(target: ResolvedOptions, options: NodeRSAOptions): 
     if (typeof options.signingScheme === 'string') {
       const parts = options.signingScheme.toLowerCase().split('-');
       if (parts.length === 1) {
-        if (NODE_HASHES.includes(parts[0] as HashAlg)) {
-          target.signingSchemeOptions = { hash: parts[0] as HashAlg };
+        if (NODE_HASHES.includes(parts[0] as HashingAlgorithm)) {
+          target.signingSchemeOptions = { hash: parts[0] as HashingAlgorithm };
           target.signingScheme = DEFAULT_SIGNING_SCHEME;
         } else {
-          target.signingScheme = parts[0] as SigningSchemeName;
+          target.signingScheme = parts[0] as SigningScheme;
           target.signingSchemeOptions = {};
         }
       } else {
-        target.signingScheme = parts[0] as SigningSchemeName;
-        target.signingSchemeOptions = { hash: parts[1] as HashAlg };
+        target.signingScheme = parts[0] as SigningScheme;
+        target.signingSchemeOptions = { hash: parts[1] as HashingAlgorithm };
       }
     } else {
       const obj = options.signingScheme;
-      target.signingScheme = (obj.scheme ?? DEFAULT_SIGNING_SCHEME) as SigningSchemeName;
+      target.signingScheme = (obj.scheme ?? DEFAULT_SIGNING_SCHEME) as SigningScheme;
       const { scheme: _scheme, ...rest } = obj;
       target.signingSchemeOptions = rest as SigningSchemeOptions;
     }
@@ -130,11 +129,11 @@ export function applyOptions(target: ResolvedOptions, options: NodeRSAOptions): 
 
   if (options.encryptionScheme !== undefined) {
     if (typeof options.encryptionScheme === 'string') {
-      target.encryptionScheme = options.encryptionScheme.toLowerCase() as EncryptionSchemeName;
+      target.encryptionScheme = options.encryptionScheme.toLowerCase() as EncryptionScheme;
       target.encryptionSchemeOptions = {};
     } else {
       const obj = options.encryptionScheme;
-      target.encryptionScheme = (obj.scheme ?? DEFAULT_ENCRYPTION_SCHEME) as EncryptionSchemeName;
+      target.encryptionScheme = (obj.scheme ?? DEFAULT_ENCRYPTION_SCHEME) as EncryptionScheme;
       const { scheme: _scheme, ...rest } = obj;
       target.encryptionSchemeOptions = rest as EncryptionSchemeOptions;
     }

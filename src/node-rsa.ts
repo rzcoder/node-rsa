@@ -8,8 +8,18 @@ import { RSAKey } from './rsa/key.js';
 import { SCHEMES } from './schemes/index.js';
 import type { SchemeOptions } from './schemes/types.js';
 import type {
+  Data,
   Encoding,
   Environment,
+  Format,
+  FormatComponentsPrivate,
+  FormatComponentsPublic,
+  FormatDer,
+  FormatPem,
+  Key,
+  KeyBits,
+  KeyComponentsPrivate,
+  KeyComponentsPublic,
   NodeRSAGenerateOptions,
   NodeRSAOptions,
   ResolvedOptions,
@@ -64,12 +74,14 @@ export class NodeRSA {
   private engine: Engine | null = null;
   private $cache: Record<string, Uint8Array | string | object> = {};
 
+  constructor(key?: KeyBits);
+  constructor(key: Key, format?: Format, options?: NodeRSAOptions);
+  constructor(key: null | undefined, format?: NodeRSAOptions);
   constructor(
-    key?: Uint8Array | string | NodeRSAGenerateOptions | null,
-    format?: string | NodeRSAOptions,
+    key?: Key | KeyBits | NodeRSAGenerateOptions | null,
+    format?: Format | string | NodeRSAOptions,
     options?: NodeRSAOptions,
   ) {
-    // normalise overloads
     let opts: NodeRSAOptions | undefined;
     let fmt: string | undefined;
     if (typeof format === 'object' && format !== null) {
@@ -93,7 +105,7 @@ export class NodeRSA {
     }
 
     if (key instanceof Uint8Array || typeof key === 'string') {
-      this.importKey(key, fmt);
+      this.importKey(key as Key, fmt as Format | undefined);
     } else if (key && typeof key === 'object') {
       const gen = key as NodeRSAGenerateOptions;
       this.generateKeyPair(gen.b, gen.e);
@@ -136,6 +148,7 @@ export class NodeRSA {
     return this;
   }
 
+  importKey(keyData: Key, format?: Format | string): this;
   importKey(keyData: Uint8Array | string | object, format?: string): this {
     if (keyData == null || (typeof keyData === 'string' && keyData.length === 0)) {
       throw new Error('Empty key given');
@@ -150,6 +163,11 @@ export class NodeRSA {
     return this;
   }
 
+  exportKey(format?: FormatPem): string;
+  exportKey(format: FormatDer): Uint8Array;
+  exportKey(format: FormatComponentsPrivate): KeyComponentsPrivate;
+  exportKey(format: FormatComponentsPublic): KeyComponentsPublic;
+  exportKey(format?: string): Uint8Array | string | object;
   exportKey(format = 'private'): Uint8Array | string | object {
     const resolved = EXPORT_FORMAT_ALIASES[format] ?? format;
     if (!this.$cache[resolved]) {
@@ -180,14 +198,25 @@ export class NodeRSA {
     return this.keyPair.maxMessageLength;
   }
 
+  encrypt(data: Data | Uint8Array, encoding?: 'buffer', sourceEncoding?: Encoding): Uint8Array;
+  encrypt(data: Data | Uint8Array, encoding: Encoding, sourceEncoding?: Encoding): string;
   encrypt(buffer: unknown, encoding?: Encoding, sourceEncoding?: string): Uint8Array | string {
     return this.$$encryptKey(false, buffer, encoding, sourceEncoding);
   }
 
-  decrypt(buffer: Uint8Array | string, encoding?: Encoding): Uint8Array | string | object {
-    return this.$$decryptKey(false, buffer, encoding);
+  decrypt(data: Uint8Array | string, encoding?: 'buffer'): Uint8Array;
+  decrypt(data: Uint8Array | string, encoding: Encoding): string;
+  decrypt<T extends object>(data: Uint8Array | string, encoding: 'json'): T;
+  decrypt(buffer: Uint8Array | string, encoding?: Encoding | 'json'): Uint8Array | string | object {
+    return this.$$decryptKey(false, buffer, encoding as Encoding);
   }
 
+  encryptPrivate(
+    data: Data | Uint8Array,
+    encoding?: 'buffer',
+    sourceEncoding?: Encoding,
+  ): Uint8Array;
+  encryptPrivate(data: Data | Uint8Array, encoding: Encoding, sourceEncoding?: Encoding): string;
   encryptPrivate(
     buffer: unknown,
     encoding?: Encoding,
@@ -196,10 +225,18 @@ export class NodeRSA {
     return this.$$encryptKey(true, buffer, encoding, sourceEncoding);
   }
 
-  decryptPublic(buffer: Uint8Array | string, encoding?: Encoding): Uint8Array | string | object {
-    return this.$$decryptKey(true, buffer, encoding);
+  decryptPublic(data: Uint8Array | string, encoding?: 'buffer'): Uint8Array;
+  decryptPublic(data: Uint8Array | string, encoding: Encoding): string;
+  decryptPublic<T extends object>(data: Uint8Array | string, encoding: 'json'): T;
+  decryptPublic(
+    buffer: Uint8Array | string,
+    encoding?: Encoding | 'json',
+  ): Uint8Array | string | object {
+    return this.$$decryptKey(true, buffer, encoding as Encoding);
   }
 
+  sign(data: Data | Uint8Array, encoding?: 'buffer', sourceEncoding?: Encoding): Uint8Array;
+  sign(data: Data | Uint8Array, encoding: Encoding, sourceEncoding?: Encoding): string;
   sign(buffer: unknown, encoding?: Encoding, sourceEncoding?: string): Uint8Array | string {
     if (!this.isPrivate()) throw new Error('This is not private key');
     const data = this.$getDataForEncrypt(buffer, sourceEncoding);
@@ -207,6 +244,13 @@ export class NodeRSA {
     return encoding && encoding !== 'buffer' ? encodeBytes(res, encoding) : res;
   }
 
+  verify(data: Data | Uint8Array, signature: Uint8Array, sourceEncoding?: Encoding): boolean;
+  verify(
+    data: Data | Uint8Array,
+    signature: string,
+    sourceEncoding: Encoding | undefined,
+    signatureEncoding: Encoding,
+  ): boolean;
   verify(
     buffer: unknown,
     signature: Uint8Array | string,
@@ -262,7 +306,7 @@ export class NodeRSA {
     throw new Error('Unexpected data type');
   }
 
-  $getDecryptedData(bytes: Uint8Array, encoding?: Encoding): Uint8Array | string | object {
+  $getDecryptedData(bytes: Uint8Array, encoding?: Encoding | 'json'): Uint8Array | string | object {
     const enc = encoding ?? 'buffer';
     if (enc === 'buffer') return bytes;
     if (enc === 'json') return JSON.parse(toUtf8(bytes));

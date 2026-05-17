@@ -1,13 +1,12 @@
 import { BigInteger } from '../bigint/big-integer.js';
 import type { CryptoBackend } from '../crypto/types.js';
-import type { EncryptionScheme, SchemeOptions, SignatureScheme } from '../schemes/types.js';
+import type { EncryptionSchemeImpl, SchemeOptions, SignatureScheme } from '../schemes/types.js';
 
 // One-shot guard so repeated small-key calls don't spam stderr.
 let warnedSmallKey = false;
 
 /**
- * Asymmetric RSA key (public or private). Mirrors the v1 `RSAKey` shape so
- * the higher-level NodeRSA class can keep its surface unchanged.
+ * Asymmetric RSA key (public or private).
  *
  * Field semantics (RFC 3447):
  *   n     — modulus
@@ -35,7 +34,7 @@ export class RSAKey {
   };
 
   // Scheme bindings — populated by setOptions().
-  encryptionScheme!: EncryptionScheme;
+  encryptionScheme!: EncryptionSchemeImpl;
   signingScheme!: SignatureScheme;
   options!: SchemeOptions;
 
@@ -54,6 +53,12 @@ export class RSAKey {
     return this.n.constructor as typeof BigInteger;
   }
 
+  /**
+   * Bind encryption + signing scheme instances to this key. If both schemes
+   * resolve to the same provider (PKCS#1 v1.5 covers both), one instance is
+   * shared so internal padding state stays consistent. Throws on unknown
+   * scheme names.
+   */
   setOptions(
     options: SchemeOptions,
     schemes: Record<string, { makeScheme(key: RSAKey, opts: SchemeOptions): unknown }>,
@@ -65,11 +70,11 @@ export class RSAKey {
     if (!encProvider) throw new Error(`Unknown encryption scheme: ${options.encryptionScheme}`);
 
     if (sigProvider === encProvider) {
-      const scheme = sigProvider.makeScheme(this, options) as EncryptionScheme & SignatureScheme;
+      const scheme = sigProvider.makeScheme(this, options) as EncryptionSchemeImpl & SignatureScheme;
       this.signingScheme = scheme;
       this.encryptionScheme = scheme;
     } else {
-      this.encryptionScheme = encProvider.makeScheme(this, options) as EncryptionScheme;
+      this.encryptionScheme = encProvider.makeScheme(this, options) as EncryptionSchemeImpl;
       this.signingScheme = sigProvider.makeScheme(this, options) as SignatureScheme;
     }
   }
@@ -146,6 +151,13 @@ export class RSAKey {
     this.recalculateCache();
   }
 
+  /**
+   * Install private-key components (raw big-endian bytes; E may be a number).
+   * If any CRT field (P/Q/DP/DQ/C) is omitted the key works without CRT —
+   * slower decrypt but valid. Throws if N/E/D are missing or if CRT fields
+   * are present but mathematically inconsistent (Boneh-DeMillo-Lipton
+   * fault-attack guard).
+   */
   setPrivate(
     N: Uint8Array,
     E: number | Uint8Array,
@@ -176,6 +188,7 @@ export class RSAKey {
     this.recalculateCache();
   }
 
+  /** Install public-key components (raw big-endian bytes; E may be a number). Throws if N/E are missing or E is invalid. */
   setPublic(N: Uint8Array, E: number | Uint8Array): void {
     if (!N || N.length === 0) throw new Error('Invalid RSA public key');
     if (typeof E !== 'number' && (!E || E.length === 0)) throw new Error('Invalid RSA public key');
@@ -309,28 +322,34 @@ export class RSAKey {
     return x.modPowInt(this.e, this.n);
   }
 
+  /** True iff `d` is loaded (n, e implied). */
   isPrivate(): boolean {
     return !!(this.n && this.e && this.d);
   }
 
+  /** True iff `n` and `e` are set. With `strict=true` additionally requires `d` to be absent. */
   isPublic(strict?: boolean): boolean {
     if (!this.n || !this.e) return false;
     if (strict && this.d) return false;
     return true;
   }
 
+  /** Modulus size in bits (0 if no key loaded). */
   get keySize(): number {
     return this.cache.keyBitLength;
   }
 
+  /** Ciphertext block size in bytes. */
   get encryptedDataLength(): number {
     return this.cache.keyByteLength;
   }
 
+  /** Largest single-chunk plaintext the configured encryption scheme will accept. */
   get maxMessageLength(): number {
     return this.encryptionScheme.maxMessageLength();
   }
 
+  /** Recompute cached key-size metrics. */
   recalculateCache(): void {
     if (!this.n) {
       this.cache = { keyBitLength: 0, keyByteLength: 0 };

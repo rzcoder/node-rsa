@@ -1,11 +1,11 @@
 import { concat, constantTimeEqual, fromHex } from '../crypto/bytes.js';
-import type { HashAlg } from '../crypto/types.js';
+import type { HashingAlgorithm } from '../crypto/types.js';
 import type { RSAKey } from '../rsa/key.js';
-import type { EncryptionScheme, SchemeOptions, SignatureScheme } from './types.js';
+import type { EncryptionSchemeImpl, SchemeOptions, SignatureScheme } from './types.js';
 
 export const RSA_NO_PADDING = 3;
 
-const SIGN_INFO_HEAD: Partial<Record<HashAlg, Uint8Array>> = {
+const SIGN_INFO_HEAD: Partial<Record<HashingAlgorithm, Uint8Array>> = {
   md5: fromHex('3020300c06082a864886f70d020505000410'),
   sha1: fromHex('3021300906052b0e03021a05000414'),
   sha224: fromHex('302d300d06096086480165030402040500041c'),
@@ -15,9 +15,9 @@ const SIGN_INFO_HEAD: Partial<Record<HashAlg, Uint8Array>> = {
   ripemd160: fromHex('3021300906052b2403020105000414'),
 };
 
-const DEFAULT_HASH: HashAlg = 'sha256';
+const DEFAULT_HASH: HashingAlgorithm = 'sha256';
 
-class Pkcs1Scheme implements EncryptionScheme, SignatureScheme {
+class Pkcs1Scheme implements EncryptionSchemeImpl, SignatureScheme {
   constructor(
     private readonly key: RSAKey,
     private readonly options: SchemeOptions,
@@ -164,7 +164,7 @@ class Pkcs1Scheme implements EncryptionScheme, SignatureScheme {
     return constantTimeEqual(m, padded);
   }
 
-  pkcs1pad(hashBuf: Uint8Array, hashAlgorithm: HashAlg): Uint8Array {
+  pkcs1pad(hashBuf: Uint8Array, hashAlgorithm: HashingAlgorithm): Uint8Array {
     const digest = SIGN_INFO_HEAD[hashAlgorithm];
     if (!digest) throw new Error(`Unsupported hash algorithm: ${hashAlgorithm}`);
     const data = concat(digest, hashBuf);
@@ -182,7 +182,7 @@ class Pkcs1Scheme implements EncryptionScheme, SignatureScheme {
 export const pkcs1Scheme = {
   isEncryption: true as const,
   isSignature: true as const,
-  makeScheme(key: RSAKey, options: SchemeOptions): EncryptionScheme & SignatureScheme {
+  makeScheme(key: RSAKey, options: SchemeOptions): EncryptionSchemeImpl & SignatureScheme {
     return new Pkcs1Scheme(key, options);
   },
 };

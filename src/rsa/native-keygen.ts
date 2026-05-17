@@ -13,9 +13,11 @@ function fromBase64Url(b64url: string): Uint8Array {
 }
 
 /**
- * Populate `key` from node:crypto.generateKeyPairSync. Orders of magnitude
- * faster than the pure-JS Miller-Rabin path for keys ≥ 2048 bits
- * (~50 ms vs ~2 s for 2048-bit).
+ * Populate `key` with a freshly-generated `bits`-bit RSA key whose public
+ * exponent is `expHex` (hex string, e.g. `"010001"`). Uses
+ * `node:crypto.generateKeyPairSync` — orders of magnitude faster than the
+ * pure-JS Miller-Rabin path for keys ≥ 2048 bits (~50 ms vs ~2 s for
+ * 2048-bit).
  *
  * Browser bundle has no equivalent; src/index.browser.ts doesn't wire this
  * factory and NodeRSA.generateKeyPair falls back to RSAKey.generate.

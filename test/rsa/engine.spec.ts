@@ -5,7 +5,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { DerReader } from '../../src/asn1/index.js';
 import { BigInteger, setBigIntegerBackend } from '../../src/bigint/big-integer.js';
 import { nodeBackend } from '../../src/crypto/backend.node.js';
-import { equals, fromUtf8 } from '../../src/crypto/bytes.js';
+import { fromUtf8 } from '../../src/crypto/bytes.js';
 import { JsEngine } from '../../src/rsa/engine.js';
 import { RSAKey } from '../../src/rsa/key.js';
 import { SCHEMES } from '../../src/schemes/index.js';
@@ -57,7 +57,7 @@ describe('JsEngine encrypt → decrypt (PKCS#1 v1.5)', () => {
     const ct = engine.encrypt(msg);
     expect(ct.length).toBe(key.encryptedDataLength);
     const dec = engine.decrypt(ct);
-    expect(equals(dec, msg)).toBe(true);
+    expect(dec).toEqual(msg);
   });
 
   it('chunks a long message across multiple blocks', () => {
@@ -70,7 +70,7 @@ describe('JsEngine encrypt → decrypt (PKCS#1 v1.5)', () => {
     expect(ct.length % key.encryptedDataLength).toBe(0);
     expect(ct.length).toBeGreaterThan(key.encryptedDataLength); // at least 2 chunks
     const dec = engine.decrypt(ct);
-    expect(equals(dec, msg)).toBe(true);
+    expect(dec).toEqual(msg);
   });
 
   it('rejects ciphertext whose length is not a multiple of encryptedDataLength', () => {
@@ -89,7 +89,7 @@ describe('JsEngine encrypt → decrypt (PKCS#1 v1.5)', () => {
     const msg = fromUtf8('signed payload');
     const ct = engine.encrypt(msg, true);
     const dec = engine.decrypt(ct, true);
-    expect(equals(dec, msg)).toBe(true);
+    expect(dec).toEqual(msg);
   });
 });
 
@@ -121,8 +121,8 @@ describe('JsEngine — CRT vs non-CRT $doPrivate parity', () => {
     // branch (basicKey) must agree on the plaintext.
     const ptFull = fullEng.decrypt(ctFull);
     const ptBasic = basicEng.decrypt(ctFull);
-    expect(equals(ptBasic, ptFull)).toBe(true);
-    expect(equals(ptFull, msg)).toBe(true);
+    expect(ptBasic).toEqual(ptFull);
+    expect(ptFull).toEqual(msg);
   });
 
   it('CRT and non-CRT produce identical raw $doPrivate result for a fixed input < n', () => {
@@ -160,7 +160,7 @@ describe('JsEngine — message-size boundary handling (PKCS#1 v1.5)', () => {
     const ct = engine.encrypt(msg);
     expect(ct.length).toBe(key.encryptedDataLength); // exactly one chunk
     const dec = engine.decrypt(ct);
-    expect(equals(dec, msg)).toBe(true);
+    expect(dec).toEqual(msg);
   });
 
   it('encrypts a message of maxMessageLength + 1 bytes in two blocks', () => {
@@ -172,7 +172,7 @@ describe('JsEngine — message-size boundary handling (PKCS#1 v1.5)', () => {
     const ct = engine.encrypt(msg);
     expect(ct.length).toBe(key.encryptedDataLength * 2);
     const dec = engine.decrypt(ct);
-    expect(equals(dec, msg)).toBe(true);
+    expect(dec).toEqual(msg);
   });
 
   it('encrypts an empty message into a single full-size block', () => {
@@ -204,7 +204,7 @@ describe('JsEngine encrypt → decrypt (OAEP)', () => {
     const msg = fromUtf8('oaep engine');
     const ct = engine.encrypt(msg);
     const dec = engine.decrypt(ct);
-    expect(equals(dec, msg)).toBe(true);
+    expect(dec).toEqual(msg);
   });
 
   it('chunks across multiple OAEP blocks', () => {
@@ -216,6 +216,6 @@ describe('JsEngine encrypt → decrypt (OAEP)', () => {
     const ct = engine.encrypt(msg);
     expect(ct.length % key.encryptedDataLength).toBe(0);
     const dec = engine.decrypt(ct);
-    expect(equals(dec, msg)).toBe(true);
+    expect(dec).toEqual(msg);
   });
 });
