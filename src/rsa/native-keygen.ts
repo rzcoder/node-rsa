@@ -1,5 +1,4 @@
 import { generateKeyPairSync } from 'node:crypto';
-import { BigInteger } from '../bigint/big-integer.js';
 import { fromBase64 } from '../crypto/bytes.js';
 import type { RSAKey } from './key.js';
 
@@ -52,13 +51,14 @@ export function nodeNativeKeygen(key: RSAKey, bits: number, expHex: string): voi
     qi: string;
   };
 
-  key.n = new BigInteger(fromBase64Url(jwk.n));
-  key.e = exp;
-  key.d = new BigInteger(fromBase64Url(jwk.d));
-  key.p = new BigInteger(fromBase64Url(jwk.p));
-  key.q = new BigInteger(fromBase64Url(jwk.q));
-  key.dmp1 = new BigInteger(fromBase64Url(jwk.dp));
-  key.dmq1 = new BigInteger(fromBase64Url(jwk.dq));
-  key.coeff = new BigInteger(fromBase64Url(jwk.qi));
-  key.recalculateCache();
+  key.setPrivate(
+    fromBase64Url(jwk.n),
+    exp,
+    fromBase64Url(jwk.d),
+    fromBase64Url(jwk.p),
+    fromBase64Url(jwk.q),
+    fromBase64Url(jwk.dp),
+    fromBase64Url(jwk.dq),
+    fromBase64Url(jwk.qi),
+  );
 }

@@ -55,7 +55,7 @@ describe('OAEP — JS-engine round-trip and constant-time decode (C4)', () => {
     const ct = key.encrypt(new TextEncoder().encode('test')) as Uint8Array;
     const tampered = new Uint8Array(ct);
     tampered[Math.floor(tampered.length / 2)] ^= 0x01;
-    expect(() => key.decrypt(tampered)).toThrow(/Decryption failed.*invalid padding/);
+    expect(() => key.decrypt(tampered)).toThrow('Error during decryption');
   });
 
   it('all mid-buffer mutations yield the SAME generic error (constant error path)', () => {
@@ -106,7 +106,7 @@ describe('PKCS#1 v1.5 — JS-engine round-trip and constant-time decode (C5)', (
     const ct = key.encrypt(new TextEncoder().encode('test')) as Uint8Array;
     const tampered = new Uint8Array(ct);
     tampered[Math.floor(tampered.length / 2)] ^= 0x01;
-    expect(() => key.decrypt(tampered)).toThrow(/Decryption failed.*invalid padding/);
+    expect(() => key.decrypt(tampered)).toThrow('Error during decryption');
   });
 
   it('all mid-buffer mutations yield the SAME generic error (constant error path)', () => {

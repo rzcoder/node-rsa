@@ -125,6 +125,15 @@ export function applyOptions(target: ResolvedOptions, options: NodeRSAOptions): 
     ) {
       throw new Error(`Unsupported hashing algorithm for ${target.environment} environment`);
     }
+    if (
+      target.signingSchemeOptions.hash &&
+      (target.signingSchemeOptions.hash === 'md4' || target.signingSchemeOptions.hash === 'md5')
+    ) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `node-rsa: ${target.signingSchemeOptions.hash} is cryptographically broken for signatures; use sha256 or stronger`,
+      );
+    }
   }
 
   if (options.encryptionScheme !== undefined) {

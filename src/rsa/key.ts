@@ -61,7 +61,10 @@ export class RSAKey {
    */
   setOptions(
     options: SchemeOptions,
-    schemes: Record<string, { makeScheme(key: RSAKey, opts: SchemeOptions): unknown }>,
+    schemes: Record<
+      string,
+      { makeScheme(key: RSAKey, opts: SchemeOptions): EncryptionSchemeImpl | SignatureScheme }
+    >,
   ): void {
     this.options = options;
     const sigProvider = schemes[options.signingScheme];
@@ -70,7 +73,8 @@ export class RSAKey {
     if (!encProvider) throw new Error(`Unknown encryption scheme: ${options.encryptionScheme}`);
 
     if (sigProvider === encProvider) {
-      const scheme = sigProvider.makeScheme(this, options) as EncryptionSchemeImpl & SignatureScheme;
+      const scheme = sigProvider.makeScheme(this, options) as EncryptionSchemeImpl &
+        SignatureScheme;
       this.signingScheme = scheme;
       this.encryptionScheme = scheme;
     } else {
@@ -360,6 +364,28 @@ export class RSAKey {
       keyBitLength,
       keyByteLength: (keyBitLength + 6) >> 3,
     };
+  }
+
+  /**
+   * Clear all key material from this instance. Call when the key is no
+   * longer needed to reduce the window in which private components are
+   * reachable from the JS heap (heap snapshots, core dumps, swap).
+   *
+   * JavaScript has no guaranteed deterministic memory zeroing — GC-managed
+   * BigInteger internals may linger until collected. This method removes
+   * references as early as possible, which is the strongest guarantee the
+   * language offers.
+   */
+  destroy(): void {
+    this.n = null;
+    this.e = 0;
+    this.d = null;
+    this.p = null;
+    this.q = null;
+    this.dmp1 = null;
+    this.dmq1 = null;
+    this.coeff = null;
+    this.cache = { keyBitLength: 0, keyByteLength: 0 };
   }
 
   /** Convenience: get the backend bound via setOptions. */
