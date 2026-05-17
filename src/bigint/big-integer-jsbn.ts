@@ -126,20 +126,30 @@ function cbit(x: number): number {
 
 // BigInteger class
 export class BigInteger {
+  /** @internal digit array via numeric index — jsbn-style storage */
   [n: number]: number;
+  /** @internal */
   t = 0;
+  /** @internal */
   s = 0;
 
   // Mirror legacy `this.DB`/`this.DM`/etc. access patterns
+  /** @internal */
   readonly DB = DB;
+  /** @internal */
   readonly DM = DM;
+  /** @internal */
   readonly DV = DV;
+  /** @internal */
   readonly FV = FV;
+  /** @internal */
   readonly F1 = F1;
+  /** @internal */
   readonly F2 = F2;
 
   static ZERO: BigInteger;
   static ONE: BigInteger;
+  /** @internal */
   static readonly int2char = int2char;
 
   constructor(
@@ -160,6 +170,7 @@ export class BigInteger {
   }
 
   // am3: multiply-accumulate (digit-base 2^28)
+  /** @internal */
   am(i: number, x: number, w: BigInteger, j: number, c: number, n: number): number {
     const xl = x & 0x3fff;
     const xh = x >> 14;
@@ -175,12 +186,14 @@ export class BigInteger {
   }
 
   // protected: digit/byte initialisation
+  /** @internal */
   copyTo(r: BigInteger): void {
     for (let i = this.t - 1; i >= 0; --i) r[i] = this[i]!;
     r.t = this.t;
     r.s = this.s;
   }
 
+  /** @internal */
   fromInt(x: number): void {
     this.t = 1;
     this.s = x < 0 ? -1 : 0;
@@ -189,6 +202,7 @@ export class BigInteger {
     else this.t = 0;
   }
 
+  /** @internal */
   fromString(data: string | number[] | Uint8Array, radix?: number, unsigned?: boolean): void {
     let k: number;
     switch (radix) {
@@ -246,20 +260,24 @@ export class BigInteger {
     if (mi) BigInteger.ZERO.subTo(this, this);
   }
 
+  /** @internal */
   fromByteArray(a: number[], unsigned?: boolean): void {
     this.fromString(a, 256, unsigned);
   }
 
+  /** @internal */
   fromBuffer(a: Uint8Array): void {
     this.fromString(a, 256, true);
   }
 
+  /** @internal */
   clamp(): void {
     const c = this.s & this.DM;
     while (this.t > 0 && this[this.t - 1] === c) --this.t;
   }
 
   // arithmetic on internal digits
+  /** @internal */
   dlShiftTo(n: number, r: BigInteger): void {
     let i: number;
     for (i = this.t - 1; i >= 0; --i) r[i + n] = this[i]!;
@@ -268,12 +286,14 @@ export class BigInteger {
     r.s = this.s;
   }
 
+  /** @internal */
   drShiftTo(n: number, r: BigInteger): void {
     for (let i = n; i < this.t; ++i) r[i - n] = this[i]!;
     r.t = Math.max(this.t - n, 0);
     r.s = this.s;
   }
 
+  /** @internal */
   lShiftTo(n: number, r: BigInteger): void {
     const bs = n % this.DB;
     const cbs = this.DB - bs;
@@ -292,6 +312,7 @@ export class BigInteger {
     r.clamp();
   }
 
+  /** @internal */
   rShiftTo(n: number, r: BigInteger): void {
     r.s = this.s;
     const ds = Math.floor(n / this.DB);
@@ -312,6 +333,7 @@ export class BigInteger {
     r.clamp();
   }
 
+  /** @internal */
   subTo(a: BigInteger, r: BigInteger): void {
     let i = 0;
     let c = 0;
@@ -345,6 +367,7 @@ export class BigInteger {
     r.clamp();
   }
 
+  /** @internal */
   multiplyTo(a: BigInteger, r: BigInteger): void {
     const x = this.abs();
     const y = a.abs();
@@ -357,6 +380,7 @@ export class BigInteger {
     if (this.s !== a.s) BigInteger.ZERO.subTo(r, r);
   }
 
+  /** @internal */
   squareTo(r: BigInteger): void {
     const x = this.abs();
     let i = (r.t = 2 * x.t);
@@ -376,6 +400,7 @@ export class BigInteger {
     r.clamp();
   }
 
+  /** @internal */
   divRemTo(m: BigInteger, q: BigInteger | null, r: BigInteger | null): void {
     const pm = m.abs();
     if (pm.t <= 0) return;
@@ -433,6 +458,7 @@ export class BigInteger {
     if (ts < 0) BigInteger.ZERO.subTo(r, r);
   }
 
+  /** @internal */
   invDigit(): number {
     if (this.t < 1) return 0;
     const x = this[0]!;
@@ -449,6 +475,7 @@ export class BigInteger {
     return ((this.t > 0 ? this[0]! & 1 : this.s) & 1) === 0;
   }
 
+  /** @internal */
   exp(e: number, z: Reducer): BigInteger {
     if (e > 0xffffffff || e < 1) return BigInteger.ONE;
     let r = nbi();
@@ -507,6 +534,7 @@ export class BigInteger {
     return m ? r : '0';
   }
 
+  /** @internal */
   negate(): BigInteger {
     const r = nbi();
     BigInteger.ZERO.subTo(this, r);
@@ -545,12 +573,14 @@ export class BigInteger {
   }
 
   // extended functions
+  /** @internal */
   clone(): BigInteger {
     const r = nbi();
     this.copyTo(r);
     return r;
   }
 
+  /** @internal */
   intValue(): number {
     if (this.s < 0) {
       if (this.t === 1) return this[0]! - this.DV;
@@ -560,14 +590,17 @@ export class BigInteger {
     return ((this[1]! & ((1 << (32 - this.DB)) - 1)) << this.DB) | this[0]!;
   }
 
+  /** @internal */
   byteValue(): number {
     return this.t === 0 ? this.s : (this[0]! << 24) >> 24;
   }
 
+  /** @internal */
   shortValue(): number {
     return this.t === 0 ? this.s : (this[0]! << 16) >> 16;
   }
 
+  /** @internal */
   chunkSize(r: number): number {
     return Math.floor((Math.LN2 * this.DB) / Math.log(r));
   }
@@ -578,6 +611,7 @@ export class BigInteger {
     return 1;
   }
 
+  /** @internal */
   toRadix(b?: number): string {
     const base = b ?? 10;
     if (this.signum() === 0 || base < 2 || base > 36) return '0';
@@ -595,6 +629,7 @@ export class BigInteger {
     return z.intValue().toString(base) + r;
   }
 
+  /** @internal */
   fromRadix(s: string, b?: number): void {
     this.fromInt(0);
     const base = b ?? 10;
@@ -624,6 +659,7 @@ export class BigInteger {
     if (mi) BigInteger.ZERO.subTo(this, this);
   }
 
+  /** @internal */
   fromNumber(a: number, b?: number): void {
     if (typeof b === 'number') {
       // (bits, certainty) → generate probable prime
@@ -650,6 +686,7 @@ export class BigInteger {
     }
   }
 
+  /** @internal */
   toByteArray(): number[] {
     let i = this.t;
     const r: number[] = [];
@@ -711,18 +748,22 @@ export class BigInteger {
     return res.slice();
   }
 
+  /** @internal */
   equals(a: BigInteger): boolean {
     return this.compareTo(a) === 0;
   }
 
+  /** @internal */
   min(a: BigInteger): BigInteger {
     return this.compareTo(a) < 0 ? this : a;
   }
 
+  /** @internal */
   max(a: BigInteger): BigInteger {
     return this.compareTo(a) > 0 ? this : a;
   }
 
+  /** @internal */
   bitwiseTo(a: BigInteger, op: (x: number, y: number) => number, r: BigInteger): void {
     let i: number;
     let f: number;
@@ -741,26 +782,31 @@ export class BigInteger {
     r.clamp();
   }
 
+  /** @internal */
   and(a: BigInteger): BigInteger {
     const r = nbi();
     this.bitwiseTo(a, op_and, r);
     return r;
   }
+  /** @internal */
   or(a: BigInteger): BigInteger {
     const r = nbi();
     this.bitwiseTo(a, op_or, r);
     return r;
   }
+  /** @internal */
   xor(a: BigInteger): BigInteger {
     const r = nbi();
     this.bitwiseTo(a, op_xor, r);
     return r;
   }
+  /** @internal */
   andNot(a: BigInteger): BigInteger {
     const r = nbi();
     this.bitwiseTo(a, op_andnot, r);
     return r;
   }
+  /** @internal */
   not(): BigInteger {
     const r = nbi();
     for (let i = 0; i < this.t; ++i) r[i] = this.DM & ~this[i]!;
@@ -783,12 +829,14 @@ export class BigInteger {
     return r;
   }
 
+  /** @internal */
   getLowestSetBit(): number {
     for (let i = 0; i < this.t; ++i) if (this[i] !== 0) return i * this.DB + lbit(this[i]!);
     if (this.s < 0) return this.t * this.DB;
     return -1;
   }
 
+  /** @internal */
   bitCount(): number {
     let r = 0;
     const x = this.s & this.DM;
@@ -802,21 +850,26 @@ export class BigInteger {
     return (this[j]! & (1 << (n % this.DB))) !== 0;
   }
 
+  /** @internal */
   changeBit(n: number, op: (x: number, y: number) => number): BigInteger {
     const r = BigInteger.ONE.shiftLeft(n);
     this.bitwiseTo(r, op, r);
     return r;
   }
+  /** @internal */
   setBit(n: number): BigInteger {
     return this.changeBit(n, op_or);
   }
+  /** @internal */
   clearBit(n: number): BigInteger {
     return this.changeBit(n, op_andnot);
   }
+  /** @internal */
   flipBit(n: number): BigInteger {
     return this.changeBit(n, op_xor);
   }
 
+  /** @internal */
   addTo(a: BigInteger, r: BigInteger): void {
     let i = 0;
     let c = 0;
@@ -870,11 +923,13 @@ export class BigInteger {
     this.squareTo(r);
     return r;
   }
+  /** @internal */
   divide(a: BigInteger): BigInteger {
     const r = nbi();
     this.divRemTo(a, r, null);
     return r;
   }
+  /** @internal */
   remainder(a: BigInteger): BigInteger {
     const r = nbi();
     this.divRemTo(a, null, r);
@@ -887,12 +942,14 @@ export class BigInteger {
     return [q, r];
   }
 
+  /** @internal */
   dMultiply(n: number): void {
     this[this.t] = this.am(0, n - 1, this, 0, 0, this.t);
     ++this.t;
     this.clamp();
   }
 
+  /** @internal */
   dAddOffset(n: number, w: number): void {
     if (n === 0) return;
     while (this.t <= w) this[this.t++] = 0;
@@ -904,10 +961,12 @@ export class BigInteger {
     }
   }
 
+  /** @internal */
   pow(e: number): BigInteger {
     return this.exp(e, new NullExp());
   }
 
+  /** @internal */
   multiplyLowerTo(a: BigInteger, n: number, r: BigInteger): void {
     let i = Math.min(this.t + a.t, n);
     r.s = 0;
@@ -919,6 +978,7 @@ export class BigInteger {
     r.clamp();
   }
 
+  /** @internal */
   multiplyUpperTo(a: BigInteger, n: number, r: BigInteger): void {
     --n;
     let i = (r.t = this.t + a.t - n);
@@ -1044,6 +1104,7 @@ export class BigInteger {
     return y;
   }
 
+  /** @internal */
   modInt(n: number): number {
     if (n <= 0) return 0;
     const d = this.DV % n;
@@ -1126,6 +1187,7 @@ export class BigInteger {
     return x.millerRabin(t);
   }
 
+  /** @internal */
   millerRabin(t: number): boolean {
     const n1 = this.subtract(BigInteger.ONE);
     const k = n1.getLowestSetBit();

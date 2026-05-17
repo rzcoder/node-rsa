@@ -261,8 +261,7 @@ export class BigInteger {
   static readonly ONE: BigInteger = new BigInteger(1);
   static readonly ZERO: BigInteger = new BigInteger(0);
 
-  /** @internal */
-  _v: bigint;
+  private _v: bigint;
 
   constructor(a?: number | string | Uint8Array | bigint | null, b?: number, unsigned?: boolean) {
     if (a == null) {
@@ -309,6 +308,7 @@ export class BigInteger {
     return (this._v & ONE_BI) === ZERO_BI;
   }
 
+  /** @internal */
   negate(): BigInteger {
     return new BigInteger(-this._v);
   }
@@ -333,6 +333,7 @@ export class BigInteger {
     return new BigInteger(this._v * this._v);
   }
 
+  /** @internal */
   divide(o: BigInteger): BigInteger {
     return new BigInteger(this._v / o._v);
   }
