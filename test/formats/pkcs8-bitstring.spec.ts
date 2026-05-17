@@ -19,7 +19,6 @@ beforeAll(() => {
   setBigIntegerBackend(nodeBackend);
 });
 
-// ============================================================================
 // PKCS#8 BIT STRING corner case audit
 //
 // The legacy `asn1` npm package (used by node-rsa v1) silently masks any
@@ -41,8 +40,6 @@ beforeAll(() => {
 //      unused-bits, with a clear diagnostic (no silent masking).
 //   3. Round-trip is byte-identical: import → export → import yields the
 //      same DER as the v1 `asn1`-package-produced fixture.
-// ============================================================================
-
 describe('PKCS#8 SPKI BIT STRING audit', () => {
   it('publicExport always emits unused-bits = 0 (no caller-tunable parameter)', () => {
     const k = new NodeRSA(readStr('private_pkcs1.pem'));

@@ -7,13 +7,11 @@
  * This port preserves the original digit representation, function names, and
  * algorithm structure 1-to-1 with the legacy implementation so that all
  * keygen RNG and primality-test paths produce byte-identical results.
- *
- * TODO(v2.1): replace with a native-BigInt backend behind the same surface.
  */
 
 import type { CryptoBackend } from '../crypto/types.js';
 
-// ─── Backend injection for RNG ──────────────────────────────────────────────
+// Backend injection for RNG
 let _backend: CryptoBackend | undefined;
 
 export function setBigIntegerBackend(backend: CryptoBackend): void {
@@ -29,7 +27,7 @@ function getBackend(): CryptoBackend {
   return _backend;
 }
 
-// ─── Digit-base constants ───────────────────────────────────────────────────
+// Digit-base constants
 const DB = 28; // bits per digit
 const DM = (1 << DB) - 1;
 const DV = 1 << DB;
@@ -38,7 +36,7 @@ const FV = 2 ** BI_FP;
 const F1 = BI_FP - DB;
 const F2 = 2 * DB - BI_FP;
 
-// ─── Reducer interface (Classic / Montgomery / Barrett / NullExp) ───────────
+// Reducer interface (Classic / Montgomery / Barrett / NullExp)
 interface Reducer {
   convert(x: BigInteger): BigInteger;
   revert(x: BigInteger): BigInteger;
@@ -47,7 +45,7 @@ interface Reducer {
   sqrTo(x: BigInteger, r: BigInteger): void;
 }
 
-// ─── Radix-conversion tables ────────────────────────────────────────────────
+// Radix-conversion tables
 const BI_RM = '0123456789abcdefghijklmnopqrstuvwxyz';
 const BI_RC: number[] = [];
 {
@@ -126,7 +124,7 @@ function cbit(x: number): number {
   return r;
 }
 
-// ─── BigInteger class ───────────────────────────────────────────────────────
+// BigInteger class
 export class BigInteger {
   [n: number]: number;
   t = 0;
@@ -161,7 +159,7 @@ export class BigInteger {
     }
   }
 
-  // ── am3: multiply-accumulate (digit-base 2^28) ───────────────────────────
+  // am3: multiply-accumulate (digit-base 2^28)
   am(i: number, x: number, w: BigInteger, j: number, c: number, n: number): number {
     const xl = x & 0x3fff;
     const xh = x >> 14;
@@ -176,7 +174,7 @@ export class BigInteger {
     return c;
   }
 
-  // ── protected: digit/byte initialisation ─────────────────────────────────
+  // protected: digit/byte initialisation
   copyTo(r: BigInteger): void {
     for (let i = this.t - 1; i >= 0; --i) r[i] = this[i]!;
     r.t = this.t;
@@ -261,7 +259,7 @@ export class BigInteger {
     while (this.t > 0 && this[this.t - 1] === c) --this.t;
   }
 
-  // ── arithmetic on internal digits ────────────────────────────────────────
+  // arithmetic on internal digits
   dlShiftTo(n: number, r: BigInteger): void {
     let i: number;
     for (i = this.t - 1; i >= 0; --i) r[i + n] = this[i]!;
@@ -470,7 +468,7 @@ export class BigInteger {
     return z.revert(r);
   }
 
-  // ── public arithmetic & comparisons ───────────────────────────────────────
+  // public arithmetic & comparisons
   toString(b?: number): string {
     if (this.s < 0) return `-${this.negate().toString(b)}`;
     let k: number;
@@ -546,7 +544,7 @@ export class BigInteger {
     return this.exp(e, z);
   }
 
-  // ── extended functions ────────────────────────────────────────────────────
+  // extended functions
   clone(): BigInteger {
     const r = nbi();
     this.copyTo(r);
@@ -1158,7 +1156,7 @@ export class BigInteger {
   }
 }
 
-// ─── helpers and reducers ───────────────────────────────────────────────────
+// helpers and reducers
 function nbi(): BigInteger {
   return new BigInteger(null);
 }
@@ -1320,11 +1318,11 @@ class NullExp implements Reducer {
   }
 }
 
-// ─── lowprimes table for primality testing ──────────────────────────────────
+// lowprimes table for primality testing
 // biome-ignore format: keep the lowprimes table on one line for clarity vs the legacy file
 const lowprimes: number[] = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97,101,103,107,109,113,127,131,137,139,149,151,157,163,167,173,179,181,191,193,197,199,211,223,227,229,233,239,241,251,257,263,269,271,277,281,283,293,307,311,313,317,331,337,347,349,353,359,367,373,379,383,389,397,401,409,419,421,431,433,439,443,449,457,461,463,467,479,487,491,499,503,509,521,523,541,547,557,563,569,571,577,587,593,599,601,607,613,617,619,631,641,643,647,653,659,661,673,677,683,691,701,709,719,727,733,739,743,751,757,761,769,773,787,797,809,811,821,823,827,829,839,853,857,859,863,877,881,883,887,907,911,919,929,937,941,947,953,967,971,977,983,991,997];
 const lplim = (1 << 26) / lowprimes[lowprimes.length - 1]!;
 
-// ─── constants — defined after the class because they call nbv ──────────────
+// constants — defined after the class because they call nbv
 BigInteger.ZERO = nbv(0);
 BigInteger.ONE = nbv(1);

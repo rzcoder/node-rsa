@@ -1,12 +1,10 @@
 import type { CryptoBackend } from '../crypto/types.js';
 
-// ============================================================================
 // Native-BigInt implementation of the jsbn BigInteger surface used by node-rsa.
 // Drop-in for src/bigint/big-integer-jsbn.ts — same exported class name and
 // public methods. Selected by src/bigint/big-integer.ts (selector).
 //
 // Backend injection (random_bytes for primality testing) mirrors the jsbn file.
-// ============================================================================
 
 let _backend: CryptoBackend | undefined;
 
@@ -23,8 +21,7 @@ function getBackend(): CryptoBackend {
   return _backend;
 }
 
-// ---------- helpers ----------
-
+// helpers
 const ZERO_BI = 0n;
 const ONE_BI = 1n;
 const TWO_BI = 2n;
@@ -259,8 +256,7 @@ function parseFromString(s: string, radix: number): bigint {
   return neg ? -v : v;
 }
 
-// ---------- the public class ----------
-
+// the public class
 export class BigInteger {
   static readonly ONE: BigInteger = new BigInteger(1);
   static readonly ZERO: BigInteger = new BigInteger(0);

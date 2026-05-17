@@ -64,20 +64,7 @@ Key methods on `NodeRSA`:
 | `isPrivate`, `isPublic(strict?)`, `isEmpty` | Predicates |
 | `getKeySize`, `getMaxMessageSize` | Key metrics |
 
-## Behaviour changes from v1
-
-| Concern | v1 | v2 |
-|---|---|---|
-| Return types on Node | `Buffer` | `Buffer` (unchanged; `Buffer` extends `Uint8Array`) |
-| Return types on browser | needed Buffer polyfill | `Uint8Array` |
-| Module system | CJS | ESM + CJS dual |
-| Min Node version | 8.11 | 20 |
-| Browser crypto | `crypto-browserify` shim required | Built-in: `@noble/hashes` + `globalThis.crypto.getRandomValues` |
-| `setOptions({environment})` | controls runtime branching | Deprecated no-op (still forces JS engine when set to `'browser'`) |
-| MD4 in browser | available via shim | not available (Web Crypto subset) |
-| `asn1` npm dependency | required | replaced with in-tree DER reader/writer |
-
-A migration walkthrough is in [`MIGRATION.md`](MIGRATION.md).
+Upgrading from v1? See [`MIGRATION.md`](MIGRATION.md) for the behaviour-change summary and step-by-step walkthrough.
 
 ## Browser compatibility
 
