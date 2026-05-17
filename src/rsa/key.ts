@@ -61,7 +61,10 @@ export class RSAKey {
    */
   setOptions(
     options: SchemeOptions,
-    schemes: Record<string, { makeScheme(key: RSAKey, opts: SchemeOptions): EncryptionSchemeImpl | SignatureScheme }>,
+    schemes: Record<
+      string,
+      { makeScheme(key: RSAKey, opts: SchemeOptions): EncryptionSchemeImpl | SignatureScheme }
+    >,
   ): void {
     this.options = options;
     const sigProvider = schemes[options.signingScheme];
@@ -70,7 +73,8 @@ export class RSAKey {
     if (!encProvider) throw new Error(`Unknown encryption scheme: ${options.encryptionScheme}`);
 
     if (sigProvider === encProvider) {
-      const scheme = sigProvider.makeScheme(this, options) as EncryptionSchemeImpl & SignatureScheme;
+      const scheme = sigProvider.makeScheme(this, options) as EncryptionSchemeImpl &
+        SignatureScheme;
       this.signingScheme = scheme;
       this.encryptionScheme = scheme;
     } else {

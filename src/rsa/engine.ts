@@ -32,7 +32,8 @@ export class JsEngine implements Engine {
   private readonly pkcs1: EncryptionSchemeImpl;
 
   constructor(private readonly key: RSAKey) {
-    this.pkcs1 = pkcs1Provider.makeScheme(key, key.options) as EncryptionSchemeImpl & SignatureScheme;
+    this.pkcs1 = pkcs1Provider.makeScheme(key, key.options) as EncryptionSchemeImpl &
+      SignatureScheme;
   }
 
   encrypt(buffer: Uint8Array, usePrivate = false): Uint8Array {
