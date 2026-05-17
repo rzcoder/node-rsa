@@ -1,7 +1,7 @@
 {
   "name": "node-rsa",
-  "version": "2.0.0",
-  "description": "RSA library for Node.js and browsers — pure-TS, no Buffer/crypto polyfills required in the browser",
+  "version": "2.0.0-rc.0",
+  "description": "RSA library for Node.js and browsers",
   "type": "module",
   "engines": {
     "node": ">=20"

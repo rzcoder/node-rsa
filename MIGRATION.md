@@ -1,84 +1,17 @@
-# Migrating from node-rsa v1 / v2.0 to v2.1+
+# Migrating from node-rsa v1 to v2.0
 
 ## TL;DR
 
-* **v1 → v2.0**: bump Node to ≥ 20; everything else below in Steps 1–7.
-* **v2.0 → v2.1**: one source-level change — the default signing scheme
-  switched from PKCS#1 v1.5 to RSASSA-PSS. If you rely on the default
-  (i.e. call `key.sign(...)` without an explicit `signingScheme`),
-  either accept the switch (recommended — PSS is modern best practice)
-  or pin to v1.5 explicitly. See [v2.0 → v2.1](#v20--v21-default-signing-scheme).
+Bump Node to ≥ 20; follow Steps 1–10 below. The biggest behavioural change
+to watch for is the **default signing scheme switch from PKCS#1 v1.5 to
+RSASSA-PSS**. If you rely on the default (i.e. call `key.sign(...)` without
+an explicit `signingScheme`), either accept the switch (recommended — PSS
+is modern best practice) or pin to v1.5 explicitly. See
+[Step 7](#step-7-adjust-to-the-new-default-signing-scheme).
 
 For browser bundlers (Vite, Webpack 5, Rollup, esbuild, Parcel), **delete
 any Buffer/crypto/process shims** you set up for v1 — they're no longer
 needed and may interfere.
-
-## v2.0 → v2.1: node bundle uses `node:crypto` natively
-
-Starting in 2.1, the node bundle routes RSA keygen, sign, and verify
-through `node:crypto.{generateKeyPairSync, sign, verify}` whenever
-possible — order-of-magnitude faster than the pure-JS path for keys ≥ 2048
-bits. The browser bundle is unchanged (no `node:crypto`).
-
-In normal use you don't need to do anything. Two configurations now
-throw where 2.0 silently fell back to JS:
-
-1. **Custom MGF for PSS.** `node:crypto` supports only MGF1 with hash =
-   signing hash. If you pass `signingScheme: { scheme: 'pss', mgf: ... }`
-   on Node, scheme construction throws. To keep a custom MGF, opt back
-   into the pure-JS path:
-
-   ```ts
-   key.setOptions({ environment: 'browser' });   // forces JsEngine + JS schemes
-   ```
-
-2. **Hash algorithms not supported by your local OpenSSL build.** Most
-   commonly this affects `md4` (and sometimes `ripemd160`) when the
-   OpenSSL 3 legacy provider isn't loaded. Both `nodeBackend.digest` and
-   `crypto.sign` reject the hash; sign/verify throw with a clear error.
-   The previous behaviour was identical (the JS scheme delegated to
-   `nodeBackend.digest` which also threw) — only the error wording and
-   call-site differ.
-
-If you forced `environment: 'browser'` at runtime, sign/verify revert to
-the pure-JS schemes alongside the engine — that path is unchanged.
-
-## v2.0 → v2.1: default signing scheme
-
-`DEFAULT_SIGNING_SCHEME` changed from `'pkcs1'` to `'pss'` in 2.1. This
-matters in two cases:
-
-1. **You call `key.sign()` without an explicit scheme and someone else
-   verifies the signature.** They'll be expecting PSS, not PKCS#1 v1.5.
-   Either coordinate the switch or pin explicitly:
-
-   ```ts
-   const key = new NodeRSA(pem, { signingScheme: 'pkcs1' });
-   //                              ^^^^^^^^^^^^^^^^^^^^^^^^
-   //         keeps v2.0 default; remove this line to accept the v2.1 default
-   ```
-
-2. **You used the bare-hash shorthand** `signingScheme: 'sha256'`. The
-   shorthand maps to "default scheme + that hash", so before 2.1 it meant
-   `pkcs1-sha256`; now it means `pss-sha256`. Spell out the scheme
-   to keep behaviour:
-
-   ```ts
-   new NodeRSA(null, { signingScheme: 'pkcs1-sha256' });
-   ```
-
-Round-trip in-process (`key.sign()` then `key.verify()` on the same
-`NodeRSA` instance, no `setOptions` between them) is unaffected — both
-sides see the same default and round-trip cleanly. Cross-version
-verification (sign in 2.0, verify in 2.1, or vice versa) requires an
-explicit scheme on at least one side.
-
-There are no other source-level changes between 2.0 and 2.1. The rest of
-this document is the original v1 → v2.0 migration.
-
----
-
-# Migrating from node-rsa v1 to v2.0
 
 ## Behaviour changes at a glance
 
@@ -92,6 +25,8 @@ this document is the original v1 → v2.0 migration.
 | `setOptions({environment})` | controls runtime branching | Deprecated no-op (still forces JS engine when set to `'browser'`) |
 | MD4 in browser | available via shim | not available (Web Crypto subset) |
 | `asn1` npm dependency | required | replaced with in-tree DER reader/writer |
+| Default signing scheme | `pkcs1` (PKCS#1 v1.5) | `pss` (RSASSA-PSS) |
+| Custom MGF for PSS on Node | accepted (pure-JS path) | throws — force JS path via `setOptions({environment:'browser'})` |
 
 ## Step 1: bump Node
 
@@ -185,24 +120,134 @@ If you genuinely relied on `'iojs'` as an environment value, switch to
   SHA-256 for any signing scheme that's not pinned by a wire-protocol
   requirement.
 
-## Step 7: re-run your tests
+The node bundle additionally routes sign/verify through
+`node:crypto.{sign,verify}`, which **throws synchronously** for any hash
+the local OpenSSL build doesn't support (most commonly `md4`, sometimes
+`ripemd160`). v1 and v2's pure-JS schemes already threw at digest time —
+only the error wording and call-site differ. If you need a hash OpenSSL
+doesn't support but `@noble/hashes` does, force the JS path with
+`setOptions({ environment: 'browser' })`.
+
+## Step 7: adjust to the new default signing scheme
+
+`DEFAULT_SIGNING_SCHEME` is `'pss'` in v2 (was `'pkcs1'` in v1). This
+matters in two cases:
+
+1. **You call `key.sign()` without an explicit scheme and someone else
+   verifies the signature.** They'll be expecting PSS, not PKCS#1 v1.5.
+   Either coordinate the switch or pin explicitly:
+
+   ```ts
+   const key = new NodeRSA(pem, { signingScheme: 'pkcs1' });
+   //                              ^^^^^^^^^^^^^^^^^^^^^^^^
+   //         keeps v1's PKCS#1 v1.5 default; remove this line to accept the v2 default
+   ```
+
+2. **You used the bare-hash shorthand** `signingScheme: 'sha256'`. The
+   shorthand maps to "default scheme + that hash", so in v1 it meant
+   `pkcs1-sha256`; in v2 it means `pss-sha256`. Spell out the scheme to
+   keep behaviour:
+
+   ```ts
+   new NodeRSA(null, { signingScheme: 'pkcs1-sha256' });
+   ```
+
+Round-trip in-process (`key.sign()` then `key.verify()` on the same
+`NodeRSA` instance, no `setOptions` between them) is unaffected — both
+sides see the same default and round-trip cleanly. Cross-version
+verification (sign in v1, verify in v2, or vice versa) requires an
+explicit scheme on at least one side.
+
+## Step 8: if you used a custom MGF for PSS
+
+The node bundle calls `node:crypto.sign` / `verify` for PSS, and
+`node:crypto` only supports MGF1 with hash equal to the signing hash.
+Passing `signingScheme: { scheme: 'pss', mgf: ... }` on Node throws at
+scheme construction. To keep a custom MGF, opt back into the pure-JS path:
+
+```ts
+key.setOptions({ environment: 'browser' });   // forces JsEngine + JS schemes
+```
+
+If you forced `environment: 'browser'` at runtime, sign/verify revert to
+the pure-JS schemes alongside the engine — that path is unchanged.
+
+## Step 9: re-run your tests
 
 The 61-case mocha suite from v1 is ported 1-to-1 in v2's
 `test/node-rsa.spec.ts` (run on both Node and browser-emulated workspaces)
 and is green. If your tests still pass, you're done.
 
-## Things that did NOT change
+## Step 10: TypeScript types — drop `@types/node-rsa`
 
-- Constructor overloads — `new NodeRSA(pem)`, `new NodeRSA({b:2048})`,
-  `new NodeRSA(pem, 'pkcs1-private-pem')`, `new NodeRSA(pem, options)`.
-- Format strings — every `'pkcs1-private-pem'` / `'pkcs8-public-der'` /
-  `'openssh-private'` / `'components'` / etc. still resolves the same.
-- Combined scheme strings — `'pss-sha512'`, `'pkcs1-md5'`, etc.
-- The `$$encryptKey` / `$$decryptKey` / `$getDataForEncrypt` /
-  `$getDecryptedData` "internal" methods are still present on the class for
-  the (unusual) callers that depend on them.
-- `key.keyPair.{n,e,d,p,q,dmp1,dmq1,coeff}` field access — works the same;
-  the fields are `BigInteger | null`.
+v2 ships native TypeScript types. **Uninstall `@types/node-rsa`** — keeping
+it shadows the bundled `.d.ts` and produces stale errors:
+
+```sh
+npm uninstall @types/node-rsa
+```
+
+The runtime and value-level API is unchanged, but the type surface differs
+from `@types/node-rsa@1.1.4` in a few places. The fixes are mechanical.
+
+### Module shape
+
+DT used `export = NodeRSA`, which carried a namespace alongside the class.
+v2 uses `export default NodeRSA` plus named type exports.
+
+```ts
+// v1 + @types/node-rsa
+import NodeRSA = require('node-rsa');
+const opts: NodeRSA.Options = { signingScheme: 'pkcs1-sha256' };
+const key: NodeRSA.Key = pemString;
+
+// v2
+import NodeRSA, { type NodeRSAOptions, type Key } from 'node-rsa';
+const opts: NodeRSAOptions = { signingScheme: 'pkcs1-sha256' };
+const key: Key = pemString;
+```
+
+The `NodeRSA.<TypeName>` namespace pattern no longer resolves — every type
+must be imported by name.
+
+### One renamed type
+
+Only the `Options` interface is renamed — DT scoped it under the namespace
+(`NodeRSA.Options`), v2 exports it flat with the class-prefix:
+
+| `@types/node-rsa@1.1.4` | v2 |
+|---|---|
+| `NodeRSA.Options` | `NodeRSAOptions` |
+
+Every other DT type name is preserved as-is: `Key`, `Data`, `KeyBits`,
+`KeyComponentsPrivate`, `KeyComponentsPublic`, `Format`, `FormatPem`,
+`FormatDer`, `FormatComponentsPrivate`, `FormatComponentsPublic`, `Encoding`,
+`EncryptionScheme`, `SigningScheme`, `SigningSchemeHash`, `HashingAlgorithm`,
+`AdvancedSigningScheme`, `AdvancedSigningSchemePSS`, `AdvancedSigningSchemePKCS1`,
+`AdvancedEncryptionScheme`, `AdvancedEncryptionSchemePKCS1`,
+`AdvancedEncryptionSchemePKCS1OAEP`. Import them by name.
+
+### `Encoding` is narrower
+
+DT declared `Encoding = "ascii" | "utf8" | "utf16le" | "ucs2" | "latin1" |
+"base64" | "hex" | "binary" | "buffer"`. v2 declares `Encoding = 'buffer'
+| 'binary' | 'latin1' | 'hex' | 'base64' | 'utf8'`.
+
+The dropped values (`ascii`, `utf16le`, `ucs2`) were not actually wired
+end-to-end in v1 — passing them ran the data through a base64 fallback that
+mangled non-ASCII input. v2 removes the type so the silent fallback can't
+be reached. If you were genuinely using `'utf16le'` and getting expected
+results, you weren't; switch to `'utf8'` or pre-encode the buffer yourself.
+
+`'binary'` and `'latin1'` are interchangeable in v2 and map to the same
+runtime path.
+
+### Return types
+
+`Buffer` on Node, `Uint8Array` on browser — already covered in
+[Step 3](#step-3-review-return-types). DT always returned `Buffer`; if you
+relied on Buffer-only methods (`.toString('base64')`, `.write`, etc.) on a
+browser build, switch to the explicit-encoding overloads or polyfill `Buffer`.
 
 ## When to keep using v1
 
