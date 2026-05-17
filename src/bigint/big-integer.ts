@@ -8,28 +8,6 @@ import {
   setBigIntegerBackend as setNativeBackend,
 } from './big-integer-native.js';
 
-// ============================================================================
-// BigInteger implementation selector.
-//
-// ESM live-binding pattern: `export let BigInteger` updates everywhere
-// importers reference it once we call `setBigIntegerImpl(...)`. Importers do
-// `new BigInteger(...)` and `BigInteger.ONE`; both honour the latest value
-// because property access happens at call site, not import.
-//
-// Per-bundle defaults (set at module-load time of the entry):
-//   - src/index.node.ts      → leaves jsbn (proven, audited)
-//   - src/index.browser.ts   → setBigIntegerImpl('native') (native BigInt
-//                              is universally supported in modern browsers;
-//                              silently falls back to jsbn on runtimes
-//                              without BigInt)
-//
-// End-user override: `setBigIntegerImpl('jsbn' | 'native')` is re-exported
-// from the package entries. Must be called BEFORE constructing any NodeRSA
-// instance — once `new BigInteger(...)` has run, subsequent instances built
-// after a swap will use the new impl, but already-built numbers keep their
-// old class identity.
-// ============================================================================
-
 export type BigIntegerImpl = 'jsbn' | 'native';
 
 // The instance type stays jsbn-shaped at the type level (both impls satisfy

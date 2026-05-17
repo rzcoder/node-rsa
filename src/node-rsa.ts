@@ -220,7 +220,7 @@ export class NodeRSA {
     return this.keyPair.signingScheme.verify(data, sig);
   }
 
-  // ───── internals ──────────────────────────────────────────────────────────
+  // internals
   $$encryptKey(
     usePrivate: boolean,
     buffer: unknown,

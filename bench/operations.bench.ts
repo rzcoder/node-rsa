@@ -1,7 +1,6 @@
 import { bench, describe } from 'vitest';
 import { MODES, NodeRSA, PAYLOAD, buildKey, ctorOptionsFor } from './fixtures.js';
 
-// ============================================================================
 // One canonical configuration — 2048-bit RSA, SHA-256, 32B input — so the
 // matrix is "environment vs typical operation" and nothing else:
 //
@@ -12,8 +11,6 @@ import { MODES, NodeRSA, PAYLOAD, buildKey, ctorOptionsFor } from './fixtures.js
 // browser project: browser). Vitest's per-describe summary then compares
 // modes against each other for the SAME operation — which is the only
 // comparison worth printing.
-// ============================================================================
-
 describe('keygen 2048-bit', () => {
   for (const mode of MODES) {
     const pin = ctorOptionsFor(mode);

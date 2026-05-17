@@ -8,14 +8,10 @@ import { fromBase64, toHex } from '../src/crypto/bytes.js';
 import { DIGEST_LENGTH } from '../src/crypto/digest-length.js';
 import NodeRSA from '../src/index.node.js';
 import type { HashAlg } from '../src/types.js';
-
-// ============================================================================
 // 1-to-1 port of v1's test/tests.js (mocha+chai → vitest+chai). Structure,
 // describe/it titles, and assertions match the legacy file. Buffer-specific
 // uses are translated to Uint8Array equivalents; deprecated environment
 // "iojs" is removed (v2 supports only "node" and "browser").
-// ============================================================================
-
 const here = dirname(fileURLToPath(import.meta.url));
 const keysFolder = resolve(here, 'keys');
 const RSA_NO_PADDING = 3;
@@ -606,7 +602,7 @@ describe('NodeRSA', () => {
       });
     }
 
-    // ── Cross-environment compatibility ────────────────────────────────────
+    // Cross-environment compatibility
     // JsEngine (forced when env='browser') and NodeNativeEngine (env='node')
     // must produce interoperable ciphertexts for the same key.
     //
@@ -856,7 +852,7 @@ describe('NodeRSA', () => {
           });
         }
 
-        // ── Cross-environment compatibility ────────────────────────────────
+        // Cross-environment compatibility
         // PSS uses a random salt, so cross-env signature bytes don't match.
         // Only PKCS#1 v1.5 (deterministic) gets cross-env equality testing.
         if (scheme !== 'pkcs1') return;
