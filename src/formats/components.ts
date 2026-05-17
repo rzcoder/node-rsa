@@ -17,6 +17,11 @@ export interface PublicComponents {
   e: number | Uint8Array;
 }
 
+/**
+ * Raw component object — plain JS object with `n`, `e`, `d`, `p`, `q`,
+ * `dmp1`, `dmq1`, `coeff` (private) or just `n`, `e` (public).
+ * No encoding step; intended for direct programmatic input.
+ */
 export const componentsFormat: FormatProvider = {
   privateExport(key: RSAKey, _options: ExportOptions = {}): PrivateComponents {
     if (!key.n || !key.d || !key.p || !key.q || !key.dmp1 || !key.dmq1 || !key.coeff) {

@@ -1,6 +1,6 @@
 import { DerReader, DerWriter } from '../asn1/index.js';
 import type { RSAKey } from '../rsa/key.js';
-import { decodePem, encodePem } from './pem.js';
+import { encodePem, resolveBytes } from './pem.js';
 import type { ExportOptions, FormatProvider, ImportOptions } from './types.js';
 
 const PRIVATE_OPENING = '-----BEGIN RSA PRIVATE KEY-----';
@@ -8,6 +8,7 @@ const PRIVATE_CLOSING = '-----END RSA PRIVATE KEY-----';
 const PUBLIC_OPENING = '-----BEGIN RSA PUBLIC KEY-----';
 const PUBLIC_CLOSING = '-----END RSA PUBLIC KEY-----';
 
+/** PKCS#1 (RFC 8017 §A.1) — `RSA PRIVATE KEY` / `RSA PUBLIC KEY` PEM, or raw DER. */
 export const pkcs1Format: FormatProvider = {
   privateExport(key: RSAKey, options: ExportOptions = {}): Uint8Array | string {
     if (!key.n || !key.d || !key.p || !key.q || !key.dmp1 || !key.dmq1 || !key.coeff) {
@@ -90,22 +91,3 @@ export const pkcs1Format: FormatProvider = {
     return false;
   },
 };
-
-function resolveBytes(
-  data: Uint8Array | string,
-  options: ImportOptions,
-  opening: string,
-  closing: string,
-): Uint8Array {
-  if (options.type === 'der') {
-    if (data instanceof Uint8Array) return data;
-    throw new Error('Unsupported key format');
-  }
-  if (data instanceof Uint8Array) {
-    return decodePem(new TextDecoder().decode(data), opening, closing);
-  }
-  if (typeof data === 'string') {
-    return decodePem(data, opening, closing);
-  }
-  throw new Error('Unsupported key format');
-}

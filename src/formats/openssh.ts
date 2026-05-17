@@ -1,6 +1,5 @@
 import { BigInteger } from '../bigint/big-integer.js';
 import {
-  concat,
   fromBase64,
   fromUtf8,
   readUInt32BE,
@@ -9,13 +8,20 @@ import {
   writeUInt32BE,
 } from '../crypto/bytes.js';
 import type { RSAKey } from '../rsa/key.js';
-import { linebrk, trimSurroundingText } from './pem.js';
+import { linebrk, trimSurroundingText } from '../utils/text-utils.js';
 import type { ExportOptions, FormatProvider, ImportOptions } from './types.js';
 
 const PRIVATE_OPENING = '-----BEGIN OPENSSH PRIVATE KEY-----';
 const PRIVATE_CLOSING = '-----END OPENSSH PRIVATE KEY-----';
 
+/**
+ * OpenSSH — `ssh-rsa AAAA…` single-line public format, and
+ * `OPENSSH PRIVATE KEY` PEM (openssh-key-v1). Only unencrypted keys
+ * (cipher="none", kdf="none"); encrypted private keys are not supported.
+ * The trailing comment field is preserved on import as `key.sshcomment`.
+ */
 export const opensshFormat: FormatProvider = {
+  /** OpenSSH private-key export. The two checkint placeholders are left as zero (no integrity field is written). */
   privateExport(key: RSAKey, options: ExportOptions = {}): Uint8Array | string {
     if (!key.n || !key.d || !key.p || !key.q || !key.coeff) {
       throw new Error('OpenSSH export: incomplete private key');
@@ -33,26 +39,42 @@ export const opensshFormat: FormatProvider = {
     const qbuf = key.q.toBuffer() as Uint8Array;
     const commentbuf = key.sshcomment ? fromUtf8(key.sshcomment) : new Uint8Array(0);
 
-    const pubkeyLength = 11 + 4 + ebuf.byteLength + 4 + nbuf.byteLength;
+    const pubkeyLength =
+      11 + // length-prefixed 'ssh-rsa' (4-byte uint32 length + 7 chars)
+      4 +
+      ebuf.byteLength + // 4 = length prefix for e
+      4 +
+      nbuf.byteLength; // 4 = length prefix for n
+
     const privateKeyLength =
-      8 +
-      11 +
+      8 + // two uint32 checkints (file-corruption / wrong-passphrase detector)
+      11 + // length-prefixed 'ssh-rsa' (4 + 7)
       4 +
-      nbuf.byteLength +
+      nbuf.byteLength + // 4 = length prefix for n
       4 +
-      ebuf.byteLength +
+      ebuf.byteLength + // 4 = length prefix for e
       4 +
-      dbuf.byteLength +
+      dbuf.byteLength + // 4 = length prefix for d
       4 +
-      coeffbuf.byteLength +
+      coeffbuf.byteLength + // 4 = length prefix for iqmp (coeff)
       4 +
-      pbuf.byteLength +
+      pbuf.byteLength + // 4 = length prefix for p
       4 +
-      qbuf.byteLength +
+      qbuf.byteLength + // 4 = length prefix for q
       4 +
-      commentbuf.byteLength;
+      commentbuf.byteLength; // 4 = length prefix for comment
     const paddingLength = Math.ceil(privateKeyLength / 8) * 8 - privateKeyLength;
-    const totalLength = 15 + 16 + 4 + 4 + 4 + pubkeyLength + 4 + privateKeyLength + paddingLength;
+
+    const totalLength =
+      15 + // 'openssh-key-v1\0' magic
+      16 + // two length-prefixed 'none' strings (cipher + kdf), 2*(4+4)
+      4 + // empty kdfoptions (length prefix only, zero bytes of payload)
+      4 + // numkeys (uint32 = 1)
+      4 + // pubkey-blob length prefix
+      pubkeyLength +
+      4 + // private-section length prefix
+      privateKeyLength +
+      paddingLength;
 
     const buf = new Uint8Array(totalLength);
     const writer = new SshWriter(buf);
@@ -73,8 +95,8 @@ export const opensshFormat: FormatProvider = {
     writer.writeString(ebuf);
     writer.writeString(nbuf);
 
-    writer.writeUInt32(totalLength - 47 - pubkeyLength);
-    writer.off += 8; // unused checksum
+    writer.writeUInt32(privateKeyLength + paddingLength); // length prefix for the private section
+    writer.off += 8; // skip two uint32 checkints (left as zero — no integrity field is written)
 
     writer.writeString(fromUtf8('ssh-rsa'));
     writer.writeString(nbuf);
@@ -94,6 +116,7 @@ export const opensshFormat: FormatProvider = {
     return `${PRIVATE_OPENING}\n${linebrk(toBase64(buf), 70)}\n${PRIVATE_CLOSING}\n`;
   },
 
+  /** OpenSSH private-key import. The format omits CRT exponents, so `dp` and `dq` are derived from `d mod (p−1)` and `d mod (q−1)`. */
   privateImport(key: RSAKey, data: Uint8Array | string, options: ImportOptions = {}): void {
     let buffer: Uint8Array;
     if (options.type !== 'der') {
@@ -232,7 +255,9 @@ export const opensshFormat: FormatProvider = {
 
 class SshReader {
   off = 0;
+
   constructor(readonly buf: Uint8Array) {}
+
   readString(): Uint8Array {
     const len = readUInt32BE(this.buf, this.off);
     // Uint8Array.subarray silently truncates on OOB rather than throwing,
@@ -252,18 +277,18 @@ class SshReader {
 
 class SshWriter {
   off = 0;
+
   constructor(readonly buf: Uint8Array) {}
+
   writeString(data: Uint8Array): void {
     writeUInt32BE(data.byteLength, this.buf, this.off);
     this.off += 4;
     this.buf.set(data, this.off);
     this.off += data.byteLength;
   }
+
   writeUInt32(value: number): void {
     writeUInt32BE(value, this.buf, this.off);
     this.off += 4;
   }
 }
-
-// Suppress "unused" — concat is re-exported below for tree-shake friendliness
-void concat;
