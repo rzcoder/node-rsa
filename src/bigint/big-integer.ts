@@ -40,10 +40,6 @@ export function setBigIntegerImpl(impl: BigIntegerImpl): BigIntegerImpl {
   return _currentImpl;
 }
 
-export function getBigIntegerImpl(): BigIntegerImpl {
-  return _currentImpl;
-}
-
 /**
  * Inject the crypto backend that BigInteger uses for RNG (primality
  * testing). Applied to both impls so a later `setBigIntegerImpl` doesn't

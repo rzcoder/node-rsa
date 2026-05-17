@@ -5,6 +5,7 @@ import { pkcs1Format } from './pkcs1.js';
 import { pkcs8Format } from './pkcs8.js';
 import type { FormatProvider, ImportOptions } from './types.js';
 
+/** Registry of built-in format providers, keyed by scheme name. */
 export const FORMATS: Record<string, FormatProvider> = {
   pkcs1: pkcs1Format,
   pkcs8: pkcs8Format,
@@ -30,22 +31,15 @@ function formatParse(format: string): ParsedFormat {
   return { scheme: parts[0] ?? '', keyType, keyOpt };
 }
 
-export function isPrivateExport(format: string): boolean {
-  return typeof FORMATS[format]?.privateExport === 'function';
-}
-
-export function isPrivateImport(format: string): boolean {
-  return typeof FORMATS[format]?.privateImport === 'function';
-}
-
-export function isPublicExport(format: string): boolean {
-  return typeof FORMATS[format]?.publicExport === 'function';
-}
-
-export function isPublicImport(format: string): boolean {
-  return typeof FORMATS[format]?.publicImport === 'function';
-}
-
+/**
+ * Import `data` into `key`. If `format` is omitted, each provider's
+ * `autoImport` is tried in registration order. Returns false only on
+ * the no-format auto path when nothing matched; the explicit-format path
+ * throws on unknown scheme or missing provider method.
+ *
+ * Format string is `<scheme>[-public|-private][-pem|-der]`, e.g.
+ * `"pkcs1-private-pem"`. Defaults: keyType=private, type=default.
+ */
 export function detectAndImport(key: RSAKey, data: unknown, format?: string): boolean {
   if (!format) {
     for (const scheme of Object.values(FORMATS)) {
@@ -66,6 +60,12 @@ export function detectAndImport(key: RSAKey, data: unknown, format?: string): bo
   return true;
 }
 
+/**
+ * Export `key` in the given format. Returns undefined if `format` is omitted.
+ * Throws if the scheme is unknown, the key lacks the requested half
+ * (private/public), or the provider doesn't implement that direction.
+ * Format string syntax matches {@link detectAndImport}.
+ */
 export function detectAndExport(
   key: RSAKey,
   format?: string,

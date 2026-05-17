@@ -5,11 +5,6 @@ export class DerWriter {
   private chunks: Uint8Array[] = [];
   private sequenceStack: Uint8Array[][] = [];
 
-  /** Append raw bytes verbatim (no TLV wrapping). */
-  writeRaw(bytes: Uint8Array): void {
-    this.chunks.push(bytes);
-  }
-
   /** Write a generic TLV with the given tag and value bytes. */
   writeTlv(tag: number, value: Uint8Array): void {
     this.chunks.push(new Uint8Array([tag]));

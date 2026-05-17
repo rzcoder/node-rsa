@@ -7,8 +7,6 @@ export const Tag = {
   SEQUENCE: 0x30,
 } as const;
 
-export type TagValue = (typeof Tag)[keyof typeof Tag];
-
 export function tagName(tag: number): string {
   switch (tag) {
     case Tag.INTEGER:

@@ -160,13 +160,6 @@ export class DerReader {
   readOctetString(): Uint8Array {
     return this.readTlv(Tag.OCTET_STRING).value;
   }
-
-  /** Read all remaining bytes from the current position. */
-  readRemaining(): Uint8Array {
-    const out = this.bytes.subarray(this.pos);
-    this.pos = this.bytes.length;
-    return out;
-  }
 }
 
 function decodeOid(bytes: Uint8Array): string {
