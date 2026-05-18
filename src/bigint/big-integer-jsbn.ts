@@ -85,7 +85,6 @@ function nbits(x: number): number {
     r += 2;
   }
   if ((t = x >> 1) !== 0) {
-    x = t;
     r += 1;
   }
   return r;
@@ -1076,9 +1075,7 @@ export class BigInteger {
     let x = this.s < 0 ? this.negate() : this.clone();
     let y = a.s < 0 ? a.negate() : a.clone();
     if (x.compareTo(y) < 0) {
-      const t = x;
-      x = y;
-      y = t;
+      [x, y] = [y, x];
     }
     let i = x.getLowestSetBit();
     let g = y.getLowestSetBit();
