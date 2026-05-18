@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>node-rsa — browser bundle smoke test</title>
+    <style>
+      body {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        max-width: 720px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        line-height: 1.5;
+      }
+      h1 {
+        font-size: 1.2rem;
+      }
+      #status {
+        padding: 0.5rem 0.75rem;
+        border-radius: 4px;
+        background: #f0f0f0;
+        font-weight: bold;
+      }
+      #status[data-state='ok'] {
+        background: #d4f4dd;
+      }
+      #status[data-state='fail'] {
+        background: #f4d4d4;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 0.25rem 0.5rem;
+        border-bottom: 1px solid #eee;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>node-rsa — browser bundle smoke test</h1>
+    <p id="status" data-state="pending">Running…</p>
+    <table id="results">
+      <thead>
+        <tr>
+          <th>Step</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

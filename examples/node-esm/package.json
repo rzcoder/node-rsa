@@ -1,0 +1,12 @@
+{
+  "name": "node-rsa-example-esm",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "node-rsa": "file:../.."
+  }
+}

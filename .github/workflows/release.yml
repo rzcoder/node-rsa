@@ -1,0 +1,110 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish (e.g. v2.0.0). Must already exist as a git tag."
+        required: true
+        type: string
+      dry-run:
+        description: "Skip the actual npm publish (build + verify only)."
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify tag matches package.json version and determine npm dist-tag
+        env:
+          RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
+        run: |
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          RAW_REF="${{ github.event.inputs.tag || github.ref_name }}"
+          TAG_VERSION="${RAW_REF#v}"
+          echo "package.json version: $PKG_VERSION"
+          echo "git tag version:      $TAG_VERSION"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::package.json version ($PKG_VERSION) does not match release tag ($TAG_VERSION)"
+            exit 1
+          fi
+
+          # Pre-release semver (contains a hyphen, e.g. 2.0.0-rc.0) → publish under "next".
+          # Stable (e.g. 2.0.0) → publish under "latest", which is npm's default install target.
+          if [[ "$PKG_VERSION" == *-* ]]; then
+            NPM_TAG=next
+          else
+            NPM_TAG=latest
+          fi
+          echo "npm dist-tag:         $NPM_TAG"
+          echo "NPM_TAG=$NPM_TAG" >> "$GITHUB_ENV"
+
+          # If this run was triggered by a GitHub Release, the "prerelease" flag
+          # on the release must agree with the version string. This catches the
+          # easy mistake of forgetting to tick "Set as a pre-release" (or vice
+          # versa) before publishing the release.
+          if [ "${{ github.event_name }}" = "release" ]; then
+            if [ "$NPM_TAG" = "next" ] && [ "$RELEASE_PRERELEASE" != "true" ]; then
+              echo "::error::Version $PKG_VERSION looks like a pre-release but the GitHub Release is not marked as prerelease"
+              exit 1
+            fi
+            if [ "$NPM_TAG" = "latest" ] && [ "$RELEASE_PRERELEASE" = "true" ]; then
+              echo "::error::Version $PKG_VERSION is stable but the GitHub Release is marked as prerelease"
+              exit 1
+            fi
+          fi
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Browser bundle hygiene check
+        run: |
+          if grep -E "require\(['\"](node:|crypto|buffer|fs)['\"]|import.*from.*['\"]node:|import\s+['\"]node:" dist/index.browser.js; then
+            echo "::error::Browser bundle contains forbidden Node imports"
+            exit 1
+          fi
+
+      - name: Bundle size budget
+        run: npm run check:bundle-size
+
+      - name: Publish to npm (dry-run)
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry-run == 'true' }}
+        run: npm publish --provenance --access public --tag "$NPM_TAG" --dry-run
+
+      - name: Publish to npm
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.dry-run != 'true' }}
+        run: npm publish --provenance --access public --tag "$NPM_TAG"

@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  check:
+    name: Lint, typecheck, test, build (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Browser bundle hygiene check
+        run: |
+          # Only flag actual imports/requires of node: modules — not string
+          # literals or comments that happen to contain "node:".
+          if grep -E "require\(['\"](node:|crypto|buffer|fs)['\"]|import.*from.*['\"]node:|import\s+['\"]node:" dist/index.browser.js; then
+            echo "::error::Browser bundle contains forbidden Node imports"
+            exit 1
+          fi
+
+      - name: Bundle size budget
+        run: npm run check:bundle-size
+
+      - name: Smoke test ESM example
+        run: cd examples/node-esm && npm install --no-package-lock && npm start
+
+      - name: Smoke test CJS example
+        run: cd examples/node-cjs && npm install --no-package-lock && npm start

@@ -1,0 +1,294 @@
+import { BigInteger } from '../bigint/big-integer.js';
+import {
+  fromBase64,
+  fromUtf8,
+  readUInt32BE,
+  toBase64,
+  toUtf8,
+  writeUInt32BE,
+} from '../crypto/bytes.js';
+import type { RSAKey } from '../rsa/key.js';
+import { linebrk, trimSurroundingText } from '../utils/text-utils.js';
+import type { ExportOptions, FormatProvider, ImportOptions } from './types.js';
+
+const PRIVATE_OPENING = '-----BEGIN OPENSSH PRIVATE KEY-----';
+const PRIVATE_CLOSING = '-----END OPENSSH PRIVATE KEY-----';
+
+/**
+ * OpenSSH — `ssh-rsa AAAA…` single-line public format, and
+ * `OPENSSH PRIVATE KEY` PEM (openssh-key-v1). Only unencrypted keys
+ * (cipher="none", kdf="none"); encrypted private keys are not supported.
+ * The trailing comment field is preserved on import as `key.sshcomment`.
+ */
+export const opensshFormat: FormatProvider = {
+  /** OpenSSH private-key export. The two checkint placeholders are left as zero (no integrity field is written). */
+  privateExport(key: RSAKey, options: ExportOptions = {}): Uint8Array | string {
+    if (!key.n || !key.d || !key.p || !key.q || !key.coeff) {
+      throw new Error('OpenSSH export: incomplete private key');
+    }
+
+    const nbuf = key.n.toBuffer() as Uint8Array;
+    let ebuf = new Uint8Array(4);
+    writeUInt32BE(key.e, ebuf, 0);
+    // Strip leading zero bytes
+    while (ebuf.length > 0 && ebuf[0] === 0) ebuf = ebuf.subarray(1);
+
+    const dbuf = key.d.toBuffer() as Uint8Array;
+    const coeffbuf = key.coeff.toBuffer() as Uint8Array;
+    const pbuf = key.p.toBuffer() as Uint8Array;
+    const qbuf = key.q.toBuffer() as Uint8Array;
+    const commentbuf = key.sshcomment ? fromUtf8(key.sshcomment) : new Uint8Array(0);
+
+    const pubkeyLength =
+      11 + // length-prefixed 'ssh-rsa' (4-byte uint32 length + 7 chars)
+      4 +
+      ebuf.byteLength + // 4 = length prefix for e
+      4 +
+      nbuf.byteLength; // 4 = length prefix for n
+
+    const privateKeyLength =
+      8 + // two uint32 checkints (file-corruption / wrong-passphrase detector)
+      11 + // length-prefixed 'ssh-rsa' (4 + 7)
+      4 +
+      nbuf.byteLength + // 4 = length prefix for n
+      4 +
+      ebuf.byteLength + // 4 = length prefix for e
+      4 +
+      dbuf.byteLength + // 4 = length prefix for d
+      4 +
+      coeffbuf.byteLength + // 4 = length prefix for iqmp (coeff)
+      4 +
+      pbuf.byteLength + // 4 = length prefix for p
+      4 +
+      qbuf.byteLength + // 4 = length prefix for q
+      4 +
+      commentbuf.byteLength; // 4 = length prefix for comment
+    const paddingLength = Math.ceil(privateKeyLength / 8) * 8 - privateKeyLength;
+
+    const totalLength =
+      15 + // 'openssh-key-v1\0' magic
+      16 + // two length-prefixed 'none' strings (cipher + kdf), 2*(4+4)
+      4 + // empty kdfoptions (length prefix only, zero bytes of payload)
+      4 + // numkeys (uint32 = 1)
+      4 + // pubkey-blob length prefix
+      pubkeyLength +
+      4 + // private-section length prefix
+      privateKeyLength +
+      paddingLength;
+
+    const buf = new Uint8Array(totalLength);
+    const writer = new SshWriter(buf);
+
+    // "openssh-key-v1\0"
+    buf.set(fromUtf8('openssh-key-v1'), 0);
+    buf[14] = 0;
+    writer.off = 15;
+
+    writer.writeString(fromUtf8('none'));
+    writer.writeString(fromUtf8('none'));
+    writer.writeString(new Uint8Array(0));
+
+    writer.writeUInt32(1); // number of keys
+    writer.writeUInt32(pubkeyLength);
+
+    writer.writeString(fromUtf8('ssh-rsa'));
+    writer.writeString(ebuf);
+    writer.writeString(nbuf);
+
+    writer.writeUInt32(privateKeyLength + paddingLength); // length prefix for the private section
+    writer.off += 8; // skip two uint32 checkints (left as zero — no integrity field is written)
+
+    writer.writeString(fromUtf8('ssh-rsa'));
+    writer.writeString(nbuf);
+    writer.writeString(ebuf);
+    writer.writeString(dbuf);
+    writer.writeString(coeffbuf);
+    writer.writeString(pbuf);
+    writer.writeString(qbuf);
+    writer.writeString(commentbuf);
+
+    let pad = 0x01;
+    while (writer.off < totalLength) {
+      buf[writer.off++] = pad++;
+    }
+
+    if (options.type === 'der') return buf;
+    return `${PRIVATE_OPENING}\n${linebrk(toBase64(buf), 70)}\n${PRIVATE_CLOSING}\n`;
+  },
+
+  /** OpenSSH private-key import. The format omits CRT exponents, so `dp` and `dq` are derived from `d mod (p−1)` and `d mod (q−1)`. */
+  privateImport(key: RSAKey, data: Uint8Array | string, options: ImportOptions = {}): void {
+    let buffer: Uint8Array;
+    if (options.type !== 'der') {
+      const text = data instanceof Uint8Array ? toUtf8(data) : (data as string);
+      const trimmed = trimSurroundingText(text, PRIVATE_OPENING, PRIVATE_CLOSING).replace(
+        /\s+/g,
+        '',
+      );
+      buffer = fromBase64(trimmed);
+    } else if (data instanceof Uint8Array) {
+      buffer = data;
+    } else {
+      throw new Error('Unsupported key format');
+    }
+
+    const magic = toUtf8(buffer.subarray(0, 14));
+    if (magic !== 'openssh-key-v1') throw new Error('Invalid file format.');
+
+    const reader = new SshReader(buffer);
+    reader.off = 15;
+
+    if (toUtf8(reader.readString()) !== 'none') throw new Error('Unsupported key type');
+    if (toUtf8(reader.readString()) !== 'none') throw new Error('Unsupported key type');
+    if (toUtf8(reader.readString()) !== '') throw new Error('Unsupported key type');
+
+    reader.off += 4; // keynum
+    reader.off += 4; // sshpublength
+
+    if (toUtf8(reader.readString()) !== 'ssh-rsa') throw new Error('Unsupported key type');
+    reader.readString(); // public e
+    reader.readString(); // public n
+
+    // Private section: `length || checkint1 || checkint2 || keydata` —
+    // the two checkints MUST be identical (file corruption / wrong
+    // passphrase detector per the OpenSSH key format).
+    reader.off += 4; // private section length (subsequent reads bounds-check)
+    const checkInt1 = readUInt32BE(reader.buf, reader.off);
+    reader.off += 4;
+    const checkInt2 = readUInt32BE(reader.buf, reader.off);
+    reader.off += 4;
+    if (checkInt1 !== checkInt2) {
+      throw new Error(
+        'OpenSSH private key: checksum mismatch (file may be corrupted or encrypted)',
+      );
+    }
+    if (toUtf8(reader.readString()) !== 'ssh-rsa') throw new Error('Unsupported key type');
+
+    const n = reader.readString();
+    const e = reader.readString();
+    const d = reader.readString();
+    const coeff = reader.readString();
+    const p = reader.readString();
+    const q = reader.readString();
+
+    // Derive dp = d mod (p-1) and dq = d mod (q-1)
+    const dint = new BigInteger(d);
+    const pint = new BigInteger(p);
+    const qint = new BigInteger(q);
+    const dp = dint.mod(pint.subtract(BigInteger.ONE)).toBuffer() as Uint8Array;
+    const dq = dint.mod(qint.subtract(BigInteger.ONE)).toBuffer() as Uint8Array;
+
+    key.setPrivate(n, e, d, p, q, dp, dq, coeff);
+    key.sshcomment = toUtf8(reader.readString());
+  },
+
+  publicExport(key: RSAKey, options: ExportOptions = {}): Uint8Array | string {
+    if (!key.n) throw new Error('OpenSSH export: missing modulus');
+    let ebuf = new Uint8Array(4);
+    writeUInt32BE(key.e, ebuf, 0);
+    while (ebuf.length > 0 && ebuf[0] === 0) ebuf = ebuf.subarray(1);
+    const nbuf = key.n.toBuffer() as Uint8Array;
+
+    const buf = new Uint8Array(ebuf.byteLength + 4 + nbuf.byteLength + 4 + 'ssh-rsa'.length + 4);
+    const writer = new SshWriter(buf);
+    writer.writeString(fromUtf8('ssh-rsa'));
+    writer.writeString(ebuf);
+    writer.writeString(nbuf);
+
+    if (options.type === 'der') return buf;
+    const comment = key.sshcomment ?? '';
+    return `ssh-rsa ${toBase64(buf)} ${comment}\n`;
+  },
+
+  publicImport(key: RSAKey, data: Uint8Array | string, options: ImportOptions = {}): void {
+    let buffer: Uint8Array;
+    if (options.type !== 'der') {
+      const text = data instanceof Uint8Array ? toUtf8(data) : (data as string);
+      if (text.substring(0, 8) !== 'ssh-rsa ') throw new Error('Unsupported key format');
+      let pemEnd = text.indexOf(' ', 8);
+      if (pemEnd === -1) {
+        pemEnd = text.length;
+      } else {
+        // Legacy strips ALL whitespace (not just trailing) — multi-word
+        // comments are lossy on round-trip. Preserving that for 1-to-1.
+        key.sshcomment = text.substring(pemEnd + 1).replace(/\s+|\n\r|\n|\r$/gm, '');
+      }
+      const pem = text.substring(8, pemEnd).replace(/\s+/g, '');
+      buffer = fromBase64(pem);
+    } else if (data instanceof Uint8Array) {
+      buffer = data;
+    } else {
+      throw new Error('Unsupported key format');
+    }
+
+    const reader = new SshReader(buffer);
+    const type = toUtf8(reader.readString());
+    if (type !== 'ssh-rsa') throw new Error(`Invalid key type: ${type}`);
+    const e = reader.readString();
+    const n = reader.readString();
+    key.setPublic(n, e);
+  },
+
+  autoImport(key: RSAKey, data: unknown): boolean {
+    const text =
+      typeof data === 'string'
+        ? data
+        : data instanceof Uint8Array
+          ? new TextDecoder().decode(data)
+          : null;
+    if (text === null) return false;
+    if (
+      /^[\S\s]*-----BEGIN OPENSSH PRIVATE KEY-----\s*(?=(([A-Za-z0-9+/=]+\s*)+))\1-----END OPENSSH PRIVATE KEY-----[\S\s]*$/g.test(
+        text,
+      )
+    ) {
+      opensshFormat.privateImport?.(key, text);
+      return true;
+    }
+    if (/^[\S\s]*ssh-rsa \s*(?=(([A-Za-z0-9+/=]+\s*)+))\1[\S\s]*$/g.test(text)) {
+      opensshFormat.publicImport?.(key, text);
+      return true;
+    }
+    return false;
+  },
+};
+
+class SshReader {
+  off = 0;
+
+  constructor(readonly buf: Uint8Array) {}
+
+  readString(): Uint8Array {
+    const len = readUInt32BE(this.buf, this.off);
+    // Uint8Array.subarray silently truncates on OOB rather than throwing,
+    // so a forged length field would deliver a short buffer deep into the
+    // key parser with an opaque failure mode. Bound-check explicitly.
+    if (this.off + 4 + len > this.buf.length) {
+      throw new Error(
+        `OpenSSH: string length ${len} exceeds buffer (offset=${this.off}, buffer=${this.buf.length})`,
+      );
+    }
+    this.off += 4;
+    const out = this.buf.subarray(this.off, this.off + len);
+    this.off += len;
+    return out;
+  }
+}
+
+class SshWriter {
+  off = 0;
+
+  constructor(readonly buf: Uint8Array) {}
+
+  writeString(data: Uint8Array): void {
+    writeUInt32BE(data.byteLength, this.buf, this.off);
+    this.off += 4;
+    this.buf.set(data, this.off);
+    this.off += data.byteLength;
+  }
+
+  writeUInt32(value: number): void {
+    writeUInt32BE(value, this.buf, this.off);
+    this.off += 4;
+  }
+}
