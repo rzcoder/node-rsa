@@ -1,4 +1,9 @@
-# node-rsa
+# Node-RSA
+
+[![npm version](https://img.shields.io/npm/v/node-rsa.svg)](https://www.npmjs.com/package/node-rsa)
+[![CI](https://github.com/rzcoder/node-rsa/actions/workflows/ci.yml/badge.svg)](https://github.com/rzcoder/node-rsa/actions/workflows/ci.yml)
+[![npm downloads](https://img.shields.io/npm/dm/node-rsa.svg)](https://www.npmjs.com/package/node-rsa)
+[![license](https://img.shields.io/npm/l/node-rsa.svg)](https://github.com/rzcoder/node-rsa/blob/master/LICENSE)
 
 RSA library for Node.js and browsers.
 
@@ -7,6 +12,23 @@ RSA library for Node.js and browsers.
 * Generating keys
 * Encrypting and decrypting, with long-message support
 * Signing and verifying
+
+## Table of contents
+
+* [Example](#example)
+* [Installing](#installing)
+* [Usage](#usage)
+  * [Create instance](#create-instance)
+  * [Import/Export keys](#importexport-keys)
+  * [Properties](#properties)
+  * [Encrypting/Decrypting](#encryptingdecrypting)
+  * [Signing/Verifying](#signingverifying)
+* [Browser usage](#browser-usage)
+* [Security notes](#security-notes)
+* [Migrating](#migrating)
+* [Changelog](#changelog)
+* [License](#license)
+* [Acknowledgements](#acknowledgements)
 
 ## Example
 
@@ -248,7 +270,7 @@ Returns `true` / `false`.
 
 ## Browser usage
 
-The browser bundle (`dist/index.browser.js`) is published as ESM only and contains no Node-builtin imports — you don't need to polyfill Buffer, crypto, or process. Bundlers that honour the `"browser"` export condition (Vite, Webpack 5, Rollup, esbuild, Parcel) pick it up automatically. The bundle weighs ~90 KB raw / ~21 KB gzipped.
+The browser bundle (`dist/index.browser.js`) is published as ESM only and contains no Node-builtin imports — you don't need to polyfill Buffer, crypto, or process. Bundlers that honour the `"browser"` export condition (Vite, Webpack 5, Rollup, esbuild, Parcel) pick it up automatically. The bundle weighs ~114 KB raw / ~28 KB gzipped.
 
 If your bundler doesn't resolve conditional exports, import the browser entry directly:
 
@@ -263,6 +285,10 @@ import NodeRSA from 'node-rsa/dist/index.browser.js';
 ## Migrating
 
 Migrating from 1.x? See [MIGRATION.md](MIGRATION.md) for the behaviour-change summary and step-by-step walkthrough.
+
+## Changelog
+
+Release notes and per-version changes are tracked in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
@@ -307,4 +333,4 @@ and disclaimer.
 ## Acknowledgements
 
 * Tom Wu — original [jsbn](http://www-cs-students.stanford.edu/~tjw/jsbn/) BigInteger and RSA implementations
-* [@noble/hashes](https://github.com/paulmillr/noble-hashes) — synchronous hash functions for the browser bundle
+* Paul Miller — [@noble/hashes](https://github.com/paulmillr/noble-hashes) v2.x, audited synchronous hash functions (MD5, RIPEMD-160, SHA-1/2 family) used by the browser bundle
