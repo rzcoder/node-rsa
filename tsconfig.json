@@ -33,5 +33,5 @@
     "ignoreDeprecations": "6.0"
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "src.legacy", "test", "bench", "examples", ".tmp"]
+  "exclude": ["node_modules", "dist", "test", "bench", "examples", ".tmp"]
 }

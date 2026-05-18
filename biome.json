@@ -9,7 +9,6 @@
     "includes": [
       "**",
       "!**/dist",
-      "!**/src.legacy",
       "!**/node_modules",
       "!**/coverage",
       "!**/.tmp",

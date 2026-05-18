@@ -154,8 +154,6 @@ The browser bundle silently falls back to jsbn on runtimes without
   `noImplicitOverride` etc.
 - 1006 test cases across 27 files. The v1 mocha suite of 61 `it()` blocks is
   ported verbatim and runs in both vitest projects.
-- The legacy v1 source is preserved in `src.legacy/` during the port and
-  deleted on the v2.0.0 release commit.
 
 ## 1.1.1 and earlier
 

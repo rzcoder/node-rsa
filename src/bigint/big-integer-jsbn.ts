@@ -1,8 +1,7 @@
 /*
  * TypeScript port of Tom Wu's jsbn BigInteger.
  *
- *   Original copyright (c) 2003-2009 Tom Wu — MIT-style license preserved in
- *   src.legacy/libs/jsbn.js. Buffer support added by rzcoder (2014).
+ * Original copyright (c) 2003-2009 Tom Wu.
  *
  * This port preserves the original digit representation, function names, and
  * algorithm structure 1-to-1 with the legacy implementation so that all
