@@ -84,6 +84,6 @@ export function detectAndExport(
   return provider.publicExport(key, fmt.keyOpt);
 }
 
-export { componentsFormat, opensshFormat, pkcs1Format, pkcs8Format };
-export type { ExportOptions, FormatProvider, ImportOptions } from './types.js';
 export type { PrivateComponents, PublicComponents } from './components.js';
+export type { ExportOptions, FormatProvider, ImportOptions } from './types.js';
+export { componentsFormat, opensshFormat, pkcs1Format, pkcs8Format };

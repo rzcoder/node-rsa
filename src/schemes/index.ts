@@ -1,6 +1,6 @@
 import type { RSAKey } from '../rsa/key.js';
 import { oaepScheme } from './oaep.js';
-import { RSA_NO_PADDING, pkcs1Scheme } from './pkcs1.js';
+import { pkcs1Scheme, RSA_NO_PADDING } from './pkcs1.js';
 import { pssScheme } from './pss.js';
 import type { EncryptionSchemeImpl, SchemeOptions, SignatureScheme } from './types.js';
 
@@ -16,8 +16,6 @@ export const SCHEMES: Record<string, SchemeProvider> = {
   pss: pssScheme,
 };
 
-export { RSA_NO_PADDING };
-export { oaepScheme, pkcs1Scheme, pssScheme };
 export type {
   EncryptionSchemeImpl,
   EncryptionSchemeOptions,
@@ -26,3 +24,4 @@ export type {
   SignatureScheme,
   SigningSchemeOptions,
 } from './types.js';
+export { oaepScheme, pkcs1Scheme, pssScheme, RSA_NO_PADDING };

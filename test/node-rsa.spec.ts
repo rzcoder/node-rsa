@@ -4,10 +4,11 @@ import { fileURLToPath } from 'node:url';
 import { assert } from 'chai';
 import { beforeAll, describe, it } from 'vitest';
 import { nodeBackend } from '../src/crypto/backend.node.js';
-import { fromBase64, toHex } from '../src/crypto/bytes.js';
+import { toHex } from '../src/crypto/bytes.js';
 import { DIGEST_LENGTH } from '../src/crypto/digest-length.js';
 import NodeRSA from '../src/index.node.js';
 import type { HashingAlgorithm } from '../src/types.js';
+
 // 1-to-1 port of v1's test/tests.js (mocha+chai → vitest+chai). Structure,
 // describe/it titles, and assertions match the legacy file. Buffer-specific
 // uses are translated to Uint8Array equivalents; deprecated environment

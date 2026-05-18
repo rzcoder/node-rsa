@@ -1,5 +1,5 @@
 import { nodeBackend } from './crypto/backend.node.js';
-import { NodeRSA, bootstrap } from './node-rsa.js';
+import { bootstrap, NodeRSA } from './node-rsa.js';
 import { JsEngine } from './rsa/engine.js';
 import { NodeNativeEngine } from './rsa/native-engine.js';
 import { nodeNativeKeygen } from './rsa/native-keygen.js';

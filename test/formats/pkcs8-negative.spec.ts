@@ -28,11 +28,7 @@ beforeAll(() => {
  * `oid`, and `innerVersion`. Components are taken from a valid fixture
  * so the only thing wrong with the resulting file is the chosen header.
  */
-function buildPkcs8Private(opts: {
-  version: number;
-  oid: string;
-  innerVersion: number;
-}): string {
+function buildPkcs8Private(opts: { version: number; oid: string; innerVersion: number }): string {
   const k = new NodeRSA(readStr('private_pkcs1.pem'));
   const kp = k.keyPair;
 

@@ -1,6 +1,6 @@
 import { setBigIntegerImpl } from './bigint/big-integer.js';
 import { webBackend } from './crypto/backend.web.js';
-import { NodeRSA, bootstrap } from './node-rsa.js';
+import { bootstrap, NodeRSA } from './node-rsa.js';
 
 // Modern browsers (Chrome 67+, Firefox 68+, Safari 14+, Edge 79+) support
 // native BigInt. The selector falls back to jsbn silently if `BigInt` is

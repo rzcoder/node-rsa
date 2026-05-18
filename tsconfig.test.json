@@ -6,6 +6,12 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false
   },
-  "include": ["src/**/*", "test/**/*", "vitest.config.ts", "vitest.workspace.ts", "tsup.config.ts"],
+  "include": [
+    "src/**/*",
+    "test/**/*",
+    "vitest.config.ts",
+    "vitest.bench.config.ts",
+    "tsup.config.ts"
+  ],
   "exclude": ["node_modules", "dist", "src.legacy", ".tmp"]
 }

@@ -1,7 +1,7 @@
 import {
-  type KeyObject,
   createPrivateKey,
   createPublicKey,
+  type KeyObject,
   constants as nodeConstants,
   sign as nodeSign,
   verify as nodeVerify,

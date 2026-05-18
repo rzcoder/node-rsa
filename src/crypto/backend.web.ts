@@ -1,7 +1,5 @@
-import { md5 } from '@noble/hashes/legacy';
-import { ripemd160 } from '@noble/hashes/ripemd160';
-import { sha1 } from '@noble/hashes/sha1';
-import { sha224, sha256, sha384, sha512 } from '@noble/hashes/sha2';
+import { md5, ripemd160, sha1 } from '@noble/hashes/legacy.js';
+import { sha224, sha256, sha384, sha512 } from '@noble/hashes/sha2.js';
 import type { CryptoBackend, HashingAlgorithm } from './types.js';
 
 type HashFn = (data: Uint8Array) => Uint8Array;

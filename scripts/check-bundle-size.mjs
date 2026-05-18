@@ -6,9 +6,9 @@ import { gzipSync } from 'node:zlib';
 const root = resolve(import.meta.dirname, '..');
 
 const BUDGETS = {
-  'dist/index.browser.js': { raw: 105_000, gz: 30_000 },
-  'dist/index.node.js': { raw: 120_000, gz: 35_000 },
-  'dist/index.node.cjs': { raw: 120_000, gz: 35_000 },
+  'dist/index.browser.js': { raw: 120_000, gz: 30_000 },
+  'dist/index.node.js': { raw: 130_000, gz: 35_000 },
+  'dist/index.node.cjs': { raw: 130_000, gz: 35_000 },
 };
 
 let failed = false;

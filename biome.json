@@ -1,33 +1,32 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
     "useIgnoreFile": true
   },
   "files": {
-    "ignore": [
-      "dist",
-      "src.legacy",
-      "node_modules",
-      "coverage",
-      ".tmp",
-      ".nyc_output",
-      "package-lock.json",
-      "test/tests.js",
-      "test/keys"
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/src.legacy",
+      "!**/node_modules",
+      "!**/coverage",
+      "!**/.tmp",
+      "!**/.nyc_output",
+      "!**/package-lock.json",
+      "!**/test/tests.js",
+      "!**/test/keys"
     ]
   },
-  "organizeImports": {
-    "enabled": true
-  },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
     "enabled": true,
     "rules": {
       "recommended": true,
       "suspicious": {
         "noExplicitAny": "error",
-        "noConsoleLog": "warn"
+        "noConsole": { "level": "warn", "options": { "allow": ["warn", "error"] } }
       },
       "style": {
         "useImportType": "error",
@@ -64,7 +63,7 @@
   },
   "overrides": [
     {
-      "include": ["src/bigint/**"],
+      "includes": ["**/src/bigint/**"],
       "linter": {
         "rules": {
           "style": {
@@ -78,17 +77,17 @@
       }
     },
     {
-      "include": ["examples/**", "scripts/**"],
+      "includes": ["**/examples/**", "**/scripts/**"],
       "linter": {
         "rules": {
           "suspicious": {
-            "noConsoleLog": "off"
+            "noConsole": "off"
           }
         }
       }
     },
     {
-      "include": ["test/**"],
+      "includes": ["**/test/**"],
       "linter": {
         "rules": {
           "style": {

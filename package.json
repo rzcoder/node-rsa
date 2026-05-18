@@ -25,12 +25,18 @@
     "./package.json": "./package.json"
   },
   "sideEffects": false,
-  "files": ["dist", "README.md", "CHANGELOG.md", "MIGRATION.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "MIGRATION.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
     "test:watch": "vitest",
-    "bench": "vitest bench --run --workspace=vitest.bench.workspace.ts",
+    "bench": "vitest bench --run --config=vitest.bench.config.ts",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
@@ -63,14 +69,14 @@
   },
   "homepage": "https://github.com/rzcoder/node-rsa",
   "dependencies": {
-    "@noble/hashes": "^1.5.0"
+    "@noble/hashes": "^2.2.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "@types/node": "^20.17.0",
-    "chai": "^4.5.0",
-    "tsup": "^8.3.5",
-    "typescript": "^5.6.3",
-    "vitest": "^2.1.5"
+    "@biomejs/biome": "^2.4.15",
+    "@types/node": "^22.10.0",
+    "chai": "^6.2.2",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.6"
   }
 }

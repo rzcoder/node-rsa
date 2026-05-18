@@ -7,7 +7,7 @@ import { BigInteger, setBigIntegerBackend } from '../../src/bigint/big-integer.j
 import { nodeBackend } from '../../src/crypto/backend.node.js';
 import { fromUtf8 } from '../../src/crypto/bytes.js';
 import { RSAKey } from '../../src/rsa/key.js';
-import { SCHEMES, oaepScheme, pkcs1Scheme, pssScheme } from '../../src/schemes/index.js';
+import { oaepScheme, pkcs1Scheme, pssScheme, SCHEMES } from '../../src/schemes/index.js';
 import type { SchemeOptions } from '../../src/schemes/types.js';
 
 const here = dirname(fileURLToPath(import.meta.url));

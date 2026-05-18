@@ -1,5 +1,5 @@
 import { bench, describe } from 'vitest';
-import { MODES, NodeRSA, PAYLOAD, buildKey, ctorOptionsFor } from './fixtures.js';
+import { buildKey, ctorOptionsFor, MODES, NodeRSA, PAYLOAD } from './fixtures.js';
 
 // One canonical configuration — 2048-bit RSA, SHA-256, 32B input — so the
 // matrix is "environment vs typical operation" and nothing else:

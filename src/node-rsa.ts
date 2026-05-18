@@ -10,7 +10,7 @@ import {
 } from './crypto/bytes.js';
 import type { CryptoBackend } from './crypto/types.js';
 import { detectAndExport, detectAndImport } from './formats/index.js';
-import { EXPORT_FORMAT_ALIASES, applyOptions, makeDefaultOptions } from './options.js';
+import { applyOptions, EXPORT_FORMAT_ALIASES, makeDefaultOptions } from './options.js';
 import { type Engine, JsEngine } from './rsa/engine.js';
 import { RSAKey } from './rsa/key.js';
 import { SCHEMES } from './schemes/index.js';
@@ -283,7 +283,7 @@ export class NodeRSA {
       const data = this.$getDataForEncrypt(buffer, sourceEncoding);
       const res = this.ensureEngine().encrypt(data, usePrivate);
       return encoding && encoding !== 'buffer' ? encodeBytes(res, encoding) : res;
-    } catch (e) {
+    } catch {
       throw new Error('Error during encryption');
     }
   }
@@ -297,7 +297,7 @@ export class NodeRSA {
       const bytes = typeof buffer === 'string' ? fromBase64(buffer) : buffer;
       const res = this.ensureEngine().decrypt(bytes, usePublic);
       return this.$getDecryptedData(res, encoding);
-    } catch (e) {
+    } catch {
       throw new Error('Error during decryption');
     }
   }
