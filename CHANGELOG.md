@@ -1,5 +1,37 @@
 # Changelog
 
+## Unreleased
+
+### Fixed — wrong modulus byte length for keys of 8k+1 bits ([#246](https://github.com/rzcoder/node-rsa/issues/246))
+
+The modulus length in octets was computed as `(bits + 6) >> 3` instead of
+`⌈bits / 8⌉`, which is one byte short exactly when the key size is 8k+1
+bits (1025, 2049, …). Bug inherited from v1. Key sizes that are a multiple
+of 8 — everything `generateKeyPair` can produce — and all other sizes are
+unaffected: both formulas give the same value for them.
+
+For an affected (imported) key this release changes:
+
+- Ciphertext blocks and signatures are now `⌈bits / 8⌉` bytes (129 for a
+  1025-bit key, was 128), and `getMaxMessageSize()` grows by one.
+- The node engine can decrypt again — it used to fail on its own and on
+  OpenSSL's ciphertexts.
+- The pure-JS engine interoperates with OpenSSL in both directions for
+  PKCS#1 v1.5 / OAEP encryption and PKCS#1 v1.5 / PSS signatures.
+- The pure-JS engine no longer fails when the RSA result needs the top
+  byte: with jsbn `encrypt` / `sign` threw, with native `BigInt` they
+  silently returned output with that byte cut off (roughly a quarter of
+  operations, depending on the key).
+- OAEP decryption in the pure-JS engine again checks the leading byte of
+  the encoded message in constant time. With jsbn the old code rejected
+  such values early, which made decryption time depend on whether the
+  result was ≥ 2^(8(k−1)).
+
+**Compatibility:** ciphertexts and PKCS#1 v1.5 signatures that an older
+version's pure-JS engine produced with an 8k+1-bit key used a non-standard
+encoding and are not accepted any more. PSS signatures still verify.
+Decrypt such data with the old version before upgrading.
+
 ## 2.0.0 — TypeScript rewrite, native `node:crypto` fast paths, security audit fixes
 
 Full rewrite of the v1 library in TypeScript with the same public API. The

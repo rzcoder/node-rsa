@@ -362,7 +362,8 @@ export class RSAKey {
     const keyBitLength = this.n.bitLength();
     this.cache = {
       keyBitLength,
-      keyByteLength: (keyBitLength + 6) >> 3,
+      // k = ⌈bits / 8⌉ — the modulus length in octets (RFC 8017 §2).
+      keyByteLength: (keyBitLength + 7) >> 3,
     };
   }
 
