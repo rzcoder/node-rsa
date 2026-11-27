@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.1.0 — correct modulus length for keys of 8k+1 bits
 
 ### Fixed — wrong modulus byte length for keys of 8k+1 bits ([#246](https://github.com/rzcoder/node-rsa/issues/246))
 
